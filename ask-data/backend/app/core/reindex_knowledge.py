@@ -4,6 +4,8 @@ from pathlib import Path
 
 from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
 
+# cd /home/cdsw/ask-data/backend
+# python -m app.core.reindex_knowledge
 
 def main() -> None:
     backend_dir = Path(__file__).resolve().parents[2]
