@@ -1,55 +1,68 @@
 ```
-GENAI/ask-data
-├── backend/                                                     # Central FastAPI Application Cluster
-│   ├── app/                                                     # Modular source packages for the web application tier
-│   │   ├── core/                                                # Ingestion and background orchestration components
-│   │   │   └── ingest.py                                        # Chunking, embedding generation, and vector insertion script
-│   │   ├── schemas/                                             # Data validation models (Pydantic models)
-│   │   │   ├── .gitkeep                                         # Preserves empty folder tracking in git
-│   │   │   └── query.py                                         # Structural definitions validating incoming JSON query payloads
-│   │   ├── services/                                            # Core logic and agent routing microservices
-│   │   │   ├── .gitkeep                                         # Preserves empty folder tracking in git
-│   │   │   └── translator.py                                    # Dual-path CrewAI execution layer (Direct SQL Context vs RAG Engine)
-│   │   ├── __init__.py                                          # Forces directory tracking as an importable package module
-│   │   ├── database.py                                          # Establishes relational engine connection pools and transaction setups
-│   │   └── main.py                                              # Main FastAPI router managing endpoints, CORS, and exception routing
-│   ├── chroma_db/                                               # Persistent local vector database storage layer (Chroma/SQLite)
-│   ├── backend_entry.py                                         # Dependency installation script, reverse proxy binder, and Uvicorn boot engine
-│   ├── domain_config.yaml                                       # Static domain environments, model specifications, and target parameters
-│   ├── requirements.txt                                         # Defines global Python packages required for the core application tier
-│   └── test_connection.py                                       # Network utility testing database loopbacks prior to application launch
-├── data/                                                        # Raw Documents Unstructured Data Ingestion Layer
-│   └── documents/                                               # Staging subfolder for raw compliance manual files
-│       ├── .gitkeep                                             # Track subfolder constraints in git repository
-│       └── KEBIJAKAN KOMUNIKASI DENGAN PEMEGANG SAHAM...pdf     # Corporate standard policy template used for vector ingestion
-├── data_generation/                                             # Seeding Utilities for Relational Testing Data
-│   └── generate_synthetic.py                                    # Auto-populates target relational database with simulated transaction arrays
-├── frontend/                                                    # User Interface Panel Environment
-│   ├── app/                                                     # Client UI configuration assets, styles, and dashboard templates
-│   │   └── .gitkeep                                             # Tracks frontend app workspace parameters in git
-│   ├── frontend_entry.py                                        # Launches frontend process loops and registers subdomains inside CML gateway
-│   └── package.json                                             # Manages frontend JavaScript modules, deployment scripts, and compiler settings
-├── litellm_proxy/                                               # Open-Source API Standardizer & Fallback Middleware
-│   ├── litellm_config.yaml                                      # Model routing maps binding OpenAI requests to target raw Qwen engine setups
-│   └── proxy_entry.py                                           # Binds proxy settings to port 8100 and monitors incoming network data
-├── mcp_server/                                                  # Model Context Protocol Unified Data Layer
-│   ├── app/                                                     # Modular wrapper containing structural agent tooling scripts
-│   │   └── tools/                                               # Concrete automation hooks exposed to the application LLM layers
-│   │       ├── dormant_risk.py                                  # Inspects databases to detect high-risk static/dormant client accounts
-│   │       ├── rag_search.py                                    # Context extraction tool offering direct semantic access to vector stores
-│   │       └── sql_query.py                                     # Standard tool allowing external query processing blocks against databases
-│   ├── mcp_entry.py                                             # Hosts the custom MCP endpoint logic inside an independent API microservice
-│   └── requirements.txt                                         # Lists packages specifically assigned to handle context standardizations
-├── qwen_inference/                                              # Localized CPU Generation & Execution Stack
-│   ├── download_cpu_model.py                                    # Automates GGUF model quantization pull routines from Hugging Face models
-│   ├── download_model.py                                        # Utility managing baseline weight collection frameworks
-│   ├── qwen_cpu_entry.py                                        # Runs highly optimized CPU generations using llama-cpp-python packages
-│   ├── qwen_entry.py                                            # Standard baseline generation microservice targeting general execution tracks
-│   └── requirements.txt                                         # Provisioning toolsets handling matrix multiplications and local model layers
-├── sql/                                                         # Relational Database Target DDL Definitions
-│   └── schema.sql                                               # Contains formal script commands (CREATE TABLE) to formulate database assets
-├── scripts/                                                     # Enterprise Setup and Container Provisioning
-│   └── cml_bootstrap.sh                                         # Core shell execution setup defining OS privileges and standard system packages
-├── .gitignore                                                   # Restricts large models, persistent operational logs, and weights from Git
-└── README.md                                                    # Master architectural guide detailing installation steps and dependencies
+ask-data/
+├── backend/                             # Core Backend Microservice (FastAPI & CrewAI Agents)
+│   ├── app/                             # Main application package directory
+│   │   ├── core/                        # Data processing & ingestion pipelines
+│   │   │   ├── ingest_knowledge.py      # Automated PDF extraction & ChromaDB vector ingestion
+│   │   │   └── reindex_knowledge.py     # Vector store index rebuilding utility
+│   │   ├── schemas/                     # Pydantic data schemas & response payload models
+│   │   ├── services/                    # Agentic orchestration & LLM routing
+│   │   │   └── translator.py            # CrewAI agent definitions (SQL Generator & RAG Compliance)
+│   │   ├── database.py                  # Database connection routines and ORM session managers
+│   │   └── main.py                      # Primary FastAPI app routing /ask REST endpoints
+│   ├── chroma_db/                       # Persistent disk storage for ChromaDB vector embeddings
+│   ├── tests/                           # Unit and integration test suites for backend APIs
+│   ├── backend_entry.py                 # Production launcher for running the Backend CML app
+│   ├── domain_config.yaml               # Agent persona prompts & domain metadata configurations
+│   ├── requirements.txt                 # Backend Python package dependencies
+│   └── test_connection.py               # Diagnostic script for checking backend connectivity
+│
+├── data/                                # Document knowledge store for RAG
+│   └── documents/                       # Enterprise policy PDF manuals (e.g., Bank Jatim Investor SOP)
+│
+├── data_generation/                     # Synthetic test data generation tools
+│
+├── frontend/                            # User Interface Application (Gradio Web UI)
+│   ├── app/                             # UI layouts, chat components, and event handlers
+│   ├── package.json                     # Frontend metadata configuration
+│   ├── README.md                        # Frontend-specific setup and configuration guide
+│   └── requirements.txt                 # Python dependencies for Gradio UI runtime
+│
+├── litellm_proxy/                       # LiteLLM Proxy Gateway Service
+│   ├── litellm_config.yaml              # Proxy route mappings, API keys, and model fallback configs
+│   └── requirements.txt                 # Dependencies for running LiteLLM proxy
+│
+├── mcp_server/                          # Model Context Protocol (MCP) Server Infrastructure
+│   ├── app/                             # MCP tool registration package
+│   │   ├── tools/                       # Modular execution tools connected over SSE
+│   │   │   ├── chroma_client.py         # ChromaDB query client & vector similarity search logic
+│   │   │   ├── config.py                # Centralized Pydantic application settings & .env parser
+│   │   │   ├── dormant_risk.py          # Compliance tool for calculating dormant account risk scores
+│   │   │   ├── impala_client.py         # Database connection wrapper for Cloudera Impala
+│   │   │   ├── rag_search.py            # Vector retrieval tool execution handler
+│   │   │   └── sql_query.py             # Read-only SQL query execution engine
+│   │   └── main.py                      # FastMCP app routing tools over Server-Sent Events (SSE)
+│   ├── .env                             # Environment variables (Impala credentials, Chroma paths)
+│   ├── mcp_entry.py                     # Production launcher script for running the MCP server
+│   ├── requirements.txt                 # Dependencies for MCP protocol execution
+│   └── test_impala.py                   # Standalone diagnostic connection test for Impala DB
+│
+├── qwen_inference/                      # Local LLM Inference Engine Service
+│   ├── app/                             # Local inference endpoint wrapper
+│   │   └── main.py                      # OpenAI-compatible API server exposing local LLM
+│   ├── download_cpu_model.py            # Utility script to pre-fetch CPU-quantized LLM weights
+│   ├── download_model.py                # Hugging Face model downloader for Qwen model weights
+│   ├── qwen_cpu_entry.py                # CPU inference runtime launcher
+│   ├── qwen_entry.py                    # Primary GPU inference server entry point
+│   └── requirements.txt                 # Dependencies for local transformer model loading
+│
+├── sql/                                 # SQL Schema Definitions & DDL Scripts
+│   ├── impala_schema.sql                # Table DDL, column types, and schemas for Cloudera Impala
+│   └── schema.sql                       # Relational database schema references
+│
+├── download_requirements.py             # Utility to pre-download Python wheels for offline setups
+├── scripts/                             # Environment orchestration scripts
+│   └── cml_bootstrap.sh                 # Environment setup shell script for Cloudera AI (CML)
+├── .gitignore                           # Git version control exclusion patterns
+└── README.md                            # Main system documentation & architecture overview
 ```
