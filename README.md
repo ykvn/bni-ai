@@ -65,4 +65,6 @@ ask-data/
 │   └── cml_bootstrap.sh                 # Environment setup shell script for Cloudera AI (CML)
 ├── .gitignore                           # Git version control exclusion patterns
 └── README.md                            # Main system documentation & architecture overview
+
+Example of RAG Search: Berdasarkan dokumen kebijakan komunikasi, apa saja prosedur dan kegiatan rutin manajerial yang harus dilakukan oleh Investor Relations terkait dengan pemaparan kinerja kepada analis dan investor?
 ```
