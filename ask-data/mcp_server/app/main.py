@@ -17,7 +17,8 @@ from mcp.server.sse import SseServerTransport
 
 # --- ACTIVE TOOL REGISTRATION ---
 from app.tools.config import settings  # Centralized application configuration settings
-from app.tools.sql_query import execute_banking_query, get_database_schema
+from app.tools.execute_banking_query import execute_banking_query
+from app.tools.get_database_schema import get_database_schema
 from app.tools.chroma_client import search_documents  # Standardized vector client
 from app.tools.dormant_risk import calculate_dormant_account_risk
 

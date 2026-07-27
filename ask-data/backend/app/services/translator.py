@@ -54,15 +54,6 @@ class SQLTranslationService:
             print(f"⚠️ Native MCP Protocol fetch failed for tool [{tool_name}]: {str(e)}")
             return json.dumps([{"error": f"MCP Gateway Disruption: {str(e)}"}])
 
-    def run_mcp_query(self, sql_query: str) -> list:
-        """Synchronous wrapper to execute relational queries via MCP."""
-        raw_json = asyncio.run(self._call_mcp_tool("execute_banking_query", {"sql_query": sql_query}))
-        try:
-            return json.loads(raw_json)
-        except Exception:
-            # Fallback if the server returned a plain string error message
-            return [{"execution_message": raw_json}]
-
     # =========================================================================
     # 📑 PATH A: OPTIMIZED TEXT-TO-SQL ENGINE (DIRECT CONTEXT INJECTION)
     # =========================================================================
@@ -121,6 +112,15 @@ class SQLTranslationService:
             return ai_result.replace("```", "").strip()
 
         return ai_result
+
+    def run_mcp_query(self, sql_query: str) -> list:
+        """Synchronous wrapper to execute relational queries via MCP."""
+        raw_json = asyncio.run(self._call_mcp_tool("execute_banking_query", {"sql_query": sql_query}))
+        try:
+            return json.loads(raw_json)
+        except Exception:
+            # Fallback if the server returned a plain string error message
+            return [{"execution_message": raw_json}]
 
     # =========================================================================
     # 📑 PATH B: KNOWLEDGE BASE VECTOR RETRIEVAL (STANDARDIZED VIA MCP RAG)
