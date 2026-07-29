@@ -13,7 +13,7 @@ dist/
 # PoC Data Exclusions (Per specifications)
 ask-data/data/documents/*
 !ask-data/data/documents/.gitkeep
-ask-data/chroma_db/
+ask-data/chroma_server/chroma_db/
 
 # System files
 .DS_Store
