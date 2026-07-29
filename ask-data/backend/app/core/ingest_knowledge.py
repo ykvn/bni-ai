@@ -5,6 +5,10 @@ from urllib.parse import urlparse
 import urllib3
 import requests
 
+# 🩹 CML PROXY FIX: Force Python environment to bypass proxies for internal CML URLs
+os.environ["NO_PROXY"] = "*"
+os.environ["no_proxy"] = "*"
+
 # Suppress SSL warnings (matches frontend_entry.py behavior)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -21,12 +25,16 @@ from sentence_transformers import SentenceTransformer
 class CMLChromaClient:
     """
     A lightweight ChromaDB HTTP Client built on Python 'requests'.
-    Uses the exact authentication & SSL pattern as frontend_entry.py.
+    Uses direct socket routing and CML Bearer authentication.
     """
     def __init__(self, base_url: str, token: str = ""):
         self.base_url = base_url.rstrip("/")
         self.session = requests.Session()
-        self.session.verify = False  # Bypasses CML internal SSL handshake issues
+        
+        # 🔑 CRITICAL CML FIX: Ignore system HTTPS_PROXY to prevent 30s ReadTimeout
+        self.session.trust_env = False  
+        self.session.verify = False     # Bypasses internal SSL handshake issues
+        
         if token:
             self.session.headers.update({"Authorization": f"Bearer {token}"})
 
@@ -34,22 +42,19 @@ class CMLChromaClient:
         """Deletes an existing collection if present."""
         url = f"{self.base_url}/api/v1/collections/{name}"
         try:
-            self.session.delete(url, timeout=30)
-        except Exception:
-            pass
+            res = self.session.delete(url, timeout=30)
+            if res.status_code == 200:
+                print(f"🧹 [RAG ENGINE] Flushed old vector collection cache: '{name}'", flush=True)
+            else:
+                print(f"ℹ️ [RAG ENGINE] Collection reset notice (Status {res.status_code})", flush=True)
+        except Exception as e:
+            print(f"ℹ️ [RAG ENGINE] Notice during collection reset: {e}", flush=True)
 
     def get_or_create_collection_id(self, name: str) -> str:
-        """Gets an existing collection ID or creates a new one."""
-        # 1. Try fetching existing collection
-        get_url = f"{self.base_url}/api/v1/collections/{name}"
-        res = self.session.get(get_url, timeout=30)
-        if res.status_code == 200:
-            return res.json()["id"]
-
-        # 2. Create if not found
-        create_url = f"{self.base_url}/api/v1/collections"
+        """Atomically gets or creates a collection ID using ChromaDB REST API."""
+        url = f"{self.base_url}/api/v1/collections"
         payload = {"name": name, "get_or_create": True}
-        res = self.session.post(create_url, json=payload, timeout=30)
+        res = self.session.post(url, json=payload, timeout=60)
         res.raise_for_status()
         return res.json()["id"]
 
@@ -145,14 +150,13 @@ def run_auto_ingest(
     cml_token: str | None = None
 ):
     """Scans documents, flushes old context, and re-indexes into ChromaDB via requests."""
-    print(f"📡 Connecting to ChromaDB Endpoint at {chroma_server_url}...", flush=True)
+    print(f"📡 Connecting directly to ChromaDB Endpoint at {chroma_server_url}...", flush=True)
 
     # Instantiate custom requests-backed client
     chroma_client = CMLChromaClient(base_url=chroma_server_url, token=cml_token or "")
 
     # Reset collection
     chroma_client.delete_collection(name=collection_name)
-    print(f"🧹 [RAG ENGINE] Flushed old vector collection cache: '{collection_name}'", flush=True)
 
     collection_id = chroma_client.get_or_create_collection_id(name=collection_name)
     print(f"✅ Successfully connected to collection ID: '{collection_id}'", flush=True)
