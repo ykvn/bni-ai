@@ -3,8 +3,6 @@ import sys
 import subprocess
 from pathlib import Path
 import uvicorn
-from chromadb.config import Settings as ChromaDBSettings
-from chromadb.server.fastapi import FastAPI as ChromaFastAPI
 
 # 🩹 ENTERPRISE LINUX RUNTIME PATCH: Force modern SQLite layers immediately
 try:
@@ -54,7 +52,11 @@ def main() -> None:
     env = os.environ.copy()
     ensure_dependencies(server_dir, env)
 
-    chroma_host = os.getenv("CHROMA_SERVER_HOST", "127.0.0.1") # Align with internal CML application binding
+    # 💡 DEFERRED IMPORTS: Only load chromadb AFTER dependencies are guaranteed to exist
+    from chromadb.config import Settings as ChromaDBSettings
+    from chromadb.server.fastapi import FastAPI as ChromaFastAPI
+
+    chroma_host = os.getenv("CHROMA_SERVER_HOST", "127.0.0.1")
     chroma_port = int(os.getenv("CDSW_APP_PORT", "8000"))
     chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "/home/cdsw/chroma_server/chroma_db")
 
