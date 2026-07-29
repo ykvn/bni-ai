@@ -2,9 +2,11 @@ import os
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
+import urllib3
+import requests
 
-import chromadb
-from chromadb.config import Settings  # 👈 Added Settings to configure SSL verification
+# Suppress SSL warnings (matches frontend_entry.py behavior)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 try:
     import pysqlite3
@@ -14,6 +16,69 @@ except ImportError:
 
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
+
+
+class CMLChromaClient:
+    """
+    A lightweight ChromaDB HTTP Client built on Python 'requests'.
+    Uses the exact authentication & SSL pattern as frontend_entry.py.
+    """
+    def __init__(self, base_url: str, token: str = ""):
+        self.base_url = base_url.rstrip("/")
+        self.session = requests.Session()
+        self.session.verify = False  # Bypasses CML internal SSL handshake issues
+        if token:
+            self.session.headers.update({"Authorization": f"Bearer {token}"})
+
+    def delete_collection(self, name: str) -> None:
+        """Deletes an existing collection if present."""
+        url = f"{self.base_url}/api/v1/collections/{name}"
+        try:
+            self.session.delete(url, timeout=30)
+        except Exception:
+            pass
+
+    def get_or_create_collection_id(self, name: str) -> str:
+        """Gets an existing collection ID or creates a new one."""
+        # 1. Try fetching existing collection
+        get_url = f"{self.base_url}/api/v1/collections/{name}"
+        res = self.session.get(get_url, timeout=30)
+        if res.status_code == 200:
+            return res.json()["id"]
+
+        # 2. Create if not found
+        create_url = f"{self.base_url}/api/v1/collections"
+        payload = {"name": name, "get_or_create": True}
+        res = self.session.post(create_url, json=payload, timeout=30)
+        res.raise_for_status()
+        return res.json()["id"]
+
+    def add_documents(
+        self, 
+        collection_id: str, 
+        documents: list[str], 
+        embeddings: list[list[float]], 
+        metadatas: list[dict], 
+        ids: list[str]
+    ) -> None:
+        """Pushes text fragments and vector embeddings to ChromaDB."""
+        url = f"{self.base_url}/api/v1/collections/{collection_id}/add"
+        payload = {
+            "documents": documents,
+            "embeddings": embeddings,
+            "metadatas": metadatas,
+            "ids": ids
+        }
+        res = self.session.post(url, json=payload, timeout=120)
+        res.raise_for_status()
+
+    def get_count(self, collection_id: str) -> int:
+        """Returns active vector count in collection."""
+        url = f"{self.base_url}/api/v1/collections/{collection_id}/count"
+        res = self.session.get(url, timeout=30)
+        if res.status_code == 200:
+            return res.json()
+        return 0
 
 
 def _load_env_file(backend_dir) -> dict[str, str]:
@@ -41,7 +106,7 @@ def _load_env_file(backend_dir) -> dict[str, str]:
 
 
 def build_ingest_config(backend_dir, env=None):
-    """Resolve the document and Chroma settings used for ingestion."""
+    """Resolve document and Chroma settings used for ingestion."""
     backend_path = os.path.abspath(str(backend_dir))
     env_map = dict(env or os.environ)
     env_map.update(_load_env_file(backend_path))
@@ -49,7 +114,6 @@ def build_ingest_config(backend_dir, env=None):
     chroma_server_url = env_map.get("CHROMA_SERVER_URL", "http://localhost:8000")
     collection_name = env_map.get("CHROMA_COLLECTION", "bank_abc_knowledge")
 
-    # 🔑 Applied from frontend_entry pattern: Flexible CML token resolution
     cml_token = (
         env_map.get("CML_TOKEN") 
         or env_map.get("CDSW_API_KEY") 
@@ -80,36 +144,18 @@ def run_auto_ingest(
     collection_name: str,
     cml_token: str | None = None
 ):
-    """Scans documents, flushes old context, and re-indexes into ChromaDB Endpoint."""
-    parsed_url = urlparse(chroma_server_url)
-    chroma_host = parsed_url.hostname
-    chroma_port = parsed_url.port or (443 if chroma_ssl else 80)
+    """Scans documents, flushes old context, and re-indexes into ChromaDB via requests."""
+    print(f"📡 Connecting to ChromaDB Endpoint at {chroma_server_url}...", flush=True)
 
-    # 🔑 Applied from frontend_entry pattern: Prepare Bearer headers
-    headers = {}
-    if cml_token:
-        headers["Authorization"] = f"Bearer {cml_token}"
+    # Instantiate custom requests-backed client
+    chroma_client = CMLChromaClient(base_url=chroma_server_url, token=cml_token or "")
 
-    print(f"📡 Connecting to ChromaDB Endpoint at {chroma_host}:{chroma_port} (SSL: {chroma_ssl})...", flush=True)
+    # Reset collection
+    chroma_client.delete_collection(name=collection_name)
+    print(f"🧹 [RAG ENGINE] Flushed old vector collection cache: '{collection_name}'", flush=True)
 
-    # 🔑 Applied from frontend_entry pattern: Pass headers AND disable SSL verification 
-    # to stop httpx from stripping headers during CML Auth redirects.
-    chroma_client = chromadb.HttpClient(
-        host=chroma_host, 
-        port=chroma_port, 
-        ssl=chroma_ssl,
-        headers=headers if headers else None,
-        settings=Settings(chroma_server_ssl_verify=False)  # 👈 Prevents SSL verification drops
-    )
-
-    try:
-        chroma_client.delete_collection(name=collection_name)
-        print(f"🧹 [RAG ENGINE] Flushed old vector collection cache: '{collection_name}'", flush=True)
-    except Exception as e:
-        print(f"ℹ️ [RAG ENGINE] Notice during collection reset: {str(e)}", flush=True)
-
-    collection = chroma_client.get_or_create_collection(name=collection_name)
-    print(f"✅ Successfully connected to collection: '{collection_name}'", flush=True)
+    collection_id = chroma_client.get_or_create_collection_id(name=collection_name)
+    print(f"✅ Successfully connected to collection ID: '{collection_id}'", flush=True)
 
     if not os.path.exists(docs_dir):
         print(f"⚠️ [RAG ENGINE] Targeted directory path does not exist: '{docs_dir}'. Sync suspended.", flush=True)
@@ -160,7 +206,8 @@ def run_auto_ingest(
             document_ids = [f"chunk_{global_chunk_counter + idx}" for idx in range(len(text_fragments))]
             metadata_payloads = [{"source_file": pdf_file} for _ in text_fragments]
 
-            collection.add(
+            chroma_client.add_documents(
+                collection_id=collection_id,
                 documents=text_fragments,
                 embeddings=vector_embeddings,
                 metadatas=metadata_payloads,
@@ -174,4 +221,5 @@ def run_auto_ingest(
             print(f"❌ Error parsing file {pdf_file}: {str(file_error)}", flush=True)
             continue
 
-    print(f"🎉 Build pipeline complete! Total active vectors in cluster: {collection.count()}", flush=True)
+    total_count = chroma_client.get_count(collection_id=collection_id)
+    print(f"🎉 Build pipeline complete! Total active vectors in cluster: {total_count}", flush=True)
