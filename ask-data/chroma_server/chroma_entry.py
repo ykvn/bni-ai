@@ -54,9 +54,9 @@ def main() -> None:
     env = os.environ.copy()
     ensure_dependencies(server_dir, env)
 
-    chroma_host = os.getenv("CHROMA_SERVER_HOST", "0.0.0.0")
+    chroma_host = os.getenv("CHROMA_SERVER_HOST", "127.0.0.1") # Align with internal CML application binding
     chroma_port = int(os.getenv("CDSW_APP_PORT", "8000"))
-    chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "/home/cdsw/chroma_db_server_data")
+    chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "/home/cdsw/chroma_server/chroma_db")
 
     print(f"🚀 Starting ChromaDB Server...")
     print(f"🌐 Host: {chroma_host}, Port: {chroma_port}")
