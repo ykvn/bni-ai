@@ -1,3 +1,7 @@
 chromadb==0.4.24
-uvicorn==0.29.0
-opentelemetry-instrumentation-fastapi==0.45b0 # Or a compatible version
+uvicorn==0.20.0 # Pinned to a stable version to resolve auto_loop_factory error
+starlette==0.20.4 # Explicitly add Starlette, compatible with uvicorn==0.20.0
+fastapi==0.111.0
+opentelemetry-api==1.24.0
+opentelemetry-sdk==1.24.0
+opentelemetry-instrumentation-fastapi==0.45b0
