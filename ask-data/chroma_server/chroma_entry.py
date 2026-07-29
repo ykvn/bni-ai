@@ -3,8 +3,12 @@ import sys
 import subprocess
 from pathlib import Path
 
-# Force unbuffered output so logs display immediately in CML Application UI
-sys.stdout.reconfigure(line_buffering=True)
+# 🩹 SAFE LOG BUFFERING: Gracefully handles both standard Python runtime & IPython OutStream
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(line_buffering=True)
+    except Exception:
+        pass
 
 
 def resolve_chroma_server_dir() -> Path:
