@@ -44,18 +44,14 @@ def build_ingest_config(backend_dir, env=None):
     env_map = dict(env or os.environ)
     env_map.update(_load_env_file(backend_path))
 
-    # Resolve ChromaDB server URL & Token
     chroma_server_url = env_map.get("CHROMA_SERVER_URL", "http://localhost:8000")
     collection_name = env_map.get("CHROMA_COLLECTION", "bank_abc_knowledge")
-    
-    # 🔑 ADDED: Resolve CML_TOKEN or CDSW_API_KEY for isolated CML App authentication
     cml_token = env_map.get("CML_TOKEN") or env_map.get("CDSW_API_KEY") or env_map.get("CHROMA_SERVER_TOKEN")
 
     docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
     if not os.path.exists(docs_dir):
         docs_dir = "/home/cdsw/ask-data/data/documents"
 
-    # Parse host and port from the URL
     parsed_url = urlparse(chroma_server_url)
     chroma_ssl = parsed_url.scheme == 'https'
 
@@ -64,7 +60,7 @@ def build_ingest_config(backend_dir, env=None):
         "chroma_server_url": chroma_server_url,
         "chroma_ssl": chroma_ssl,
         "collection_name": collection_name,
-        "cml_token": cml_token,  # 👈 Added to config payload
+        "cml_token": cml_token,
     }
 
 
@@ -73,27 +69,19 @@ def run_auto_ingest(
     chroma_server_url: str, 
     chroma_ssl: bool, 
     collection_name: str,
-    cml_token: str | None = None  # 👈 Added cml_token parameter
+    cml_token: str | None = None
 ):
-    """
-    Scans the documents directory, flushes old context nodes, and performs
-    a clean re-index of all policy manuals directly into ChromaDB.
-    """
+    """Scans documents, flushes old context, and re-indexes into ChromaDB Endpoint."""
     parsed_url = urlparse(chroma_server_url)
     chroma_host = parsed_url.hostname
-    chroma_port = parsed_url.port
+    chroma_port = parsed_url.port or (443 if chroma_ssl else 80)
 
-    if chroma_port is None:
-        chroma_port = 443 if chroma_ssl else 80
-
-    # 🔑 ADDED: Construct authorization headers for CML Application Proxy
     headers = {}
     if cml_token:
         headers["Authorization"] = f"Bearer {cml_token}"
 
-    print(f"Connecting to ChromaDB server at {chroma_host}:{chroma_port} (SSL: {chroma_ssl})")
+    print(f"📡 Connecting to ChromaDB Endpoint at {chroma_host}:{chroma_port} (SSL: {chroma_ssl})...", flush=True)
     
-    # 🔑 UPDATED: Pass headers to chromadb.HttpClient
     chroma_client = chromadb.HttpClient(
         host=chroma_host, 
         port=chroma_port, 
@@ -103,29 +91,33 @@ def run_auto_ingest(
 
     try:
         chroma_client.delete_collection(name=collection_name)
-        print(f"🧹 [RAG ENGINE] Flushed old vector collection cache: '{collection_name}'")
-    except Exception:
-        pass
+        print(f"🧹 [RAG ENGINE] Flushed old vector collection cache: '{collection_name}'", flush=True)
+    except Exception as e:
+        print(f"ℹ️ [RAG ENGINE] Notice during collection reset: {str(e)}", flush=True)
 
     collection = chroma_client.get_or_create_collection(name=collection_name)
+    print(f"✅ Successfully connected to collection: '{collection_name}'", flush=True)
 
     if not os.path.exists(docs_dir):
-        print(f"⚠️ [RAG ENGINE] Targeted directory path does not exist: '{docs_dir}'. Sync cycle suspended.")
+        print(f"⚠️ [RAG ENGINE] Targeted directory path does not exist: '{docs_dir}'. Sync suspended.", flush=True)
         return
 
     pdf_files = [f for f in os.listdir(docs_dir) if f.lower().endswith('.pdf')]
     if not pdf_files:
-        print(f"⚠️ [RAG ENGINE] No source policy manuals detected inside '{docs_dir}'. Knowledge base remains empty.")
+        print(f"⚠️ [RAG ENGINE] No PDF files found in '{docs_dir}'. Knowledge base empty.", flush=True)
         return
 
-    print("🧠 [RAG ENGINE] Loading local all-MiniLM-L6-v2 vectorization engine weights...")
+    print(f"📄 Found {len(pdf_files)} PDF file(s) in {docs_dir}: {pdf_files}", flush=True)
+    print("🧠 Loading all-MiniLM-L6-v2 embedding weights (this may take a minute)...", flush=True)
+    
     embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    print("✅ Embedding model successfully loaded into memory!", flush=True)
 
     global_chunk_counter = 0
 
     for pdf_file in pdf_files:
         file_path = os.path.join(docs_dir, pdf_file)
-        print(f"📄 [RAG ENGINE] Re-indexing asset parameters from: {pdf_file}")
+        print(f"📄 Processing document: {pdf_file}...", flush=True)
 
         try:
             reader = PdfReader(file_path)
@@ -146,9 +138,10 @@ def run_auto_ingest(
                     text_fragments.append(fragment)
 
             if not text_fragments:
+                print(f"⚠️ No text could be extracted from {pdf_file}", flush=True)
                 continue
 
-            print(f"✂️ [RAG ENGINE] Fragmented {pdf_file} into {len(text_fragments)} segments. Generating embeddings...")
+            print(f"✂️ Fragmented into {len(text_fragments)} chunks. Generating embeddings...", flush=True)
             vector_embeddings = embedding_model.encode(text_fragments).tolist()
 
             document_ids = [f"chunk_{global_chunk_counter + idx}" for idx in range(len(text_fragments))]
@@ -162,10 +155,10 @@ def run_auto_ingest(
             )
 
             global_chunk_counter += len(text_fragments)
-            print(f"💾 [RAG ENGINE] Successfully committed {len(text_fragments)} vector items for {pdf_file} to disk storage.")
+            print(f"💾 Committed {len(text_fragments)} vectors for {pdf_file} to ChromaDB.", flush=True)
 
         except Exception as file_error:
-            print(f"❌ [RAG ENGINE] Error parsing file {pdf_file}: {str(file_error)}")
+            print(f"❌ Error parsing file {pdf_file}: {str(file_error)}", flush=True)
             continue
 
-    print(f"🎉 [RAG ENGINE] Database build pipeline resolved! {collection.count()} total vectors are active in the cluster.")
+    print(f"🎉 Build pipeline complete! Total active vectors in cluster: {collection.count()}", flush=True)
