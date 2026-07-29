@@ -53,23 +53,31 @@ def build_ingest_config(backend_dir, env=None):
         docs_dir = "/home/cdsw/ask-data/data/documents"
 
     # Parse host and port from the URL
-    parsed_url = urlparse(chroma_server_url)
+    parsed_url = urlparse(chroma_server_url) # Re-parse here to get scheme for SSL
+    chroma_ssl = parsed_url.scheme == 'https'
 
     return {
         "docs_dir": docs_dir,
-        "chroma_host": parsed_url.hostname,
-        "chroma_port": parsed_url.port,
+        "chroma_server_url": chroma_server_url, # Pass the full URL
+        "chroma_ssl": chroma_ssl, # Pass the SSL flag
         "collection_name": collection_name,
     }
 
 
-def run_auto_ingest(docs_dir: str, chroma_host: str, chroma_port: int, collection_name: str):
+def run_auto_ingest(docs_dir: str, chroma_server_url: str, chroma_ssl: bool, collection_name: str):
     """
     Scans the documents directory, flushes old context nodes, and performs
     a clean re-index of all policy manuals directly into ChromaDB.
     """
-    print(f"Connecting to ChromaDB server at {chroma_host}:{chroma_port}")
-    chroma_client = chromadb.HttpClient(host=chroma_host, port=chroma_port)
+    parsed_url = urlparse(chroma_server_url)
+    chroma_host = parsed_url.hostname
+    chroma_port = parsed_url.port
+
+    if chroma_port is None:
+        chroma_port = 443 if chroma_ssl else 80
+
+    print(f"Connecting to ChromaDB server at {chroma_host}:{chroma_port} (SSL: {chroma_ssl})")
+    chroma_client = chromadb.HttpClient(host=chroma_host, port=chroma_port, ssl=chroma_ssl)
 
     try:
         chroma_client.delete_collection(name=collection_name)

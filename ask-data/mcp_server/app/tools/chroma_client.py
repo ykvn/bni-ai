@@ -24,7 +24,17 @@ def _get_client() -> ClientAPI:
     global _client
     if _client is None:
         parsed_url = urlparse(settings.chroma_server_url)
-        _client = chromadb.HttpClient(host=parsed_url.hostname, port=parsed_url.port)
+        
+        chroma_host = parsed_url.hostname
+        chroma_port = parsed_url.port
+        chroma_ssl = parsed_url.scheme == 'https'
+
+        # If port is not explicitly in the URL, infer default based on scheme
+        if chroma_port is None:
+            chroma_port = 443 if chroma_ssl else 80
+
+        print(f"ChromaClient connecting to: {chroma_host}:{chroma_port} (SSL: {chroma_ssl})")
+        _client = chromadb.HttpClient(host=chroma_host, port=chroma_port, ssl=chroma_ssl)
     return _client
 
 

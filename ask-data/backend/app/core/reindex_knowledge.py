@@ -17,13 +17,13 @@ def main() -> None:
 
     print("🔄 Re-indexing knowledge base...")
     print(f"- docs dir: {config['docs_dir']}")
-    print(f"- Chroma server: {config['chroma_host']}:{config['chroma_port']}")
+    print(f"- Chroma server URL: {config['chroma_server_url']} (SSL: {config['chroma_ssl']})")
     print(f"- collection: {config['collection_name']}")
 
     run_auto_ingest(
         docs_dir=config["docs_dir"],
-        chroma_host=config["chroma_host"],
-        chroma_port=config["chroma_port"],
+        chroma_server_url=config["chroma_server_url"],
+        chroma_ssl=config["chroma_ssl"],
         collection_name=config["collection_name"],
     )
 
