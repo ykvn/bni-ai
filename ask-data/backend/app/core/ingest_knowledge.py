@@ -1,11 +1,13 @@
 import os
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
 import chromadb
+from chromadb.config import Settings  # 👈 Added Settings to configure SSL verification
+
 try:
-    __import__('pysqlite3')
-    import sys
+    import pysqlite3
     sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 except ImportError:
     pass
@@ -46,7 +48,14 @@ def build_ingest_config(backend_dir, env=None):
 
     chroma_server_url = env_map.get("CHROMA_SERVER_URL", "http://localhost:8000")
     collection_name = env_map.get("CHROMA_COLLECTION", "bank_abc_knowledge")
-    cml_token = env_map.get("CML_TOKEN") or env_map.get("CDSW_API_KEY") or env_map.get("CHROMA_SERVER_TOKEN")
+
+    # 🔑 Applied from frontend_entry pattern: Flexible CML token resolution
+    cml_token = (
+        env_map.get("CML_TOKEN") 
+        or env_map.get("CDSW_API_KEY") 
+        or env_map.get("CHROMA_SERVER_TOKEN") 
+        or ""
+    ).strip()
 
     docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
     if not os.path.exists(docs_dir):
@@ -76,17 +85,21 @@ def run_auto_ingest(
     chroma_host = parsed_url.hostname
     chroma_port = parsed_url.port or (443 if chroma_ssl else 80)
 
+    # 🔑 Applied from frontend_entry pattern: Prepare Bearer headers
     headers = {}
     if cml_token:
         headers["Authorization"] = f"Bearer {cml_token}"
 
     print(f"📡 Connecting to ChromaDB Endpoint at {chroma_host}:{chroma_port} (SSL: {chroma_ssl})...", flush=True)
-    
+
+    # 🔑 Applied from frontend_entry pattern: Pass headers AND disable SSL verification 
+    # to stop httpx from stripping headers during CML Auth redirects.
     chroma_client = chromadb.HttpClient(
         host=chroma_host, 
         port=chroma_port, 
         ssl=chroma_ssl,
-        headers=headers if headers else None
+        headers=headers if headers else None,
+        settings=Settings(chroma_server_ssl_verify=False)  # 👈 Prevents SSL verification drops
     )
 
     try:
@@ -108,10 +121,10 @@ def run_auto_ingest(
         return
 
     print(f"📄 Found {len(pdf_files)} PDF file(s) in {docs_dir}: {pdf_files}", flush=True)
-    print("🧠 Loading all-MiniLM-L6-v2 embedding weights (this may take a minute)...", flush=True)
+    print("🧠 Loading all-MiniLM-L6-v2 embedding weights...", flush=True)
     
     embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    print("✅ Embedding model successfully loaded into memory!", flush=True)
+    print("✅ Embedding model loaded into memory!", flush=True)
 
     global_chunk_counter = 0
 
@@ -138,7 +151,7 @@ def run_auto_ingest(
                     text_fragments.append(fragment)
 
             if not text_fragments:
-                print(f"⚠️ No text could be extracted from {pdf_file}", flush=True)
+                print(f"⚠️ No text extracted from {pdf_file}", flush=True)
                 continue
 
             print(f"✂️ Fragmented into {len(text_fragments)} chunks. Generating embeddings...", flush=True)
