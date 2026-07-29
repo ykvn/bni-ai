@@ -83,7 +83,9 @@ def run_chroma_worker() -> None:
         allow_reset=True
     )
 
-    app = ChromaFastAPI(chroma_settings)
+    # 🔧 FIX: Extract the underlying ASGI application from ChromaFastAPI
+    server = ChromaFastAPI(chroma_settings)
+    app = server.app() if callable(getattr(server, "app", None)) else getattr(server, "_app", server)
 
     # Launch uvicorn
     uvicorn.run(app, host=chroma_host, port=chroma_port)
