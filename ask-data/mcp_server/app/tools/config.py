@@ -37,7 +37,8 @@ class Settings(BaseSettings):
     db_name: str = Field(default="default", alias="DB_NAME")
 
     # Standardized ChromaDB & Vector Embedding Storage (Local Transformers Layer)
-    chroma_persist_dir: str = Field(default="/home/cdsw/ask-data/backend/chroma_db", alias="CHROMA_PERSIST_DIR")
+    chroma_persist_dir: str = Field(default="/home/cdsw/ask-data/chroma_server/chroma_db", alias="CHROMA_PERSIST_DIR")
+    chroma_server_url: str = Field(default="http://localhost:8000", alias="CHROMA_SERVER_URL")
     chroma_collection: str = Field(default="bank_abc_knowledge", alias="CHROMA_COLLECTION")
     chroma_model: str = Field(default="all-MiniLM-L6-v2", alias="CHROMA_MODEL")
 

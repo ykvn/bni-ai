@@ -1,0 +1,2 @@
+chromadb==0.4.24
+uvicorn==0.29.0

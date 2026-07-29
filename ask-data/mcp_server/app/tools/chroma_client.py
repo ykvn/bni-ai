@@ -11,17 +11,20 @@ except ImportError:
     pass
 
 import chromadb
+from urllib.parse import urlparse
+from chromadb.api import ClientAPI
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from app.tools.config import settings
 
-_client: chromadb.PersistentClient | None = None
+_client: ClientAPI | None = None
 
 
-def _get_client() -> chromadb.PersistentClient:
-    """Singleton connection routine ensuring a single persistent disk handle."""
+def _get_client() -> ClientAPI:
+    """Singleton connection routine ensuring a single client connection."""
     global _client
     if _client is None:
-        _client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+        parsed_url = urlparse(settings.chroma_server_url)
+        _client = chromadb.HttpClient(host=parsed_url.hostname, port=parsed_url.port)
     return _client
 
 
