@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 import chromadb
 try:
@@ -9,7 +10,6 @@ try:
 except ImportError:
     pass
 
-from urllib.parse import urlparse
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 
@@ -44,27 +44,37 @@ def build_ingest_config(backend_dir, env=None):
     env_map = dict(env or os.environ)
     env_map.update(_load_env_file(backend_path))
 
-    # Now we need the ChromaDB server URL, not the local persist_dir
+    # Resolve ChromaDB server URL & Token
     chroma_server_url = env_map.get("CHROMA_SERVER_URL", "http://localhost:8000")
     collection_name = env_map.get("CHROMA_COLLECTION", "bank_abc_knowledge")
+    
+    # 🔑 ADDED: Resolve CML_TOKEN or CDSW_API_KEY for isolated CML App authentication
+    cml_token = env_map.get("CML_TOKEN") or env_map.get("CDSW_API_KEY") or env_map.get("CHROMA_SERVER_TOKEN")
 
     docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
     if not os.path.exists(docs_dir):
         docs_dir = "/home/cdsw/ask-data/data/documents"
 
     # Parse host and port from the URL
-    parsed_url = urlparse(chroma_server_url) # Re-parse here to get scheme for SSL
+    parsed_url = urlparse(chroma_server_url)
     chroma_ssl = parsed_url.scheme == 'https'
 
     return {
         "docs_dir": docs_dir,
-        "chroma_server_url": chroma_server_url, # Pass the full URL
-        "chroma_ssl": chroma_ssl, # Pass the SSL flag
+        "chroma_server_url": chroma_server_url,
+        "chroma_ssl": chroma_ssl,
         "collection_name": collection_name,
+        "cml_token": cml_token,  # 👈 Added to config payload
     }
 
 
-def run_auto_ingest(docs_dir: str, chroma_server_url: str, chroma_ssl: bool, collection_name: str):
+def run_auto_ingest(
+    docs_dir: str, 
+    chroma_server_url: str, 
+    chroma_ssl: bool, 
+    collection_name: str,
+    cml_token: str | None = None  # 👈 Added cml_token parameter
+):
     """
     Scans the documents directory, flushes old context nodes, and performs
     a clean re-index of all policy manuals directly into ChromaDB.
@@ -76,8 +86,20 @@ def run_auto_ingest(docs_dir: str, chroma_server_url: str, chroma_ssl: bool, col
     if chroma_port is None:
         chroma_port = 443 if chroma_ssl else 80
 
+    # 🔑 ADDED: Construct authorization headers for CML Application Proxy
+    headers = {}
+    if cml_token:
+        headers["Authorization"] = f"Bearer {cml_token}"
+
     print(f"Connecting to ChromaDB server at {chroma_host}:{chroma_port} (SSL: {chroma_ssl})")
-    chroma_client = chromadb.HttpClient(host=chroma_host, port=chroma_port, ssl=chroma_ssl)
+    
+    # 🔑 UPDATED: Pass headers to chromadb.HttpClient
+    chroma_client = chromadb.HttpClient(
+        host=chroma_host, 
+        port=chroma_port, 
+        ssl=chroma_ssl,
+        headers=headers if headers else None
+    )
 
     try:
         chroma_client.delete_collection(name=collection_name)

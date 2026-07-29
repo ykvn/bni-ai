@@ -4,8 +4,6 @@ from pathlib import Path
 
 from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
 
-# cd /home/cdsw/ask-data/backend
-# python -m app.core.reindex_knowledge
 
 def main() -> None:
     backend_dir = Path(__file__).resolve().parents[2]
@@ -19,12 +17,15 @@ def main() -> None:
     print(f"- docs dir: {config['docs_dir']}")
     print(f"- Chroma server URL: {config['chroma_server_url']} (SSL: {config['chroma_ssl']})")
     print(f"- collection: {config['collection_name']}")
+    if config.get("cml_token"):
+        print("- CML Authentication: Token loaded successfully")
 
     run_auto_ingest(
         docs_dir=config["docs_dir"],
         chroma_server_url=config["chroma_server_url"],
         chroma_ssl=config["chroma_ssl"],
         collection_name=config["collection_name"],
+        cml_token=config["cml_token"],  # 👈 Pass token to auto_ingest
     )
 
 
