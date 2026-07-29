@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import chromadb
 try:
     __import__('pysqlite3')
     import sys
@@ -8,7 +9,7 @@ try:
 except ImportError:
     pass
 
-import chromadb
+from urllib.parse import urlparse
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 
@@ -43,26 +44,32 @@ def build_ingest_config(backend_dir, env=None):
     env_map = dict(env or os.environ)
     env_map.update(_load_env_file(backend_path))
 
-    persist_dir = env_map.get("CHROMA_PERSIST_DIR", str(os.path.join(backend_path, "chroma_db")))
+    # Now we need the ChromaDB server URL, not the local persist_dir
+    chroma_server_url = env_map.get("CHROMA_SERVER_URL", "http://localhost:8000")
     collection_name = env_map.get("CHROMA_COLLECTION", "bank_abc_knowledge")
 
     docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
     if not os.path.exists(docs_dir):
         docs_dir = "/home/cdsw/ask-data/data/documents"
 
+    # Parse host and port from the URL
+    parsed_url = urlparse(chroma_server_url)
+
     return {
         "docs_dir": docs_dir,
-        "persist_dir": persist_dir,
+        "chroma_host": parsed_url.hostname,
+        "chroma_port": parsed_url.port,
         "collection_name": collection_name,
     }
 
 
-def run_auto_ingest(docs_dir: str, persist_dir: str, collection_name: str):
+def run_auto_ingest(docs_dir: str, chroma_host: str, chroma_port: int, collection_name: str):
     """
     Scans the documents directory, flushes old context nodes, and performs
     a clean re-index of all policy manuals directly into ChromaDB.
     """
-    chroma_client = chromadb.PersistentClient(path=persist_dir)
+    print(f"Connecting to ChromaDB server at {chroma_host}:{chroma_port}")
+    chroma_client = chromadb.HttpClient(host=chroma_host, port=chroma_port)
 
     try:
         chroma_client.delete_collection(name=collection_name)
