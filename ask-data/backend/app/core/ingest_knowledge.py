@@ -5,10 +5,6 @@ from urllib.parse import urlparse
 import urllib3
 import requests
 
-# 🩹 CML PROXY FIX: Force Python environment to bypass proxies for internal CML URLs
-os.environ["NO_PROXY"] = "*"
-os.environ["no_proxy"] = "*"
-
 # Suppress SSL warnings (matches frontend_entry.py behavior)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -24,16 +20,13 @@ from sentence_transformers import SentenceTransformer
 
 class CMLChromaClient:
     """
-    A lightweight ChromaDB HTTP Client built on Python 'requests'.
-    Uses direct socket routing and CML Bearer authentication.
+    A lightweight ChromaDB REST Client built on Python 'requests'.
+    Uses CML's native environment proxy routing and Bearer authentication.
     """
     def __init__(self, base_url: str, token: str = ""):
         self.base_url = base_url.rstrip("/")
         self.session = requests.Session()
-        
-        # 🔑 CRITICAL CML FIX: Ignore system HTTPS_PROXY to prevent 30s ReadTimeout
-        self.session.trust_env = False  
-        self.session.verify = False     # Bypasses internal SSL handshake issues
+        self.session.verify = False  # Bypasses internal CML SSL certificate issues
         
         if token:
             self.session.headers.update({"Authorization": f"Bearer {token}"})
@@ -150,7 +143,7 @@ def run_auto_ingest(
     cml_token: str | None = None
 ):
     """Scans documents, flushes old context, and re-indexes into ChromaDB via requests."""
-    print(f"📡 Connecting directly to ChromaDB Endpoint at {chroma_server_url}...", flush=True)
+    print(f"📡 Connecting to ChromaDB Endpoint at {chroma_server_url}...", flush=True)
 
     # Instantiate custom requests-backed client
     chroma_client = CMLChromaClient(base_url=chroma_server_url, token=cml_token or "")
