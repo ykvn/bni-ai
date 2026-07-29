@@ -1,6 +1,6 @@
 chromadb==0.4.24
-uvicorn==0.20.0 # Pinned to a stable version to resolve auto_loop_factory error
-starlette==0.20.4 # Explicitly add Starlette, compatible with uvicorn==0.20.0
+uvicorn==0.30.1 # Update uvicorn to a version compatible with newer Starlette
+starlette==0.37.2 # Pin Starlette to satisfy FastAPI's requirement
 fastapi==0.111.0
 opentelemetry-api==1.24.0
 opentelemetry-sdk==1.24.0
