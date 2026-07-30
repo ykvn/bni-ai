@@ -5,12 +5,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
-# 🔑 Force-load .env file from mcp_server root directory
+# Load .env file explicitly
 _mcp_env_path = Path(__file__).resolve().parents[2] / ".env"
 if _mcp_env_path.exists():
     load_dotenv(_mcp_env_path, override=True)
 
-# Suppress self-signed SSL warnings in CML environment
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 _embedding_model = None
@@ -23,10 +22,6 @@ def _get_embedding_model():
 
 
 def perform_rag_search(query: str, n_results: int = 3) -> str:
-    """
-    Queries the standalone ChromaDB HTTP application endpoint 
-    for relevant knowledge base context using CML Bearer authentication.
-    """
     normalized_query = query.strip()
     if not normalized_query:
         return "Search Context: Empty query provided."
@@ -34,7 +29,6 @@ def perform_rag_search(query: str, n_results: int = 3) -> str:
     chroma_url = os.environ.get("CHROMA_SERVER_URL", "").rstrip("/")
     collection_name = os.environ.get("CHROMA_COLLECTION", "bank_abc_knowledge")
     
-    # 🔑 Load CML token from environment / .env file
     cml_token = (
         os.environ.get("CML_TOKEN") 
         or os.environ.get("CDSW_API_KEY") 
@@ -46,36 +40,26 @@ def perform_rag_search(query: str, n_results: int = 3) -> str:
         return "⚠️ [MCP Error] CHROMA_SERVER_URL environment variable is not configured."
 
     session = requests.Session()
-    session.verify = False  # Handles internal CML self-signed SSL certificates
+    session.verify = False
     
-    # Inject Bearer token header for CML Proxy Authentication
     if cml_token:
         session.headers.update({"Authorization": f"Bearer {cml_token}"})
-    else:
-        print("⚠️ [MCP WARNING] No CML_TOKEN loaded. Auth gateway will redirect to login.", flush=True)
 
     try:
-        # 1. Fetch Collection Metadata from ChromaDB REST API
         get_coll_url = f"{chroma_url}/api/v1/collections/{collection_name}"
         res = session.get(get_coll_url, timeout=15, allow_redirects=False)
 
-        # 🚨 Catch 302 Login Redirects if auth fails
         if res.status_code in (301, 302, 401, 403):
-            return (
-                f"⚠️ [MCP Auth Error] CML Gateway redirected request to Login (Status {res.status_code}). "
-                f"Please verify CML_TOKEN in mcp_server/.env."
-            )
+            return f"⚠️ [MCP Auth Error] CML Gateway redirected request to Login (Status {res.status_code})."
 
         if res.status_code != 200:
             return f"Search Context for '{query}': Collection '{collection_name}' not found in ChromaDB."
 
         collection_id = res.json()["id"]
 
-        # 2. Generate Query Embedding
         model = _get_embedding_model()
         query_vector = model.encode([normalized_query]).tolist()
 
-        # 3. Perform Vector Similarity Search
         query_url = f"{chroma_url}/api/v1/collections/{collection_id}/query"
         payload = {
             "query_embeddings": query_vector,
@@ -91,7 +75,6 @@ def perform_rag_search(query: str, n_results: int = 3) -> str:
         query_res.raise_for_status()
         data = query_res.json()
 
-        # 4. Extract retrieved document fragments
         documents = data.get("documents", [[]])[0]
         if not documents:
             return f"Search Context for '{query}': No matching vector nodes found in knowledge base."
