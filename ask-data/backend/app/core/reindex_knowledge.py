@@ -13,19 +13,19 @@ def main() -> None:
     env = os.environ.copy()
     config = build_ingest_config(backend_dir=backend_dir, env=env)
 
-    print("🔄 Re-indexing knowledge base...")
-    print(f"- docs dir: {config['docs_dir']}")
-    print(f"- Chroma server URL: {config['chroma_server_url']} (SSL: {config['chroma_ssl']})")
-    print(f"- collection: {config['collection_name']}")
+    print("🔄 Re-indexing knowledge base...", flush=True)
+    print(f"- docs dir: {config['docs_dir']}", flush=True)
+    print(f"- Chroma server URL: {config['chroma_server_url']} (SSL: {config['chroma_ssl']})", flush=True)
+    print(f"- collection: {config['collection_name']}", flush=True)
     if config.get("cml_token"):
-        print("- CML Authentication: Token loaded successfully")
+        print("- CML Authentication: Token loaded successfully", flush=True)
 
     run_auto_ingest(
         docs_dir=config["docs_dir"],
         chroma_server_url=config["chroma_server_url"],
         chroma_ssl=config["chroma_ssl"],
         collection_name=config["collection_name"],
-        cml_token=config["cml_token"],  # 👈 Pass token to auto_ingest
+        cml_token=config["cml_token"],
     )
 
 

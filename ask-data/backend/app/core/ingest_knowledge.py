@@ -1,11 +1,12 @@
 import os
 import sys
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 import urllib3
 import requests
 
-# Suppress SSL warnings (matches frontend_entry.py behavior)
+# Suppress SSL warnings for internal CML certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 try:
@@ -21,7 +22,7 @@ from sentence_transformers import SentenceTransformer
 class CMLChromaClient:
     """
     A lightweight ChromaDB REST Client built on Python 'requests'.
-    Uses CML's native environment proxy routing and Bearer authentication.
+    Uses CML Bearer authentication, SSL bypass, and extended gateway timeouts.
     """
     def __init__(self, base_url: str, token: str = ""):
         self.base_url = base_url.rstrip("/")
@@ -30,12 +31,28 @@ class CMLChromaClient:
         
         if token:
             self.session.headers.update({"Authorization": f"Bearer {token}"})
+        else:
+            print("⚠️ Notice: No CML token loaded. Request may fail if CML Application authentication is enabled.", flush=True)
+
+        self._warmup_gateway()
+
+    def _warmup_gateway(self) -> None:
+        """Pings Chroma heartbeat endpoint to warm up CML OAuth Proxy session."""
+        url = f"{self.base_url}/api/v1/heartbeat"
+        for attempt in range(1, 4):
+            try:
+                res = self.session.get(url, timeout=120)
+                if res.status_code in (200, 404):
+                    print("⚡ CML Gateway proxy connection established successfully.", flush=True)
+                    return
+            except Exception:
+                time.sleep(2)
 
     def delete_collection(self, name: str) -> None:
         """Deletes an existing collection if present."""
         url = f"{self.base_url}/api/v1/collections/{name}"
         try:
-            res = self.session.delete(url, timeout=30)
+            res = self.session.delete(url, timeout=120)
             if res.status_code == 200:
                 print(f"🧹 [RAG ENGINE] Flushed old vector collection cache: '{name}'", flush=True)
             else:
@@ -47,7 +64,7 @@ class CMLChromaClient:
         """Atomically gets or creates a collection ID using ChromaDB REST API."""
         url = f"{self.base_url}/api/v1/collections"
         payload = {"name": name, "get_or_create": True}
-        res = self.session.post(url, json=payload, timeout=60)
+        res = self.session.post(url, json=payload, timeout=120)
         res.raise_for_status()
         return res.json()["id"]
 
@@ -67,13 +84,13 @@ class CMLChromaClient:
             "metadatas": metadatas,
             "ids": ids
         }
-        res = self.session.post(url, json=payload, timeout=120)
+        res = self.session.post(url, json=payload, timeout=300)  # 300s timeout for large embedding payloads
         res.raise_for_status()
 
     def get_count(self, collection_id: str) -> int:
         """Returns active vector count in collection."""
         url = f"{self.base_url}/api/v1/collections/{collection_id}/count"
-        res = self.session.get(url, timeout=30)
+        res = self.session.get(url, timeout=120)
         if res.status_code == 200:
             return res.json()
         return 0
