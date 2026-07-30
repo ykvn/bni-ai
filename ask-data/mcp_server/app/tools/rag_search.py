@@ -5,30 +5,23 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
-# Load .env file explicitly
+# 1. Force load the exact same .env file the backend uses
 _mcp_env_path = Path(__file__).resolve().parents[2] / ".env"
 if _mcp_env_path.exists():
     load_dotenv(_mcp_env_path, override=True)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 _embedding_model = None
 
-def _get_embedding_model():
+# If you use CrewAI, keep your @tool decorator here!
+def search_policy_documents(query: str, n_results: int = 3) -> str:
+    """Searches the enterprise knowledge base for policy documents."""
     global _embedding_model
-    if _embedding_model is None:
-        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return _embedding_model
-
-
-def perform_rag_search(query: str, n_results: int = 3) -> str:
-    normalized_query = query.strip()
-    if not normalized_query:
-        return "Search Context: Empty query provided."
-
+    
     chroma_url = os.environ.get("CHROMA_SERVER_URL", "").rstrip("/")
     collection_name = os.environ.get("CHROMA_COLLECTION", "bank_abc_knowledge")
     
+    # Extract the token just like the backend does
     cml_token = (
         os.environ.get("CML_TOKEN") 
         or os.environ.get("CDSW_API_KEY") 
@@ -36,50 +29,43 @@ def perform_rag_search(query: str, n_results: int = 3) -> str:
         or ""
     ).strip()
 
-    if not chroma_url:
-        return "⚠️ [MCP Error] CHROMA_SERVER_URL environment variable is not configured."
+    if not chroma_url or not cml_token:
+        return "Error: Missing CHROMA_SERVER_URL or CML_TOKEN in environment."
 
     session = requests.Session()
-    session.verify = False
-    
-    if cml_token:
-        session.headers.update({"Authorization": f"Bearer {cml_token}"})
+    session.verify = False  # Bypass internal SSL
+    session.headers.update({"Authorization": f"Bearer {cml_token}"})
 
     try:
+        # 1. Get Collection ID directly via REST (Bypassing chromadb.HttpClient)
         get_coll_url = f"{chroma_url}/api/v1/collections/{collection_name}"
-        res = session.get(get_coll_url, timeout=15, allow_redirects=False)
-
-        if res.status_code in (301, 302, 401, 403):
-            return f"⚠️ [MCP Auth Error] CML Gateway redirected request to Login (Status {res.status_code})."
-
+        res = session.get(get_coll_url, timeout=15)
         if res.status_code != 200:
-            return f"Search Context for '{query}': Collection '{collection_name}' not found in ChromaDB."
-
+            return f"Error: Failed to connect to ChromaDB. Status {res.status_code}"
+        
         collection_id = res.json()["id"]
 
-        model = _get_embedding_model()
-        query_vector = model.encode([normalized_query]).tolist()
+        # 2. Embed the User's Query
+        if _embedding_model is None:
+            _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        query_vector = _embedding_model.encode([query]).tolist()
 
+        # 3. Query the Vector Database
         query_url = f"{chroma_url}/api/v1/collections/{collection_id}/query"
         payload = {
             "query_embeddings": query_vector,
             "n_results": n_results,
             "include": ["documents", "metadatas"]
         }
-        
-        query_res = session.post(query_url, json=payload, timeout=30, allow_redirects=False)
-
-        if query_res.status_code in (301, 302, 401, 403):
-            return f"⚠️ [MCP Auth Error] Vector query endpoint returned HTTP {query_res.status_code} Auth Redirect."
-
+        query_res = session.post(query_url, json=payload, timeout=30)
         query_res.raise_for_status()
-        data = query_res.json()
 
-        documents = data.get("documents", [[]])[0]
+        # 4. Return formatted context back to CrewAI
+        documents = query_res.json().get("documents", [[]])[0]
         if not documents:
-            return f"Search Context for '{query}': No matching vector nodes found in knowledge base."
+            return "No matching context found in the knowledge base."
 
         return "\n\n---\n\n".join(documents)
-
-    except Exception as err:
-        return f"⚠️ [MCP RAG Error] Could not query ChromaDB endpoint: {str(err)}"
+        
+    except Exception as e:
+        return f"Error executing RAG search: {str(e)}"
