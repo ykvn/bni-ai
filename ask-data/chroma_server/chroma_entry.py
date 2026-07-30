@@ -1,138 +1,160 @@
+"""
+CAI / CML Application entry point for ChromaDB HTTP Server.
+
+Setup in CAI / CML Application:
+  Name    : chroma_server
+  Script  : ask-data/chroma_server/chromadb_entry.py
+  Resource: 1 vCPU / 2 GiB
+"""
+
+import logging
 import os
-import sys
 import subprocess
+import sys
+import time
 from pathlib import Path
 
-# 🩹 SAFE LOG BUFFERING: Gracefully handles both standard Python runtime & IPython OutStream
-if hasattr(sys.stdout, "reconfigure"):
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
+
+def resolve_port() -> int:
+    """Resolves the active port assigned by CML."""
+    for var in ["CDSW_APP_PORT", "PORT", "CDSW_PUBLIC_PORT"]:
+        logging.info("ENV %s = %s", var, os.getenv(var, "(not set)"))
+    raw = os.getenv("CDSW_APP_PORT") or os.getenv("PORT") or "8080"
     try:
-        sys.stdout.reconfigure(line_buffering=True)
-    except Exception:
-        pass
+        return int(raw)
+    except ValueError:
+        return 8080
 
 
-def resolve_chroma_server_dir() -> Path:
-    """Robustly locates the chroma_server directory across CML execution paths."""
-    cwd = Path.cwd()
-    candidates = [
-        Path(__file__).parent.resolve() if '__file__' in globals() else cwd,
-        cwd / "chroma_server",
-        cwd / "ask-data" / "chroma_server",
-        Path("/home/cdsw/ask-data/chroma_server")
-    ]
-    for c in candidates:
-        if (c / "chroma_entry.py").exists():
-            return c
-    print(f"❌ CRITICAL SETUP ERROR: Could not locate 'chroma_server' directory.")
-    sys.exit(1)
+def resolve_data_path() -> str:
+    """Resolves and ensures the ChromaDB persistence folder on disk."""
+    default = "/home/cdsw/ask-data/chroma_server/chroma_db"
+    path = os.getenv("CHROMA_DATA_PATH", default).strip()
+
+    if not os.path.isabs(path):
+        path = os.path.abspath(os.path.join("/home/cdsw", path.lstrip("/")))
+
+    Path(path).mkdir(parents=True, exist_ok=True)
+    return path
 
 
-def ensure_dependencies(server_dir: Path, env: dict) -> None:
-    """Validates and installs requirements.txt directly into the CML runtime."""
-    req_file = server_dir / "requirements.txt"
-    if not req_file.exists():
-        print(f"⚠️ No requirements.txt found at {req_file}. Skipping dependency installation.")
-        return
-
-    print(f"📦 Validating ChromaDB server dependencies from {req_file}...")
+def ensure_chromadb() -> None:
+    """Ensures chromadb is installed in the current environment."""
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-r", str(req_file), "-q"],
-            check=True,
-            env=env,
-        )
-        print("✅ ChromaDB server dependencies verified successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Critical Error: Failed to configure ChromaDB server dependencies: {str(e)}")
-        sys.exit(1)
-
-
-def run_chroma_worker() -> None:
-    """
-    CML WORKER PROCESS: Instantiates SQLite patches and runs 
-    the programmatic ChromaFastAPI server.
-    """
-    # 🩹 ENTERPRISE LINUX RUNTIME PATCH: Force modern SQLite layers immediately
-    try:
-        import pysqlite3  # type: ignore
-        sys.modules["sqlite3"] = pysqlite3
+        import chromadb  # noqa: F401
+        logging.info("chromadb %s already installed", chromadb.__version__)
     except ImportError:
-        pass
+        logging.info("Installing chromadb...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "chromadb>=0.4.0"], check=True)
 
+
+# 1. Validate environment dependencies
+ensure_chromadb()
+
+import chromadb
+
+port = resolve_port()
+data_path = resolve_data_path()
+host = "127.0.0.1"  # Bound explicitly to loopback for CML Ingress Proxy
+
+logging.info("chromadb version : %s", chromadb.__version__)
+logging.info("Host             : %s", host)
+logging.info("Port             : %s", port)
+logging.info("Data path        : %s", data_path)
+
+# 2. Run initial server dependency test
+logging.info("=== TESTING ChromaDB Server Dependencies ===")
+test_script = f"""
+import sys, os, traceback
+os.environ['ANONYMIZED_TELEMETRY'] = 'FALSE'
+try:
     import uvicorn
-    from chromadb.config import Settings as ChromaDBSettings
+    from chromadb.config import Settings
     from chromadb.server.fastapi import FastAPI as ChromaFastAPI
+    settings = Settings(is_persistent=True, persist_directory='{data_path}', allow_reset=False, anonymized_telemetry=False)
+    server = ChromaFastAPI(settings)
+    app = server.app()
+    print("ALL OK", flush=True)
+except Exception as e:
+    traceback.print_exc()
+    sys.exit(1)
+"""
+result = subprocess.run([sys.executable, "-c", test_script], capture_output=True, text=True, timeout=30)
+logging.info("Test STDOUT: %s", result.stdout.strip())
+if result.stderr:
+    logging.info("Test STDERR: %s", result.stderr.strip())
 
-    chroma_host = os.getenv("CHROMA_SERVER_HOST", "127.0.0.1")
-    chroma_port = int(os.getenv("CDSW_APP_PORT", "8000"))
-    chroma_persist_dir = os.getenv("CHROMA_PERSIST_DIR", "/home/cdsw/chroma_server/chroma_db")
+if result.returncode != 0:
+    logging.warning("Subprocess missing dependencies — attempting automatic repair...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q",
+                    "opentelemetry-api", "opentelemetry-sdk",
+                    "opentelemetry-instrumentation-fastapi",
+                    "uvicorn[standard]"], check=False)
 
-    # Ensure persist folder exists
-    Path(chroma_persist_dir).mkdir(parents=True, exist_ok=True)
+logging.info("=== STARTING CHROMADB SERVER ===")
 
-    print(f"🚀 Starting Programmatic ChromaDB FastAPI Server...")
-    print(f"🌐 Host: {chroma_host}, Port: {chroma_port}")
-    print(f"💾 Persistence Directory: {chroma_persist_dir}")
+api_script = f"""
+import os
+import uvicorn
+from chromadb.config import Settings
+from chromadb.server.fastapi import FastAPI as ChromaFastAPI
 
-    chroma_settings = ChromaDBSettings(
-        chroma_api_impl="chromadb.api.fastapi.FastAPI",
-        chroma_server_host=chroma_host,
-        chroma_server_http_port=chroma_port,
-        is_persistent=True,
-        persist_directory=chroma_persist_dir,
-        allow_reset=True
+settings = Settings(
+    is_persistent=True,
+    persist_directory='{data_path}',
+    allow_reset=False,
+    anonymized_telemetry=False,
+    chroma_server_http_port={port},
+    chroma_server_host='{host}',
+)
+
+server = ChromaFastAPI(settings)
+asgi_app = server.app()
+
+uvicorn.run(asgi_app, host='{host}', port={port}, log_level='info')
+"""
+
+env = {
+    **os.environ, 
+    "ANONYMIZED_TELEMETRY": "FALSE",
+    "IS_PERSISTENT": "TRUE",
+    "PERSIST_DIRECTORY": data_path,
+    "ALLOW_RESET": "FALSE",
+    "CHROMA_SERVER_HTTP_PORT": str(port),
+    "CHROMA_SERVER_HOST": host,
+}
+
+
+def start_proc():
+    # Stream stderr directly to sys.stderr to prevent 64KB pipe buffer deadlocks
+    return subprocess.Popen(
+        [sys.executable, "-c", api_script],
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        env=env,
+        text=True,
     )
 
-    # 🔧 FIX: Extract the underlying ASGI application from ChromaFastAPI
-    server = ChromaFastAPI(chroma_settings)
-    app = server.app() if callable(getattr(server, "app", None)) else getattr(server, "_app", server)
 
-    # Launch uvicorn
-    uvicorn.run(app, host=chroma_host, port=chroma_port)
+proc = start_proc()
+logging.info("ChromaDB PID: %s", proc.pid)
 
+time.sleep(5)
 
-def main() -> None:
-    # 0. Check if this invocation is the worker process
-    if "--worker" in sys.argv:
-        run_chroma_worker()
-        return
+if proc.poll() is not None:
+    logging.error("ChromaDB died immediately with exit code %s!", proc.returncode)
+    raise RuntimeError(f"chromadb failed to start (exit code {proc.returncode})")
 
-    # 1. Lock in the target directory context
-    server_dir = resolve_chroma_server_dir()
-    os.chdir(server_dir)
+logging.info("✅ ChromaDB is actively listening on %s:%s", host, port)
 
-    # 2. Inject environment settings
-    env = os.environ.copy()
-    pythonpath = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = f"{server_dir}:{pythonpath}" if pythonpath else str(server_dir)
-    env["PYTHONUNBUFFERED"] = "1"
-
-    # 3. Verify required dependencies
-    ensure_dependencies(server_dir, env)
-
-    # 4. Check for CML Application Port
-    if "CDSW_APP_PORT" not in os.environ:
-        print("⚠️ WARNING: 'CDSW_APP_PORT' is missing. Defaulting port to 8000.")
-        env["CDSW_APP_PORT"] = "8000"
-
-    entry_script = server_dir / "chroma_entry.py"
-    cmd = [sys.executable, str(entry_script), "--worker"]
-
-    app_port = env.get("CDSW_APP_PORT")
-    chroma_host = env.get("CHROMA_SERVER_HOST", "127.0.0.1")
-
-    print(f"\n📡 Launching CML ChromaDB Application Gateway...")
-    print(f"🌐 Network Bound: http://{chroma_host}:{app_port}")
-
-    process = subprocess.Popen(cmd, cwd=str(server_dir), env=env)
-
-    try:
-        process.wait()
-    except (KeyboardInterrupt, SystemExit):
-        print("\n🛑 CML Application stop signal received. Shutting down ChromaDB...")
-        process.terminate()
-        process.wait()
-
-
-if __name__ == "__main__":
-    main()
+# Keep-alive process monitoring loop
+while True:
+    ret = proc.poll()
+    if ret is not None:
+        logging.error("ChromaDB process exited unexpectedly (code %s). Restarting in 5s...", ret)
+        time.sleep(5)
+        proc = start_proc()
+        logging.info("ChromaDB restarted, new PID: %s", proc.pid)
+    time.sleep(2)
