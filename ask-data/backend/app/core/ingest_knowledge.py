@@ -121,13 +121,18 @@ def _load_env_file(backend_dir) -> dict[str, str]:
 
 
 def build_ingest_config(backend_dir, env=None):
-    """Resolve document and Chroma settings used for ingestion."""
+    """Resolve document and Chroma settings explicitly from environment / .env file."""
     backend_path = os.path.abspath(str(backend_dir))
     env_map = dict(env or os.environ)
     env_map.update(_load_env_file(backend_path))
 
-    chroma_server_url = env_map.get("CHROMA_SERVER_URL", "http://localhost:8000")
-    collection_name = env_map.get("CHROMA_COLLECTION", "bank_abc_knowledge")
+    # Read explicitly from .env first; fallback to relative directory only if missing
+    docs_dir = env_map.get("DOCS_DIR")
+    if not docs_dir:
+        docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
+
+    chroma_server_url = env_map.get("CHROMA_SERVER_URL", "").strip()
+    collection_name = env_map.get("CHROMA_COLLECTION", "").strip()
 
     cml_token = (
         env_map.get("CML_TOKEN") 
@@ -135,10 +140,6 @@ def build_ingest_config(backend_dir, env=None):
         or env_map.get("CHROMA_SERVER_TOKEN") 
         or ""
     ).strip()
-
-    docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
-    if not os.path.exists(docs_dir):
-        docs_dir = "/home/cdsw/ask-data/data/documents"
 
     parsed_url = urlparse(chroma_server_url)
     chroma_ssl = parsed_url.scheme == 'https'
