@@ -19,7 +19,7 @@ from mcp.server.sse import SseServerTransport
 from app.tools.config import settings  # Centralized application configuration settings
 from app.tools.execute_banking_query import execute_banking_query
 from app.tools.get_database_schema import get_database_schema
-from app.tools.chroma_client import search_documents  # Standardized vector client
+from app.tools.rag_search import search_policy_documents as perform_rag_search
 from app.tools.dormant_risk import calculate_dormant_account_risk
 
 # 1. Initialize the central FastMCP application state
@@ -50,14 +50,8 @@ def mcp_search_policy_documents(query: str) -> str:
     Performs a semantic vector distance search against local persistent enterprise banking manuals,
     compliance guidelines, and SOP documentation (ChromaDB) to return matching structural context fragments.
     """
-    # 🔌 Read collection properties out of the central Pydantic schema
-    collection_name = settings.chroma_collection
-    
-    # Execute the standardized client query routine
-    raw_results = search_documents(query=query, collection_name=collection_name, top_k=3)
-    
-    # Return cleanly serialized payload over the protocol channel
-    return json.dumps(raw_results, default=str)
+    # Execute the newly fixed HTTP requests routine from rag_search.py
+    return perform_rag_search(query=query, n_results=3)
 
 @mcp.tool(name="evaluate_dormant_account_risk")
 def mcp_evaluate_dormant_account_risk(days_inactive: int, account_balance: float, sudden_withdrawal_amount: float = 0.0) -> str:
@@ -117,7 +111,5 @@ def test_sql_tool(sql_query: str):
 @app.post("/api/test/rag")
 def test_rag_tool(search_query: str):
     """Interactive playground to test your search_policy_documents tool"""
-    # 🔌 Streamline Swagger test execution parameters using the updated settings handle
-    collection_name = settings.chroma_collection
-    raw_results = search_documents(query=search_query, collection_name=collection_name, top_k=3)
+    raw_results = perform_rag_search(query=search_query, n_results=3)
     return {"status": "success", "matched_context": raw_results}

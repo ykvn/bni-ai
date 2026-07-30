@@ -32,7 +32,6 @@ def search_policy_documents(query: str, n_results: int = 3) -> str:
     if not chroma_url or not cml_token:
         return "Error: Missing CHROMA_SERVER_URL or CML_TOKEN in environment."
 
-    # Mimic the CMLChromaClient from ingest_knowledge.py
     session = requests.Session()
     session.verify = False  # Bypass internal SSL
     session.headers.update({"Authorization": f"Bearer {cml_token}"})
