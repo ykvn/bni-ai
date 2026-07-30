@@ -1,46 +1,74 @@
 import os
+import urllib3
+import requests
+from sentence_transformers import SentenceTransformer
 
-# An optimized mock dictionary simulating an enterprise banking policy directory.
-# In a full production deployment, this would query an external vector database (like ChromaDB or Milvus).
-ENTERPRISE_POLICY_KNOWLEDGE_BASE = {
-    "dormant_risk": (
-        "Policy Section 4.2 (Dormant Accounts): Accounts with zero user-initiated transaction activity "
-        "for 180 consecutive days must be flagged as DORMANT. High-risk profiles include accounts with balances "
-        "exceeding $50,000 that suddenly exhibit inactivity. Reactivation requires physical verification."
-    ),
-    "withdrawal_limits": (
-        "SOP Section 1.9 (Limits): Standard daily ATM withdrawal limits for basic checking accounts are "
-        "capped at $1,000 USD. Limit overrides up to $5,000 require a Tier 2 branch manager signature."
-    ),
-    "loan_compliance": (
-        "Compliance Rule 7.1 (Mortgages): Debt-to-Income (DTI) ratios for residential mortgage assessments "
-        "must maintain a strict ceiling of 43%, unless backed by additional verifiable cash collateral assets."
-    ),
-    "fraud_velocity": (
-        "Security Protocol 9.0 (Velocity Anti-Fraud): Automated immediate account suspension must trigger "
-        "if transaction velocity data points exceed 5 unique geolocation sweeps within a 60-minute window."
-    )
-}
+# Suppress SSL warnings for internal CML certificates
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def perform_rag_search(query: str) -> str:
+# Lazily load embedding model to save memory during cold starts
+_embedding_model = None
+
+def _get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedding_model
+
+
+def perform_rag_search(query: str, n_results: int = 3) -> str:
     """
-    Scans through unstructured enterprise banking policies, compliance guidelines, 
-    and SOP documents to return relevant textual contextual snippets.
+    Queries the standalone ChromaDB HTTP application endpoint 
+    for relevant knowledge base context using CML Bearer authentication.
     """
-    normalized_query = query.lower()
-    matched_snippets = []
+    normalized_query = query.strip()
+    if not normalized_query:
+        return "Search Context: Empty query provided."
 
-    # Fast text interface scoring logic matching query intents against knowledge tokens
-    for topic, text_content in ENTERPRISE_POLICY_KNOWLEDGE_BASE.items():
-        # Split tokens to check for overlapping intent words
-        keywords = topic.split("_")
-        if any(word in normalized_query for word in keywords) or topic in normalized_query:
-            matched_snippets.append(text_content)
+    chroma_url = os.environ.get("CHROMA_SERVER_URL", "http://localhost:8000").rstrip("/")
+    collection_name = os.environ.get("CHROMA_COLLECTION", "bank_abc_knowledge")
+    cml_token = os.environ.get("CML_TOKEN", "").strip()
 
-    if not matched_snippets:
-        return (
-            f"Search Context for '{query}': No specific internal banking policy or compliance "
-            f"SOP documents matched this request in the knowledge base."
-        )
+    headers = {}
+    if cml_token:
+        headers["Authorization"] = f"Bearer {cml_token}"
 
-    return "\n\n".join(matched_snippets)
+    session = requests.Session()
+    session.verify = False  # Handles internal CML self-signed SSL certificates
+    session.headers.update(headers)
+
+    try:
+        # 1. Resolve Collection ID from ChromaDB REST API
+        get_coll_url = f"{chroma_url}/api/v1/collections/{collection_name}"
+        res = session.get(get_coll_url, timeout=15)
+        
+        if res.status_code != 200:
+            return f"Search Context for '{query}': Collection '{collection_name}' not found in ChromaDB."
+
+        collection_id = res.json()["id"]
+
+        # 2. Embed the search query
+        model = _get_embedding_model()
+        query_vector = model.encode([normalized_query]).tolist()
+
+        # 3. Perform Vector Similarity Search
+        query_url = f"{chroma_url}/api/v1/collections/{collection_id}/query"
+        payload = {
+            "query_embeddings": query_vector,
+            "n_results": n_results,
+            "include": ["documents", "metadatas"]
+        }
+        
+        query_res = session.post(query_url, json=payload, timeout=30)
+        query_res.raise_for_status()
+        data = query_res.json()
+
+        # 4. Extract retrieved document fragments
+        documents = data.get("documents", [[]])[0]
+        if not documents:
+            return f"Search Context for '{query}': No matching vector nodes found in knowledge base."
+
+        return "\n\n---\n\n".join(documents)
+
+    except Exception as err:
+        return f"⚠️ [MCP RAG Error] Could not query ChromaDB endpoint: {str(err)}"

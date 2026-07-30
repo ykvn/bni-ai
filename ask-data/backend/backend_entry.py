@@ -29,11 +29,13 @@ def _resolve_backend_dir() -> Path:
         return Path(__file__).resolve().parent
     return cwd
 
+
 BACKEND_DIR = _resolve_backend_dir()
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
+
 
 def ensure_dependencies(backend_dir: Path, env: dict) -> None:
     """
@@ -57,8 +59,9 @@ def ensure_dependencies(backend_dir: Path, env: dict) -> None:
         print(f"❌ Critical Error: Failed to configure dependencies: {str(e)}")
         sys.exit(1)
 
+
 def trigger_rag_auto_ingest(backend_dir: Path, env: dict | None = None) -> None:
-    """Database Synchronization. Pre-populates ChromaDB vector maps."""
+    """Database Synchronization. Pre-populates ChromaDB vector maps via Chroma HTTP Endpoint."""
     print("\n📡 [RAG STARTUP] Synchronizing Knowledge Base document vector nodes...")
     try:
         if str(backend_dir) not in sys.path:
@@ -66,15 +69,24 @@ def trigger_rag_auto_ingest(backend_dir: Path, env: dict | None = None) -> None:
 
         config = build_ingest_config(backend_dir=backend_dir, env=env)
         print(f"[RAG STARTUP] Scanning file directory target: {config['docs_dir']}")
+        print(f"[RAG STARTUP] Target ChromaDB Endpoint: {config['chroma_server_url']} (SSL: {config['chroma_ssl']})")
+        
+        if config.get("cml_token"):
+            print("[RAG STARTUP] CML Authentication: Token loaded for chroma_server access.")
+
+        # 🔑 Updated to pass standalone Chroma HTTP parameters + CML authentication token
         run_auto_ingest(
             docs_dir=config["docs_dir"],
-            persist_dir=config["persist_dir"],
+            chroma_server_url=config["chroma_server_url"],
+            chroma_ssl=config["chroma_ssl"],
             collection_name=config["collection_name"],
+            cml_token=config.get("cml_token"),
         )
         print("[RAG STARTUP] Document processing loop verified successfully.\n")
 
     except Exception as e:
         print(f"⚠️ [RAG STARTUP WARNING] Vector synchronization bypassed: {str(e)}\n")
+
 
 def main() -> None:
     # 1. Lock execution environment down to the correct path context
@@ -120,6 +132,7 @@ def main() -> None:
     finally:
         print("🧹 Purging active production server execution sub-processes...")
         process.terminate()
+
 
 if __name__ == "__main__":
     main()
