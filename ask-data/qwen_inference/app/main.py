@@ -26,11 +26,6 @@ model_metadata = {
 }
 
 
-import os
-import sys
-import cmlapi
-from typing import Tuple
-
 def resolve_model_path() -> Tuple[str, str]:
     """
     Downloads model artifacts from Cloudera AI Registry using CML APIv2.
@@ -45,19 +40,28 @@ def resolve_model_path() -> Tuple[str, str]:
         model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
         model_version = os.environ.get("CML_MODEL_VERSION", "1")
         
-        # Search the workspace for models matching the name
-        search_res = client.list_registered_models(search_filter=model_name)
+        # 🟢 FIX: Fetch ALL models without the strict JSON filter parameter
+        search_res = client.list_registered_models()
         
-        if search_res.registered_models:
-            # Get the exact Model ID
-            model_id = search_res.registered_models[0].model_id
+        # 🟢 FIX: Filter the results safely using standard Python
+        target_model = None
+        for m in search_res.registered_models:
+            if m.model_name == model_name:
+                target_model = m
+                break
+        
+        if target_model:
+            model_id = target_model.model_id
             
             # Fetch the specific version details
             version_details = client.get_registered_model(model_id)
             
-            print(f"✅ [MODEL RESOLVER] Found '{model_name}' in Cloudera AI Registry.")
+            print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id}) in Cloudera AI Registry.")
             
-            # (Download logic will go here once API connection is established)
+            # (We are now ready to extract the download path from version_details!)
+            
+        else:
+             print(f"⚠️ [MODEL RESOLVER] Model '{model_name}' was not found in the registry list.")
             
     except Exception as err:
         print(f"⚠️ [MODEL RESOLVER] Could not retrieve from Cloudera AI Registry via APIv2: {type(err).__name__} - {err}")
