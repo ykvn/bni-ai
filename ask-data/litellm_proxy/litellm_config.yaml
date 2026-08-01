@@ -1,10 +1,7 @@
 model_list:
-  - model_name: Qwen2.5-3B-Instruct      # 🎯 MATCHES CrewAI's call exactly
+  - model_name: os.environ/CML_MODEL_NAME      # Registers: Qwen/Qwen2.5-3B-Instruct
     litellm_params:
-      # 🔌 Informs LiteLLM this is a custom OpenAI-compatible endpoint
-      model: openai/Qwen2.5-3B-Instruct
-      
-      # 🔗 Dynamically reads your Qwen Engine app base path
+      model: os.environ/CML_MODEL_NAME
+      custom_llm_provider: openai
       api_base: os.environ/QWEN_APP_URL
-      
-      api_key: "not-needed-for-local-cpu"
+      api_key: os.environ/CML_TOKEN

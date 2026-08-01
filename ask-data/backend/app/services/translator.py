@@ -28,12 +28,9 @@ class SQLTranslationService:
             or "litellm-dummy-token"
         )
 
-        # 🎯 Match model_name in litellm_config.yaml ("Qwen2.5-3B-Instruct")
-        target_model = os.getenv("CML_MODEL_NAME", "Qwen2.5-3B-Instruct").split("/")[-1]
+        # 🎯 Pass CML_MODEL_NAME directly so it matches litellm_config.yaml
+        target_model = os.getenv("CML_MODEL_NAME", "")
 
-        # 🧠 Point CrewAI directly at the Standalone LiteLLM Proxy Gateway
-        print(f"📡 Connecting CrewAI to Standalone LiteLLM Proxy Gateway at: {self.litellm_proxy_url}")
-        
         self.llm = LLM(
             model=f"openai/{target_model}",
             base_url=self.litellm_proxy_url,
