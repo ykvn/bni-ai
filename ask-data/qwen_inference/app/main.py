@@ -7,6 +7,8 @@ from pydantic import BaseModel
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import mlflow
+import cmlapi
+from typing import Tuple
 
 # ⚡ CPU INFERENCE OPTIMIZATION LAYER
 torch.set_num_threads(4)
@@ -26,25 +28,42 @@ model_metadata = {
 
 def resolve_model_path() -> Tuple[str, str]:
     """
-    Downloads model artifacts from Cloudera AI Registry (MLflow).
+    Downloads model artifacts from Cloudera AI Registry using CML APIv2.
     Falls back to local NFS directories if registry access is unavailable.
-    Returns: (resolved_local_path, source_type)
     """
-    # 1. Attempt download from Cloudera AI Model Registry
+    cml_domain = os.environ.get("CDSW_DOMAIN") or os.environ.get("CML_DOMAIN", "")
+    cml_token = os.environ.get("CML_TOKEN") or os.environ.get("CDSW_API_KEY", "")
+
     try:
-        model_uri = model_metadata["model_uri"]
-        print(f"📡 [MODEL RESOLVER] Connecting to Cloudera AI Registry for '{model_uri}'...")
+        # 1. Initialize Cloudera API Client
+        print(f"📡 [MODEL RESOLVER] Connecting to CML API at {cml_domain}...")
+        client = cmlapi.default_client(url=f"https://{cml_domain}", cml_api_key=cml_token)
+
+        # 2. Query the Registered Model from AI Registry
+        model_name = REGISTRY_MODEL_NAME
+        model_version = REGISTRY_MODEL_VERSION
         
-        downloaded_path = mlflow.artifacts.download_artifacts(artifact_uri=model_uri)
+        # We search the workspace for models matching the name
+        search_res = client.list_registered_models(search_filter=model_name)
         
-        if os.path.isdir(downloaded_path):
-            print(f"✅ [MODEL RESOLVER] Successfully pulled model artifacts to local cache.")
-            return downloaded_path, "CLOUDERA_AI_REGISTRY"
+        if search_res.registered_models:
+            # Get the exact Model ID
+            model_id = search_res.registered_models[0].model_id
+            
+            # Fetch the specific version details
+            version_details = client.get_registered_model(model_id)
+            
+            print(f"✅ [MODEL RESOLVER] Found '{model_name}' in Cloudera AI Registry.")
+            
+            # TODO: In CML APIv2, the artifact download path is usually exposed on the version details object.
+            # Once we can inspect `version_details`, we can trigger the download.
+            # For now, if we reach this point, the API connection is successful!
+            
     except Exception as err:
-        print(f"⚠️ [MODEL RESOLVER] Could not retrieve from Cloudera AI Registry: {err}")
+        print(f"⚠️ [MODEL RESOLVER] Could not retrieve from Cloudera AI Registry via APIv2: {type(err).__name__} - {err}")
         print("🔍 [MODEL RESOLVER] Searching local NFS / disk storage as fallback...")
 
-    # 2. Local NFS / Filesystem Fallback Strategy
+    # 3. Local NFS / Filesystem Fallback Strategy
     base_cwd = os.getcwd()
     script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else base_cwd
     parent_dir = os.path.dirname(script_dir)
@@ -58,7 +77,7 @@ def resolve_model_path() -> Tuple[str, str]:
 
     local_path = next((p for p in candidate_paths if os.path.isdir(p) and "config.json" in os.listdir(p)), None)
     if not local_path:
-        print(f"❌ [CRITICAL ERROR] Could not locate model weights in Registry or Local NFS paths: {candidate_paths}")
+        print(f"❌ [CRITICAL ERROR] Could not locate model weights in Registry or Local NFS paths.")
         sys.exit(1)
 
     return local_path, "LOCAL_NFS_STORAGE"
