@@ -1,17 +1,14 @@
 import os
 import sys
-from typing import List, Tuple
 from contextlib import asynccontextmanager
+from typing import List, Tuple
+
+import cmlapi
 from fastapi import FastAPI
+from huggingface_hub import snapshot_download
 from pydantic import BaseModel
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-import mlflow
-from mlflow.tracking import MlflowClient
-import cmlapi
-from typing import Tuple
-import json
-from huggingface_hub import snapshot_download
 
 # ⚡ CPU INFERENCE OPTIMIZATION LAYER
 torch.set_num_threads(4)
