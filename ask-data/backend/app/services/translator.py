@@ -15,7 +15,7 @@ class SQLTranslationService:
         self.mcp_server_url = os.getenv("MCP_SERVER_URL")
         
         # 🔌 LiteLLM Connection Point: Point strictly to loopback interface mapping targets
-        self.qwen_base_url = (os.getenv("QWEN_BASE_URL") or "").rstrip("/")
+        self.qwen_base_url = (os.getenv("QWEN_APP_URL") or "").rstrip("/")
         
         # 🔑 Security Access Handshake Tokens
         self.api_token = os.getenv("CML_TOKEN") or os.getenv("QWEN_API_KEY") or "litellm-dummy-token"
@@ -23,7 +23,7 @@ class SQLTranslationService:
         # 🧠 Initialize the CrewAI Native LLM Interface pointing directly to your LiteLLM Proxy
         print(f"📡 Connecting CrewAI to Standalone LiteLLM Proxy Gateway at: {self.qwen_base_url}")
         self.llm = LLM(
-            model=f"openai/{os.getenv('CML_MODEL_NAME', 'qwen2.5-3b-instruct')}",
+            model=f"openai/{os.getenv('CML_MODEL_NAME', 'Qwen2.5-3B-Instruct')}",
             base_url=self.qwen_base_url,
             api_key=self.api_token,
             temperature=0.0

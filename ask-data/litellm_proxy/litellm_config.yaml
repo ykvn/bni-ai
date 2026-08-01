@@ -1,8 +1,8 @@
 model_list:
-  - model_name: qwen2.5-3b-instruct        # 🎯 MATCHES CrewAI's call exactly
+  - model_name: Qwen2.5-3B-Instruct      # 🎯 MATCHES CrewAI's call exactly
     litellm_params:
       # 🔌 Informs LiteLLM this is a custom OpenAI-compatible endpoint
-      model: openai/qwen2.5-3b-instruct
+      model: openai/Qwen2.5-3B-Instruct
       
       # 🔗 Dynamically reads your Qwen Engine app base path
       api_base: os.environ/QWEN_APP_URL
