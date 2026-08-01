@@ -29,12 +29,11 @@ model_metadata = {
 
 def resolve_model_path() -> Tuple[str, str]:
     """
-    Bypasses MLflow entirely and uses CML API to extract the physical storage path.
+    Dumps the raw API response to find the HuggingFace configuration.
     """
     print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
     
     model_name = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
-    model_version_target = str(os.environ.get("CML_MODEL_VERSION", "1"))
     
     try:
         client = cmlapi.default_client()
@@ -50,27 +49,28 @@ def resolve_model_path() -> Tuple[str, str]:
             # Fetch the registered model details
             model_details = client.get_registered_model(model_id=model_id)
             
-            # Extract the nested model_versions array
-            versions_list = getattr(model_details, 'model_versions', getattr(model_details, 'versions', []))
+            print("\n" + "="*50)
+            print("🧐 [DEBUG API DUMP] RAW MODEL DETAILS:")
+            print("="*50)
             
-            if versions_list:
-                print(f"🧐 [DEBUG] Extracted {len(versions_list)} version(s) from API response.")
-                
-                # Check the first version in the list to see its raw attributes
-                first_version = versions_list[0]
-                print(f"🧐 [DEBUG VERSIONS] Inspecting the first version object:")
-                for attr_name in dir(first_version):
-                    if not attr_name.startswith('_'):
-                        try:
-                            val = getattr(first_version, attr_name)
-                            print(f"   {attr_name}: {val}")
-                        except Exception:
-                            pass
+            # Safely dump the API object to a formatted JSON string
+            if hasattr(model_details, 'to_dict'):
+                print(json.dumps(model_details.to_dict(), indent=2))
             else:
-                print("⚠️ [MODEL RESOLVER] No versions found in the model details.")
-                
+                for attr_name in dir(model_details):
+                    if not attr_name.startswith('_'):
+                        print(f"   {attr_name}: {getattr(model_details, attr_name)}")
+                        
+            print("="*50 + "\n")
+            
+        else:
+            print(f"⚠️ Could not find '{model_name}' in the registry.")
+            
     except Exception as err:
         print(f"⚠️ [MODEL RESOLVER] API error: {type(err).__name__} - {err}")
+
+    print("🛑 [DIAGNOSTIC HALT] Stopping server to review the API dump above.")
+    sys.exit(1)
 
     print("🔍 [MODEL RESOLVER] Falling back to local NFS / disk storage...")
 
