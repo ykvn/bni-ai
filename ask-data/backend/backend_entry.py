@@ -4,7 +4,16 @@ import subprocess
 from pathlib import Path
 
 # 🎯 Global config: load the single ask-data/.env BEFORE any service code reads env vars.
-_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent
+# Robust to script execution (__file__ defined) AND notebook/REPL execution (no __file__).
+_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path.cwd()
+while not (_ASK_DATA_ROOT / "shared" / "config_loader.py").exists() and _ASK_DATA_ROOT.parent != _ASK_DATA_ROOT:
+    _ASK_DATA_ROOT = _ASK_DATA_ROOT.parent
+if not (_ASK_DATA_ROOT / "shared" / "config_loader.py").exists():
+    _ASK_DATA_ROOT = (
+        Path("/home/cdsw/ask-data")
+        if Path("/home/cdsw/ask-data/shared/config_loader.py").exists()
+        else _ASK_DATA_ROOT
+    )
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
 
