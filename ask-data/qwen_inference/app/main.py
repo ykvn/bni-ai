@@ -28,18 +28,21 @@ model_metadata = {
 
 def resolve_model_path() -> Tuple[str, str]:
     """
-    Downloads model artifacts from Cloudera AI Registry using CML APIv2 & MLflow.
-    Falls back to local NFS directories if registry access is unavailable.
+    PRIORITY 1: Downloads model artifacts from Cloudera AI Registry.
+    PRIORITY 2: Falls back to local NFS directories if registry access fails.
     """
+    print("📡 [MODEL RESOLVER] Connecting to CML API using auto-detected credentials...")
+    
+    # ==========================================
+    # ATTEMPT 1: CLOUDERA AI REGISTRY
+    # ==========================================
     try:
-        print("📡 [MODEL RESOLVER] Connecting to CML API using auto-detected credentials...")
         client = cmlapi.default_client()
         
-        # We need the domain to configure MLflow's HTTPS tracking URI natively
+        # Configure MLflow to use the internal HTTPS tracking URI natively
         cml_domain = os.environ.get("CDSW_DOMAIN") or os.environ.get("CML_DOMAIN", "")
         if cml_domain:
             mlflow.set_tracking_uri(f"https://mlflow.{cml_domain}")
-            # Ensure MLflow SDK uses the v2 API Key
             os.environ["MLFLOW_TRACKING_TOKEN"] = os.environ.get("CDSW_APIV2_KEY", "")
 
         model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
@@ -48,35 +51,31 @@ def resolve_model_path() -> Tuple[str, str]:
         search_res = client.list_registered_models()
         models_list = getattr(search_res, 'models', getattr(search_res, 'registered_models', []))
         
-        target_model = None
-        for m in models_list:
-            m_name = getattr(m, 'name', getattr(m, 'model_name', ''))
-            if m_name == model_name:
-                target_model = m
-                break
+        target_model = next((m for m in models_list if getattr(m, 'name', getattr(m, 'model_name', '')) == model_name), None)
         
         if target_model:
             model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
             print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id}) in Cloudera AI Registry.")
             
-            # 🟢 THE FINAL TRIGGER: Download the artifacts via MLflow SDK
             model_uri = f"models:/{model_name}/{model_version}"
-            print(f"⏳ [MODEL RESOLVER] Downloading weights from '{model_uri}'...")
+            print(f"⏳ [MODEL RESOLVER] Downloading weights from '{model_uri}' via MLflow...")
             
+            # This requires 'boto3' in requirements.txt to succeed
             downloaded_path = mlflow.artifacts.download_artifacts(artifact_uri=model_uri)
             
             if os.path.isdir(downloaded_path):
                 print(f"🎉 [MODEL RESOLVER] Successfully pulled model artifacts to local cache: {downloaded_path}")
                 return downloaded_path, "CLOUDERA_AI_REGISTRY"
-            
         else:
-             print(f"⚠️ [MODEL RESOLVER] Model '{model_name}' was not found in the registry list.")
+            print(f"⚠️ [MODEL RESOLVER] Model '{model_name}' not found in registry.")
             
     except Exception as err:
-        print(f"⚠️ [MODEL RESOLVER] Could not retrieve from Cloudera AI Registry: {type(err).__name__} - {err}")
-        print("🔍 [MODEL RESOLVER] Searching local NFS / disk storage as fallback...")
+        print(f"⚠️ [MODEL RESOLVER] Registry download failed: {type(err).__name__} - {err}")
+        print("🔍 [MODEL RESOLVER] Falling back to local NFS / disk storage...")
 
-    # --- Fallback Strategy ---
+    # ==========================================
+    # ATTEMPT 2: NFS FALLBACK STORAGE
+    # ==========================================
     base_cwd = os.getcwd()
     script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else base_cwd
     parent_dir = os.path.dirname(script_dir)
@@ -89,8 +88,9 @@ def resolve_model_path() -> Tuple[str, str]:
     ]
 
     local_path = next((p for p in candidate_paths if os.path.isdir(p) and "config.json" in os.listdir(p)), None)
+    
     if not local_path:
-        print(f"❌ [CRITICAL ERROR] Could not locate model weights in Registry or Local NFS paths.")
+        print(f"❌ [CRITICAL ERROR] Could not locate model weights in Registry OR Local NFS paths.")
         sys.exit(1)
 
     return local_path, "LOCAL_NFS_STORAGE"
