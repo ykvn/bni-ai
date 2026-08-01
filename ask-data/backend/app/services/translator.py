@@ -11,20 +11,32 @@ from mcp.client.sse import sse_client
 
 class SQLTranslationService:
     def __init__(self):
-        # 🌐 Microservice network endpoints preserved from architectural rules
-        self.mcp_server_url = os.getenv("MCP_SERVER_URL")
+        # 🌐 Microservice network endpoints
+        self.mcp_server_url = os.getenv("MCP_SERVER_URL", "")
         
-        # 🔌 LiteLLM Connection Point: Point strictly to loopback interface mapping targets
-        self.qwen_base_url = (os.getenv("QWEN_APP_URL") or "").rstrip("/")
+        # 🔌 POINT TO STANDALONE LITELLM PROXY GATEWAY (NOT raw QWEN_APP_URL)
+        self.litellm_proxy_url = (
+            os.getenv("LITELLM_PROXY_URL") 
+            or os.getenv("LITELLM_APP_URL") 
+            or ""
+        ).rstrip("/")
         
-        # 🔑 Security Access Handshake Tokens
-        self.api_token = os.getenv("CML_TOKEN") or os.getenv("QWEN_API_KEY") or "litellm-dummy-token"
+        # 🔑 Security Access Tokens for CML
+        self.api_token = (
+            os.getenv("CML_TOKEN") 
+            or os.getenv("LITELLM_API_KEY") 
+            or "litellm-dummy-token"
+        )
 
-        # 🧠 Initialize the CrewAI Native LLM Interface pointing directly to your LiteLLM Proxy
-        print(f"📡 Connecting CrewAI to Standalone LiteLLM Proxy Gateway at: {self.qwen_base_url}")
+        # 🎯 Match model_name in litellm_config.yaml ("Qwen2.5-3B-Instruct")
+        target_model = os.getenv("CML_MODEL_NAME", "Qwen2.5-3B-Instruct").split("/")[-1]
+
+        # 🧠 Point CrewAI directly at the Standalone LiteLLM Proxy Gateway
+        print(f"📡 Connecting CrewAI to Standalone LiteLLM Proxy Gateway at: {self.litellm_proxy_url}")
+        
         self.llm = LLM(
-            model=f"openai/{os.getenv('CML_MODEL_NAME', '')}",
-            base_url=self.qwen_base_url,
+            model=f"openai/{target_model}",
+            base_url=self.litellm_proxy_url,
             api_key=self.api_token,
             temperature=0.0
         )
