@@ -10,13 +10,14 @@ import mlflow
 from mlflow.tracking import MlflowClient
 import cmlapi
 from typing import Tuple
+import json
 
 # ⚡ CPU INFERENCE OPTIMIZATION LAYER
 torch.set_num_threads(4)
 torch.set_num_interop_threads(4)
 
 # 🌐 CLOUDERA AI REGISTRY CONFIGURATION (Matches your exact registered model)
-REGISTRY_MODEL_NAME = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
+REGISTRY_MODEL_NAME = os.environ.get("CML_MODEL_NAME", "Qwen2.5-3B-Instruct")
 REGISTRY_MODEL_VERSION = os.environ.get("CML_MODEL_VERSION", "1")
 
 # 📌 Global metadata tracker
@@ -53,9 +54,9 @@ def resolve_model_path() -> Tuple[str, str]:
             print("🧐 [DEBUG API DUMP] RAW MODEL DETAILS:")
             print("="*50)
             
-            # Safely dump the API object to a formatted JSON string
+            # Safely dump the API object
             if hasattr(model_details, 'to_dict'):
-                print(json.dumps(model_details.to_dict(), indent=2))
+                print(json.dumps(model_details.to_dict(), indent=2, default=str))
             else:
                 for attr_name in dir(model_details):
                     if not attr_name.startswith('_'):
@@ -71,28 +72,6 @@ def resolve_model_path() -> Tuple[str, str]:
 
     print("🛑 [DIAGNOSTIC HALT] Stopping server to review the API dump above.")
     sys.exit(1)
-
-    print("🔍 [MODEL RESOLVER] Falling back to local NFS / disk storage...")
-
-    # ==========================================
-    # ATTEMPT 2: NFS FALLBACK STORAGE
-    # ==========================================
-    base_cwd = os.getcwd()
-    script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else base_cwd
-    parent_dir = os.path.dirname(script_dir)
-
-    candidate_paths = [
-        os.path.join(base_cwd, "model_weights_cpu"),
-        os.path.join(base_cwd, "ask-data", "qwen_inference", "model_weights_cpu"),
-        os.path.join(base_cwd, "qwen_inference", "model_weights_cpu"),
-        os.path.join(parent_dir, "model_weights_cpu")
-    ]
-
-    local_path = next((p for p in candidate_paths if os.path.isdir(p) and "config.json" in os.listdir(p)), None)
-    
-    if not local_path:
-        print(f"❌ [CRITICAL ERROR] Could not locate model weights in Registry OR Local NFS paths.")
-        sys.exit(1)
 
     return local_path, "LOCAL_NFS_STORAGE"
 
