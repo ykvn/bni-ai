@@ -97,27 +97,21 @@ class CMLChromaClient:
 
 
 def _load_env_file(backend_dir) -> dict[str, str]:
-    """Load simple KEY=VALUE entries from the nearest .env files."""
-    backend_path = Path(backend_dir).resolve()
-    candidates = [
-        backend_path / ".env",
-        backend_path.parent / ".env",
-        backend_path.parent / "mcp_server" / ".env",
-        backend_path.parent.parent / "mcp_server" / ".env",
-    ]
+    """
+    Ensure the shared global ask-data/.env values are present in the process
+    environment. The shared config_loader (run at the entry point) already
+    injects them into os.environ; this is only a safety net when this module
+    is invoked without going through the entry bootstrap (e.g. tests).
 
-    values: dict[str, str] = {}
-    for candidate in candidates:
-        if not candidate.exists():
-            continue
-        for raw_line in candidate.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            values[key.strip()] = value.strip().strip('"').strip("'")
-        break
-    return values
+    Returns an empty dict — build_ingest_config reads from os.environ directly.
+    """
+    try:
+        from shared.config_loader import load_project_env
+        load_project_env()
+    except ImportError:
+        pass
+
+    return {}
 
 
 def build_ingest_config(backend_dir, env=None):

@@ -4,28 +4,33 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 def _find_env_file() -> str:
     """
-    Dynamically finds the .env configuration file inside the workspace context.
-    Looks in mcp_server/, ask-data/, or the execution working directory handles.
+    Locates the single global ask-data/.env configuration file.
+
+    With the shared config_loader, env vars are already injected into
+    os.environ before this module is imported. This fallback only matters
+    when the module is used directly (e.g. unit tests, notebooks) and the
+    loader wasn't run first.
     """
-    # Assuming file location: mcp_server/app/tools/config.py
-    base_path = Path(__file__).resolve()
+    base = Path(__file__).resolve()
     candidates = [
-        base_path.parents[2] / ".env",   # mcp_server/.env
-        base_path.parents[3] / ".env",   # ask-data/.env
-        Path.cwd() / ".env",             # Current Working Directory fallback
+        base.parents[3] / ".env",   # ask-data/.env  (global shared config)
+        base.parents[2] / ".env",   # mcp_server/.env (legacy fallback)
+        Path.cwd() / ".env",        # Current Working Directory fallback
     ]
     for p in candidates:
         if p.exists():
             return str(p)
     return ".env"
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=_find_env_file(), 
-        env_file_encoding="utf-8", 
-        extra="ignore"
+        env_file=_find_env_file(),
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     # Cloudera Impala Core Credentials
@@ -41,5 +46,6 @@ class Settings(BaseSettings):
     chroma_server_url: str = Field(default="http://localhost:8000", alias="CHROMA_SERVER_URL")
     chroma_collection: str = Field(default="bank_abc_knowledge", alias="CHROMA_COLLECTION")
     chroma_model: str = Field(default="all-MiniLM-L6-v2", alias="CHROMA_MODEL")
+
 
 settings = Settings()  # type: ignore[call-arg]

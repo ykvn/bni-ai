@@ -40,25 +40,31 @@ def resolve_model_path() -> Tuple[str, str]:
         model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
         model_version = os.environ.get("CML_MODEL_VERSION", "1")
         
-        # 🟢 FIX: Fetch ALL models without the strict JSON filter parameter
         search_res = client.list_registered_models()
         
-        # 🟢 FIX: Filter the results safely using standard Python
+        # 🟢 FIX: Extract the list using the correct SDK attribute (usually '.models')
+        models_list = getattr(search_res, 'models', getattr(search_res, 'registered_models', []))
+        
+        # Safety net: If the list is empty, let's print the actual attributes to see what the SDK gave us
+        if not models_list:
+            print(f"🧐 [DEBUG SDK RESPONSE] Available attributes in search_res: {dir(search_res)}")
+        
         target_model = None
-        for m in search_res.registered_models:
-            if m.model_name == model_name:
+        for m in models_list:
+            # The SDK might use '.name' or '.model_name', so we check both safely
+            m_name = getattr(m, 'name', getattr(m, 'model_name', ''))
+            if m_name == model_name:
                 target_model = m
                 break
         
         if target_model:
-            model_id = target_model.model_id
-            
-            # Fetch the specific version details
-            version_details = client.get_registered_model(model_id)
+            model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
             
             print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id}) in Cloudera AI Registry.")
             
-            # (We are now ready to extract the download path from version_details!)
+            # Fetch the specific version details
+            # version_details = client.get_registered_model(model_id)
+            # print(f"🧐 [DEBUG VERSION DETAILS] {dir(version_details)}")
             
         else:
              print(f"⚠️ [MODEL RESOLVER] Model '{model_name}' was not found in the registry list.")

@@ -3,6 +3,14 @@ import sys
 import subprocess
 from pathlib import Path
 
+# 🎯 Global config: load the single ask-data/.env BEFORE any service code reads env vars.
+_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent
+if str(_ASK_DATA_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ASK_DATA_ROOT))
+
+import shared.config_loader as config_loader
+config_loader.load_project_env()
+
 
 def _resolve_backend_dir() -> Path:
     """Resolve the backend root whether the file is executed as a script or imported in a notebook."""

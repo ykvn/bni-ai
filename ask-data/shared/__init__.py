@@ -1,0 +1,1 @@
+"""Shared configuration utilities across all ask-data services."""
