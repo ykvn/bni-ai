@@ -30,11 +30,12 @@ model_metadata = {
 
 def resolve_model_path() -> Tuple[str, str]:
     """
-    Dumps the raw API response to find the HuggingFace configuration.
+    Dumps the raw API response for the CORRECT HuggingFace model.
     """
     print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
     
-    model_name = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
+    # 🟢 FIX: Hardcoded to bypass Project Environment overrides
+    model_name = "Qwen/Qwen2.5-3B-Instruct" 
     
     try:
         client = cmlapi.default_client()
@@ -45,16 +46,14 @@ def resolve_model_path() -> Tuple[str, str]:
         
         if target_model:
             model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
-            print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id})")
+            print(f"✅ [MODEL RESOLVER] Found EXACT model '{model_name}' (ID: {model_id})")
             
-            # Fetch the registered model details
             model_details = client.get_registered_model(model_id=model_id)
             
             print("\n" + "="*50)
             print("🧐 [DEBUG API DUMP] RAW MODEL DETAILS:")
             print("="*50)
             
-            # Safely dump the API object
             if hasattr(model_details, 'to_dict'):
                 print(json.dumps(model_details.to_dict(), indent=2, default=str))
             else:
