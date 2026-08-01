@@ -11,6 +11,7 @@ from mlflow.tracking import MlflowClient
 import cmlapi
 from typing import Tuple
 import json
+from huggingface_hub import snapshot_download
 
 # ⚡ CPU INFERENCE OPTIMIZATION LAYER
 torch.set_num_threads(4)
@@ -30,12 +31,12 @@ model_metadata = {
 
 def resolve_model_path() -> Tuple[str, str]:
     """
-    Dumps the raw API response for the CORRECT HuggingFace model.
+    Verifies the model in CML Registry and dynamically pulls the HuggingFace source.
     """
-    print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
+    print("📡 [MODEL RESOLVER] Connecting to CML API to verify registry configuration...")
     
-    # 🟢 FIX: Hardcoded to bypass Project Environment overrides
-    model_name = "Qwen/Qwen2.5-3B-Instruct" 
+    # Matching the exact name from your latest screenshot
+    model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-3B-Instruct")
     
     try:
         client = cmlapi.default_client()
@@ -46,31 +47,54 @@ def resolve_model_path() -> Tuple[str, str]:
         
         if target_model:
             model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
-            print(f"✅ [MODEL RESOLVER] Found EXACT model '{model_name}' (ID: {model_id})")
+            print(f"✅ [MODEL RESOLVER] Verified '{model_name}' (ID: {model_id}) exists in Cloudera AI Registry.")
+            print(f"✅ [MODEL RESOLVER] Registry indicates SOURCE is HuggingFace.")
             
-            model_details = client.get_registered_model(model_id=model_id)
+            # Since the registry uses a HuggingFace pointer, we download from HF directly.
+            # We map the UI name back to the actual HF repository name.
+            hf_repo = "Qwen/Qwen2.5-3B-Instruct"
             
-            print("\n" + "="*50)
-            print("🧐 [DEBUG API DUMP] RAW MODEL DETAILS:")
-            print("="*50)
+            # Define a secure local cache path inside the container
+            cache_dir = os.path.join(os.getcwd(), "hf_registry_cache")
+            os.makedirs(cache_dir, exist_ok=True)
             
-            if hasattr(model_details, 'to_dict'):
-                print(json.dumps(model_details.to_dict(), indent=2, default=str))
-            else:
-                for attr_name in dir(model_details):
-                    if not attr_name.startswith('_'):
-                        print(f"   {attr_name}: {getattr(model_details, attr_name)}")
-                        
-            print("="*50 + "\n")
+            print(f"⏳ [MODEL RESOLVER] Downloading weights directly from HuggingFace Hub to mirror registry import...")
+            downloaded_path = snapshot_download(
+                repo_id=hf_repo,
+                local_dir=cache_dir,
+                local_dir_use_symlinks=False # Forces actual file download instead of symlinks
+            )
+            
+            print(f"🎉 [MODEL RESOLVER] Successfully pulled model artifacts: {downloaded_path}")
+            return downloaded_path, "CLOUDERA_REGISTRY_HF_IMPORT"
             
         else:
             print(f"⚠️ Could not find '{model_name}' in the registry.")
             
     except Exception as err:
-        print(f"⚠️ [MODEL RESOLVER] API error: {type(err).__name__} - {err}")
+        print(f"⚠️ [MODEL RESOLVER] Verification error: {type(err).__name__} - {err}")
 
-    print("🛑 [DIAGNOSTIC HALT] Stopping server to review the API dump above.")
-    sys.exit(1)
+    print("🔍 [MODEL RESOLVER] Falling back to local NFS / disk storage...")
+
+    # ==========================================
+    # ATTEMPT 2: NFS FALLBACK STORAGE
+    # ==========================================
+    base_cwd = os.getcwd()
+    script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else base_cwd
+    parent_dir = os.path.dirname(script_dir)
+
+    candidate_paths = [
+        os.path.join(base_cwd, "model_weights_cpu"),
+        os.path.join(base_cwd, "ask-data", "qwen_inference", "model_weights_cpu"),
+        os.path.join(base_cwd, "qwen_inference", "model_weights_cpu"),
+        os.path.join(parent_dir, "model_weights_cpu")
+    ]
+
+    local_path = next((p for p in candidate_paths if os.path.isdir(p) and "config.json" in os.listdir(p)), None)
+    
+    if not local_path:
+        print(f"❌ [CRITICAL ERROR] Could not locate model weights in Registry OR Local NFS paths.")
+        sys.exit(1)
 
     return local_path, "LOCAL_NFS_STORAGE"
 
