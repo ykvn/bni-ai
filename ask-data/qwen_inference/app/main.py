@@ -27,18 +27,13 @@ model_metadata = {
 }
 
 
-import os
-import sys
-import cmlapi
-from typing import Tuple
-
 def resolve_model_path() -> Tuple[str, str]:
     """
     Bypasses MLflow entirely and uses CML API to extract the physical storage path.
     """
     print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
     
-    model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
+    model_name = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
     model_version = os.environ.get("CML_MODEL_VERSION", "1")
     
     try:

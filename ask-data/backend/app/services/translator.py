@@ -23,7 +23,7 @@ class SQLTranslationService:
         # 🧠 Initialize the CrewAI Native LLM Interface pointing directly to your LiteLLM Proxy
         print(f"📡 Connecting CrewAI to Standalone LiteLLM Proxy Gateway at: {self.qwen_base_url}")
         self.llm = LLM(
-            model=f"openai/{os.getenv('QWEN_MODEL', 'qwen2.5-3b-instruct')}",
+            model=f"openai/{os.getenv('CML_MODEL_NAME', 'qwen2.5-3b-instruct')}",
             base_url=self.qwen_base_url,
             api_key=self.api_token,
             temperature=0.0
