@@ -16,7 +16,7 @@ torch.set_num_threads(4)
 torch.set_num_interop_threads(4)
 
 # 🌐 CLOUDERA AI REGISTRY CONFIGURATION (Matches your exact registered model)
-REGISTRY_MODEL_NAME = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
+REGISTRY_MODEL_NAME = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
 REGISTRY_MODEL_VERSION = os.environ.get("CML_MODEL_VERSION", "1")
 
 # 📌 Global metadata tracker
@@ -33,8 +33,8 @@ def resolve_model_path() -> Tuple[str, str]:
     """
     print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
     
-    model_name = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
-    model_version = os.environ.get("CML_MODEL_VERSION", "1")
+    model_name = REGISTRY_MODEL_NAME
+    model_version = REGISTRY_MODEL_VERSION
     
     try:
         client = cmlapi.default_client()
