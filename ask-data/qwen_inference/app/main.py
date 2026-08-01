@@ -64,6 +64,18 @@ def resolve_model_path() -> Tuple[str, str]:
                         print(f"🎯 [HIDDEN PATH] {attr}: {getattr(target_v, attr)}")
             else:
                 print(f"⚠️ Could not locate version '{model_version}' in the API response.")
+                print("🧐 [DEBUG VERSIONS] Inspecting available version objects from API:")
+                
+                for idx, v in enumerate(versions_list):
+                    print(f"\n   --- Version Object {idx} ---")
+                    # Safely print all attributes that don't start with '_'
+                    for attr_name in dir(v):
+                        if not attr_name.startswith('_'):
+                            try:
+                                val = getattr(v, attr_name)
+                                print(f"   {attr_name}: {val}")
+                            except Exception:
+                                pass
                 
     except Exception as err:
         print(f"⚠️ [MODEL RESOLVER] API error: {type(err).__name__} - {err}")
