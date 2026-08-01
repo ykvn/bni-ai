@@ -26,24 +26,26 @@ model_metadata = {
 }
 
 
+import os
+import sys
+import cmlapi
+from typing import Tuple
+
 def resolve_model_path() -> Tuple[str, str]:
     """
     Downloads model artifacts from Cloudera AI Registry using CML APIv2.
     Falls back to local NFS directories if registry access is unavailable.
     """
-    cml_domain = os.environ.get("CDSW_DOMAIN") or os.environ.get("CML_DOMAIN", "")
-    cml_token = os.environ.get("CML_TOKEN") or os.environ.get("CDSW_API_KEY", "")
-
     try:
-        # 1. Initialize Cloudera API Client
-        print(f"📡 [MODEL RESOLVER] Connecting to CML API at {cml_domain}...")
-        client = cmlapi.default_client(url=f"https://{cml_domain}", cml_api_key=cml_token)
+        # 1. Initialize Cloudera API Client natively (Auto-detects URL and CDSW_APIV2_KEY)
+        print("📡 [MODEL RESOLVER] Connecting to CML API using auto-detected credentials...")
+        client = cmlapi.default_client()
 
         # 2. Query the Registered Model from AI Registry
-        model_name = REGISTRY_MODEL_NAME
-        model_version = REGISTRY_MODEL_VERSION
+        model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
+        model_version = os.environ.get("CML_MODEL_VERSION", "1")
         
-        # We search the workspace for models matching the name
+        # Search the workspace for models matching the name
         search_res = client.list_registered_models(search_filter=model_name)
         
         if search_res.registered_models:
@@ -55,9 +57,7 @@ def resolve_model_path() -> Tuple[str, str]:
             
             print(f"✅ [MODEL RESOLVER] Found '{model_name}' in Cloudera AI Registry.")
             
-            # TODO: In CML APIv2, the artifact download path is usually exposed on the version details object.
-            # Once we can inspect `version_details`, we can trigger the download.
-            # For now, if we reach this point, the API connection is successful!
+            # (Download logic will go here once API connection is established)
             
     except Exception as err:
         print(f"⚠️ [MODEL RESOLVER] Could not retrieve from Cloudera AI Registry via APIv2: {type(err).__name__} - {err}")
