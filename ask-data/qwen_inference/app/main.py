@@ -27,52 +27,51 @@ model_metadata = {
 }
 
 
+import os
+import sys
+import cmlapi
+from typing import Tuple
+
 def resolve_model_path() -> Tuple[str, str]:
     """
-    PRIORITY 1: Resolves virtual models:/ URI to physical s3:// URI via HTTPS, then downloads.
-    PRIORITY 2: Falls back to local NFS directories if registry access fails.
+    Bypasses MLflow entirely and uses CML API to extract the physical storage path.
     """
-    print("📡 [MODEL RESOLVER] Connecting to MLflow Registry via HTTPS...")
+    print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
     
     model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
     model_version = os.environ.get("CML_MODEL_VERSION", "1")
     
-    # ==========================================
-    # ATTEMPT 1: CLOUDERA AI REGISTRY (TWO-STEP)
-    # ==========================================
     try:
-        # Step 1: Bypass internal proxy, use direct HTTPS API
-        cml_domain = os.environ.get("CDSW_DOMAIN") or os.environ.get("CML_DOMAIN", "")
-        if not cml_domain:
-            raise ValueError("Could not find CDSW_DOMAIN to construct MLflow URI.")
+        client = cmlapi.default_client()
+        search_res = client.list_registered_models()
+        models_list = getattr(search_res, 'models', getattr(search_res, 'registered_models', []))
+        
+        target_model = next((m for m in models_list if getattr(m, 'name', getattr(m, 'model_name', '')) == model_name), None)
+        
+        if target_model:
+            model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
+            print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id})")
             
-        mlflow.set_tracking_uri(f"https://mlflow.{cml_domain}")
-        os.environ["MLFLOW_TRACKING_TOKEN"] = os.environ.get("CDSW_APIV2_KEY", "")
-        
-        client = mlflow.tracking.MlflowClient()
-        
-        print(f"🔍 [MODEL RESOLVER] Requesting physical S3 location for '{model_name}' (Version {model_version})...")
-        model_version_details = client.get_model_version(name=model_name, version=model_version)
-        
-        # Extract the raw s3://... path
-        actual_s3_uri = getattr(model_version_details, 'source', None)
-        
-        if not actual_s3_uri:
-            raise ValueError("Registry responded, but could not find a 'source' S3 URI in the metadata.")
+            # Request all versions for this model
+            v_res = client.list_model_versions(model_id=model_id)
+            versions_list = getattr(v_res, 'model_versions', getattr(v_res, 'versions', getattr(v_res, 'models', [])))
             
-        print(f"✅ [MODEL RESOLVER] Resolved to physical storage: {actual_s3_uri}")
-        
-        # Step 2: Download directly from S3 using boto3
-        print(f"⏳ [MODEL RESOLVER] Downloading weights directly from S3...")
-        downloaded_path = mlflow.artifacts.download_artifacts(artifact_uri=actual_s3_uri)
-        
-        if os.path.isdir(downloaded_path):
-            print(f"🎉 [MODEL RESOLVER] Successfully pulled model artifacts to local cache: {downloaded_path}")
-            return downloaded_path, "CLOUDERA_AI_REGISTRY"
+            target_v = next((v for v in versions_list if str(getattr(v, 'version', getattr(v, 'model_version', ''))) == str(model_version)), None)
             
+            if target_v:
+                print(f"✅ [MODEL RESOLVER] Found Version {model_version} metadata!")
+                
+                # Check every possible attribute Cloudera might use for the S3 path
+                for attr in ['source', 'artifact_uri', 'artifact_location', 'path', 'url']:
+                    if hasattr(target_v, attr):
+                        print(f"🎯 [HIDDEN PATH] {attr}: {getattr(target_v, attr)}")
+            else:
+                print(f"⚠️ Could not locate version '{model_version}' in the API response.")
+                
     except Exception as err:
-        print(f"⚠️ [MODEL RESOLVER] Registry download failed: {type(err).__name__} - {err}")
-        print("🔍 [MODEL RESOLVER] Falling back to local NFS / disk storage...")
+        print(f"⚠️ [MODEL RESOLVER] API error: {type(err).__name__} - {err}")
+
+    print("🔍 [MODEL RESOLVER] Falling back to local NFS / disk storage...")
 
     # ==========================================
     # ATTEMPT 2: NFS FALLBACK STORAGE
