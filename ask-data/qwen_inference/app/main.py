@@ -28,30 +28,28 @@ model_metadata = {
 
 def resolve_model_path() -> Tuple[str, str]:
     """
-    Downloads model artifacts from Cloudera AI Registry using CML APIv2.
+    Downloads model artifacts from Cloudera AI Registry using CML APIv2 & MLflow.
     Falls back to local NFS directories if registry access is unavailable.
     """
     try:
-        # 1. Initialize Cloudera API Client natively (Auto-detects URL and CDSW_APIV2_KEY)
         print("📡 [MODEL RESOLVER] Connecting to CML API using auto-detected credentials...")
         client = cmlapi.default_client()
+        
+        # We need the domain to configure MLflow's HTTPS tracking URI natively
+        cml_domain = os.environ.get("CDSW_DOMAIN") or os.environ.get("CML_DOMAIN", "")
+        if cml_domain:
+            mlflow.set_tracking_uri(f"https://mlflow.{cml_domain}")
+            # Ensure MLflow SDK uses the v2 API Key
+            os.environ["MLFLOW_TRACKING_TOKEN"] = os.environ.get("CDSW_APIV2_KEY", "")
 
-        # 2. Query the Registered Model from AI Registry
         model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
         model_version = os.environ.get("CML_MODEL_VERSION", "1")
         
         search_res = client.list_registered_models()
-        
-        # 🟢 FIX: Extract the list using the correct SDK attribute (usually '.models')
         models_list = getattr(search_res, 'models', getattr(search_res, 'registered_models', []))
-        
-        # Safety net: If the list is empty, let's print the actual attributes to see what the SDK gave us
-        if not models_list:
-            print(f"🧐 [DEBUG SDK RESPONSE] Available attributes in search_res: {dir(search_res)}")
         
         target_model = None
         for m in models_list:
-            # The SDK might use '.name' or '.model_name', so we check both safely
             m_name = getattr(m, 'name', getattr(m, 'model_name', ''))
             if m_name == model_name:
                 target_model = m
@@ -59,21 +57,26 @@ def resolve_model_path() -> Tuple[str, str]:
         
         if target_model:
             model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
-            
             print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id}) in Cloudera AI Registry.")
             
-            # Fetch the specific version details
-            # version_details = client.get_registered_model(model_id)
-            # print(f"🧐 [DEBUG VERSION DETAILS] {dir(version_details)}")
+            # 🟢 THE FINAL TRIGGER: Download the artifacts via MLflow SDK
+            model_uri = f"models:/{model_name}/{model_version}"
+            print(f"⏳ [MODEL RESOLVER] Downloading weights from '{model_uri}'...")
+            
+            downloaded_path = mlflow.artifacts.download_artifacts(artifact_uri=model_uri)
+            
+            if os.path.isdir(downloaded_path):
+                print(f"🎉 [MODEL RESOLVER] Successfully pulled model artifacts to local cache: {downloaded_path}")
+                return downloaded_path, "CLOUDERA_AI_REGISTRY"
             
         else:
              print(f"⚠️ [MODEL RESOLVER] Model '{model_name}' was not found in the registry list.")
             
     except Exception as err:
-        print(f"⚠️ [MODEL RESOLVER] Could not retrieve from Cloudera AI Registry via APIv2: {type(err).__name__} - {err}")
+        print(f"⚠️ [MODEL RESOLVER] Could not retrieve from Cloudera AI Registry: {type(err).__name__} - {err}")
         print("🔍 [MODEL RESOLVER] Searching local NFS / disk storage as fallback...")
 
-    # 3. Local NFS / Filesystem Fallback Strategy
+    # --- Fallback Strategy ---
     base_cwd = os.getcwd()
     script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else base_cwd
     parent_dir = os.path.dirname(script_dir)
