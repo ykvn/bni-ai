@@ -114,7 +114,7 @@ async def lifespan(app: FastAPI):
 
     # 🌟 STARTUP REMARK BANNER
     print("\n" + "="*75)
-    if source == "CLOUDERA_AI_REGISTRY":
+    if "CLOUDERA" in source:
         print("🚀 [MODEL SOURCE REMARK]: Loaded directly from CLOUDERA AI REGISTRY!")
         print(f"   Model Target : {model_metadata['model_uri']}")
         print(f"   Cached Path  : {path}")
