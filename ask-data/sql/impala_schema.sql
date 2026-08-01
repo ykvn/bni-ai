@@ -1,5 +1,5 @@
 -- 1. Customers Table
-CREATE EXTERNAL TABLE IF NOT EXISTS default.customers (
+CREATE EXTERNAL TABLE IF NOT EXISTS sb.customers (
     customer_id INT,
     first_name STRING,
     last_name STRING,
@@ -10,7 +10,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS default.customers (
 ) STORED AS PARQUET;
 
 -- 2. Savings Accounts Table
-CREATE EXTERNAL TABLE IF NOT EXISTS default.savings (
+CREATE EXTERNAL TABLE IF NOT EXISTS sb.savings (
     savings_id INT,
     customer_id INT,
     account_number STRING,
@@ -20,7 +20,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS default.savings (
 ) STORED AS PARQUET;
 
 -- 3. Time Deposits Table
-CREATE EXTERNAL TABLE IF NOT EXISTS default.deposits (
+CREATE EXTERNAL TABLE IF NOT EXISTS sb.deposits (
     deposit_id INT,
     customer_id INT,
     account_number STRING,
@@ -31,7 +31,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS default.deposits (
 ) STORED AS PARQUET;
 
 -- 4. Loans Table
-CREATE EXTERNAL TABLE IF NOT EXISTS default.loans (
+CREATE EXTERNAL TABLE IF NOT EXISTS sb.loans (
     loan_id INT,
     customer_id INT,
     loan_type STRING, -- Home, Auto, Personal
@@ -42,7 +42,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS default.loans (
 ) STORED AS PARQUET;
 
 -- 5. Credit Cards Table
-CREATE TABLE IF NOT EXISTS default.credit_cards (
+CREATE TABLE IF NOT EXISTS sb.credit_cards (
     card_id INT,
     customer_id INT,
     card_number STRING,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS default.credit_cards (
 ) STORED AS PARQUET;
 
 -- 6. Transactions Table
-CREATE EXTERNAL TABLE IF NOT EXISTS default.transactions (
+CREATE EXTERNAL TABLE IF NOT EXISTS sb.transactions (
     transaction_id INT,
     account_number STRING,
     amount DECIMAL(15, 2),
@@ -63,7 +63,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS default.transactions (
 ) STORED AS PARQUET;
 
 -- 7. Branch Metrics/Dashboards metadata (For dashboard context RAG queries)
-CREATE EXTERNAL TABLE IF NOT EXISTS default.branch_performance (
+CREATE EXTERNAL TABLE IF NOT EXISTS sb.branch_performance (
     branch_id INT,
     branch_name STRING,
     region STRING,
@@ -76,7 +76,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS default.branch_performance (
 -- =====================================================================
 
 -- 1. CUSTOMERS
-INSERT INTO default.customers VALUES
+INSERT INTO sb.customers VALUES
 (1, 'Ahmad', 'Fauzi', 'ahmad.f@bni.co.id', add_months(date_add(current_date(),2),-360), 'BNI', CAST('2020-01-15' AS DATE)),
 (2, 'Siti', 'Aminah', 'siti.a@bni.co.id', add_months(date_add(current_date(),4),-300), 'BNI', CAST('2021-03-22' AS DATE)),
 (3, 'Budi', 'Santoso', 'budi.s@abc.com', add_months(date_add(current_date(),1),-540), 'ABC', CAST('2019-11-02' AS DATE)),
@@ -84,34 +84,34 @@ INSERT INTO default.customers VALUES
 (5, 'Jane', 'Smith', 'jane.smith@bni.co.id', CAST('1992-09-25' AS DATE), 'BNI', CAST('2023-02-10' AS DATE));
 
 -- 2. SAVINGS
-INSERT INTO default.savings VALUES
+INSERT INTO sb.savings VALUES
 (1, 1, 'SAV-BNI-001', 25000000.00, 2.50, 'ACTIVE'),
 (2, 2, 'SAV-BNI-002', 75000000.00, 2.75, 'ACTIVE'),
 (3, 3, 'SAV-ABC-003', 120000000.00, 3.00, 'ACTIVE'),
 (4, 4, 'SAV-ABC-004', 5000000.00, 1.50, 'DORMANT');
 
 -- 3. DEPOSITS
-INSERT INTO default.deposits VALUES
+INSERT INTO sb.deposits VALUES
 (1, 1, 'DEP-BNI-101', 100000000.00, date_add(current_date(),3), 5.25, 'ACTIVE'),
 (2, 3, 'DEP-ABC-102', 500000000.00, date_add(current_date(),6), 5.50, 'ACTIVE'),
 (3, 4, 'DEP-ABC-103', 50000000.00, date_add(current_date(),180), 4.75, 'ACTIVE');
 
 -- 4. LOANS
-INSERT INTO default.loans VALUES
+INSERT INTO sb.loans VALUES
 (1, 2, 'Personal', 50000000.00, 4500000.00, date_add(current_date(),5), 'ACTIVE'),
 (2, 3, 'Mortgage', 1200000000.00, 980000000.00, add_months(current_date(),120), 'ACTIVE');
 
 -- 5. CREDIT CARDS
-INSERT INTO default.credit_cards VALUES
+INSERT INTO sb.credit_cards VALUES
 (1, 1, '4560-1234-8888-1111', 50000000.00, 12500000.00, add_months(current_date(),24), 'ACTIVE'),
 (2, 4, '4560-1234-8888-2222', 20000000.00, 19500000.00, add_months(current_date(),1), 'WARNING');
 
 -- 6. TRANSACTIONS
-INSERT INTO default.transactions VALUES
+INSERT INTO sb.transactions VALUES
 (1, 'SAV-BNI-001', 500000.00, 'DEBIT', CAST(from_unixtime(unix_timestamp()-7200) AS TIMESTAMP), 'ATM Withdrawal'),
 (2, 'SAV-ABC-003', 1500000.00, 'CREDIT', CAST(from_unixtime(unix_timestamp()-86400) AS TIMESTAMP), 'Payroll Transfer');
 
 -- 7. BRANCH PERFORMANCE
-INSERT INTO default.branch_performance VALUES
+INSERT INTO sb.branch_performance VALUES
 (1, 'Jakarta Main Branch', 'DKI Jakarta', 12500, 104.50),
 (2, 'Surabaya Cluster', 'East Java', 8400, 92.10);
