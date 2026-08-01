@@ -33,8 +33,8 @@ def resolve_model_path() -> Tuple[str, str]:
     """
     print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
     
-    model_name = REGISTRY_MODEL_NAME
-    model_version = REGISTRY_MODEL_VERSION
+    model_name = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
+    model_version = os.environ.get("CML_MODEL_VERSION", "1")
     
     try:
         client = cmlapi.default_client()
@@ -47,9 +47,11 @@ def resolve_model_path() -> Tuple[str, str]:
             model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
             print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id})")
             
-            # Request all versions for this model
-            v_res = client.list_model_versions(model_id=model_id)
-            versions_list = getattr(v_res, 'model_versions', getattr(v_res, 'versions', getattr(v_res, 'models', [])))
+            # 🟢 FIX: Use get_registered_model instead of list_model_versions
+            model_details = client.get_registered_model(model_id=model_id)
+            
+            # The versions are typically nested within the model details response
+            versions_list = getattr(model_details, 'model_versions', getattr(model_details, 'versions', []))
             
             target_v = next((v for v in versions_list if str(getattr(v, 'version', getattr(v, 'model_version', ''))) == str(model_version)), None)
             
