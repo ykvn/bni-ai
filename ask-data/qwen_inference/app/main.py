@@ -34,7 +34,7 @@ def resolve_model_path() -> Tuple[str, str]:
     print("📡 [MODEL RESOLVER] Connecting strictly via CML API...")
     
     model_name = os.environ.get("CML_MODEL_NAME", "Qwen/Qwen2.5-3B-Instruct")
-    model_version = os.environ.get("CML_MODEL_VERSION", "1")
+    model_version_target = str(os.environ.get("CML_MODEL_VERSION", "1"))
     
     try:
         client = cmlapi.default_client()
@@ -47,35 +47,27 @@ def resolve_model_path() -> Tuple[str, str]:
             model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
             print(f"✅ [MODEL RESOLVER] Found '{model_name}' (ID: {model_id})")
             
-            # 🟢 FIX: Use get_registered_model instead of list_model_versions
+            # Fetch the registered model details
             model_details = client.get_registered_model(model_id=model_id)
             
-            # The versions are typically nested within the model details response
+            # Extract the nested model_versions array
             versions_list = getattr(model_details, 'model_versions', getattr(model_details, 'versions', []))
             
-            target_v = next((v for v in versions_list if str(getattr(v, 'version', getattr(v, 'model_version', ''))) == str(model_version)), None)
-            
-            if target_v:
-                print(f"✅ [MODEL RESOLVER] Found Version {model_version} metadata!")
+            if versions_list:
+                print(f"🧐 [DEBUG] Extracted {len(versions_list)} version(s) from API response.")
                 
-                # Check every possible attribute Cloudera might use for the S3 path
-                for attr in ['source', 'artifact_uri', 'artifact_location', 'path', 'url']:
-                    if hasattr(target_v, attr):
-                        print(f"🎯 [HIDDEN PATH] {attr}: {getattr(target_v, attr)}")
+                # Check the first version in the list to see its raw attributes
+                first_version = versions_list[0]
+                print(f"🧐 [DEBUG VERSIONS] Inspecting the first version object:")
+                for attr_name in dir(first_version):
+                    if not attr_name.startswith('_'):
+                        try:
+                            val = getattr(first_version, attr_name)
+                            print(f"   {attr_name}: {val}")
+                        except Exception:
+                            pass
             else:
-                print(f"⚠️ Could not locate version '{model_version}' in the API response.")
-                print("🧐 [DEBUG VERSIONS] Inspecting available version objects from API:")
-                
-                for idx, v in enumerate(versions_list):
-                    print(f"\n   --- Version Object {idx} ---")
-                    # Safely print all attributes that don't start with '_'
-                    for attr_name in dir(v):
-                        if not attr_name.startswith('_'):
-                            try:
-                                val = getattr(v, attr_name)
-                                print(f"   {attr_name}: {val}")
-                            except Exception:
-                                pass
+                print("⚠️ [MODEL RESOLVER] No versions found in the model details.")
                 
     except Exception as err:
         print(f"⚠️ [MODEL RESOLVER] API error: {type(err).__name__} - {err}")
