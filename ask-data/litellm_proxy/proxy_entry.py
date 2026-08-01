@@ -4,12 +4,12 @@ import subprocess
 from pathlib import Path
 
 # 🎯 Global config: load the single ask-data/.env BEFORE any service code reads env vars.
-_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent
+_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
 
 import shared.config_loader as config_loader
-config_loader.load_project_env()
+config_loader.bootstrap(hint=_ASK_DATA_ROOT)
 
 
 def ensure_dependencies(proxy_dir: Path, env: dict) -> None:
