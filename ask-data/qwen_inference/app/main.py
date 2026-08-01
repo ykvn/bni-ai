@@ -29,10 +29,10 @@ model_metadata = {
 
 def resolve_model_path() -> Tuple[str, str]:
     """
-    PRIORITY 1: Resolves virtual models:/ URI to physical s3:// URI, then downloads.
+    PRIORITY 1: Resolves virtual models:/ URI to physical s3:// URI via HTTPS, then downloads.
     PRIORITY 2: Falls back to local NFS directories if registry access fails.
     """
-    print("📡 [MODEL RESOLVER] Connecting to MLflow Registry...")
+    print("📡 [MODEL RESOLVER] Connecting to MLflow Registry via HTTPS...")
     
     model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-1.5B-Instruct-AWQ")
     model_version = os.environ.get("CML_MODEL_VERSION", "1")
@@ -41,9 +41,15 @@ def resolve_model_path() -> Tuple[str, str]:
     # ATTEMPT 1: CLOUDERA AI REGISTRY (TWO-STEP)
     # ==========================================
     try:
-        # Step 1: Use default CML internal proxy to fetch metadata ONLY
-        mlflow.set_tracking_uri("cml://localhost")
-        client = MlflowClient()
+        # Step 1: Bypass internal proxy, use direct HTTPS API
+        cml_domain = os.environ.get("CDSW_DOMAIN") or os.environ.get("CML_DOMAIN", "")
+        if not cml_domain:
+            raise ValueError("Could not find CDSW_DOMAIN to construct MLflow URI.")
+            
+        mlflow.set_tracking_uri(f"https://mlflow.{cml_domain}")
+        os.environ["MLFLOW_TRACKING_TOKEN"] = os.environ.get("CDSW_APIV2_KEY", "")
+        
+        client = mlflow.tracking.MlflowClient()
         
         print(f"🔍 [MODEL RESOLVER] Requesting physical S3 location for '{model_name}' (Version {model_version})...")
         model_version_details = client.get_model_version(name=model_name, version=model_version)
@@ -56,7 +62,7 @@ def resolve_model_path() -> Tuple[str, str]:
             
         print(f"✅ [MODEL RESOLVER] Resolved to physical storage: {actual_s3_uri}")
         
-        # Step 2: Download directly from S3 using boto3 (bypasses the proxy translation)
+        # Step 2: Download directly from S3 using boto3
         print(f"⏳ [MODEL RESOLVER] Downloading weights directly from S3...")
         downloaded_path = mlflow.artifacts.download_artifacts(artifact_uri=actual_s3_uri)
         
