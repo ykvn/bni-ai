@@ -18,7 +18,7 @@ torch.set_num_threads(4)
 torch.set_num_interop_threads(4)
 
 # 🌐 CLOUDERA AI REGISTRY CONFIGURATION (Matches your exact registered model)
-REGISTRY_MODEL_NAME = os.environ.get("CML_MODEL_NAME", "Qwen2.5-3B-Instruct")
+REGISTRY_MODEL_NAME = os.environ.get("CML_MODEL_NAME", "")
 REGISTRY_MODEL_VERSION = os.environ.get("CML_MODEL_VERSION", "1")
 
 # 📌 Global metadata tracker
@@ -36,7 +36,7 @@ def resolve_model_path() -> Tuple[str, str]:
     print("📡 [MODEL RESOLVER] Connecting to CML API to verify registry configuration...")
     
     # Matching the exact name from your latest screenshot
-    model_name = os.environ.get("CML_MODEL_NAME", "Qwen2.5-3B-Instruct")
+    model_name = os.environ.get("CML_MODEL_NAME", "")
     
     try:
         client = cmlapi.default_client()
@@ -52,7 +52,7 @@ def resolve_model_path() -> Tuple[str, str]:
             
             # Since the registry uses a HuggingFace pointer, we download from HF directly.
             # We map the UI name back to the actual HF repository name.
-            hf_repo = "Qwen/Qwen2.5-3B-Instruct"
+            hf_repo = model_name
             
             # Define a secure local cache path inside the container
             cache_dir = os.path.join(os.getcwd(), "hf_registry_cache")
