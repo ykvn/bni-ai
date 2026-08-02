@@ -51,14 +51,14 @@ ask-data/
 │
 ├── qwen_inference/                       # CPU Inference Engine
 │   ├── app/
-│   │   └── main.py                       # 🆕 FastAPI server for CPU model endpoint
+│   │   └── main.py                       # FastAPI server for CPU model endpoint
 │   ├── download_cpu_model.py
 │   ├── download_model.py
 │   ├── qwen_cpu_entry.py
 │   ├── qwen_entry.py
 │   └── requirements.txt
 │
-├── shared/                               # 🆕 Shared Utilities Across Microservices
+├── shared/                               # Shared Utilities Across Microservices
 │   ├── __init__.py
 │   └── config_loader.py                  # Global .env bootstrap loader
 │
@@ -68,8 +68,8 @@ ask-data/
 ├── scripts/
 │   └── cml_bootstrap.sh                  # CML workspace bootstrapping setup script
 │
-├── .env                                  # 🆕 Global environment file for all services
-├── .env.example                          # 🆕 Template for environment configuration
+├── .env                                  # Global environment file for all services
+├── .env.example                          # Template for environment configuration
 ├── download_requirements.py              # Offline dependency loader
 ├── .gitignore
 └── README.md
