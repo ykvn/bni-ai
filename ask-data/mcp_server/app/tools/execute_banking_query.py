@@ -1,7 +1,7 @@
 import os
 import json
 
-# 🔌 Import the validated Cloudera Impala execution utility
+# Import the validated Cloudera Impala execution utility
 from app.tools.impala_client import execute_query
 
 def execute_banking_query(sql_query: str) -> str:

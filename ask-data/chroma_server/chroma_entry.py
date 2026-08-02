@@ -2,9 +2,8 @@
 CAI / CML Application entry point for ChromaDB HTTP Server.
 
 Setup in CAI / CML Application:
-  Name    : chroma_server
-  Script  : ask-data/chroma_server/chromadb_entry.py
-  Resource: 1 vCPU / 2 GiB
+  Name    : chroma
+  Script  : ask-data/chroma_server/chroma_entry.py
 """
 
 import logging
@@ -14,7 +13,7 @@ import sys
 import time
 from pathlib import Path
 
-# 🎯 Global config: load the single ask-data/.env BEFORE any service code reads env vars.
+# Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))

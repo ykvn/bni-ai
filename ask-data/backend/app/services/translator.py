@@ -2,10 +2,10 @@ import os
 import json
 import asyncio
 
-# 🤖 CrewAI Framework Engine Integration Modules
+# CrewAI Framework Engine Integration Modules
 from crewai import Agent, Task, Crew, LLM
 
-# 🔌 Official Model Context Protocol Client Packages
+# Official Model Context Protocol Client Packages
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 
@@ -14,21 +14,21 @@ class SQLTranslationService:
         # 🌐 Microservice network endpoints
         self.mcp_server_url = os.getenv("MCP_SERVER_URL", "")
         
-        # 🔌 POINT TO STANDALONE LITELLM PROXY GATEWAY (NOT raw QWEN_APP_URL)
+        # POINT TO STANDALONE LITELLM PROXY GATEWAY
         self.litellm_proxy_url = (
             os.getenv("LITELLM_PROXY_URL") 
             or os.getenv("LITELLM_APP_URL") 
             or ""
         ).rstrip("/")
         
-        # 🔑 Security Access Tokens for CML
+        # Security Access Tokens for CML
         self.api_token = (
             os.getenv("CML_TOKEN") 
             or os.getenv("LITELLM_API_KEY") 
             or "litellm-dummy-token"
         )
 
-        # 🎯 Pass CML_MODEL_NAME directly so it matches litellm_config.yaml
+        # Pass CML_MODEL_NAME directly so it matches litellm_config.yaml
         target_model = os.getenv("CML_MODEL_NAME", "")
 
         self.llm = LLM(

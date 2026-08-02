@@ -18,7 +18,7 @@ torch.set_num_interop_threads(4)
 REGISTRY_MODEL_NAME = os.environ.get("CML_MODEL_NAME", "")
 REGISTRY_MODEL_VERSION = os.environ.get("CML_MODEL_VERSION", "1")
 
-# 📌 Global metadata tracker
+# Global metadata tracker
 model_metadata = {
     "source": "UNINITIALIZED",
     "path": "N/A",
@@ -109,7 +109,7 @@ async def lifespan(app: FastAPI):
     model_metadata["source"] = source
     model_metadata["path"] = path
 
-    # 🌟 STARTUP REMARK BANNER
+    # STARTUP REMARK BANNER
     print("\n" + "="*75)
     if "CLOUDERA" in source:
         print("🚀 [MODEL SOURCE REMARK]: Loaded directly from CLOUDERA AI REGISTRY!")

@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 import os
 
-# 🩹 ENTERPRISE LINUX RUNTIME PATCH: Force modern SQLite layers immediately
 try:
     import pysqlite3  # type: ignore
     sys.modules["sqlite3"] = pysqlite3

@@ -2,7 +2,6 @@ import os
 from huggingface_hub import snapshot_download
 
 def download_qwen_cpu_model():
-    # 🎯 Upgrading to 3B to unlock native agent reasoning and kill the prompt hacks!
     model_repo = "Qwen/Qwen2.5-3B-Instruct"
     
     current_dir = os.path.dirname(os.path.abspath(__file__))

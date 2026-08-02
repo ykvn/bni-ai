@@ -3,7 +3,7 @@ import sys
 import subprocess
 from pathlib import Path
 
-# 🎯 Global config: load the single ask-data/.env BEFORE any service code reads env vars.
+# Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
@@ -73,7 +73,7 @@ def build_ui() -> object:
     import gradio as gr
     import requests
 
-    backend_url = os.environ.get("BACKEND_URL", "http://127.0.0.1:8090/ask")
+    backend_url = os.environ.get("BACKEND_URL", "")
 
     def ask_backend(question: str):
         if not question.strip():

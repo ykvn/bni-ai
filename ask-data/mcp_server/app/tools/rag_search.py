@@ -5,7 +5,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
-# 1. Force load the exact same .env file the backend uses
 _mcp_env_path = Path(__file__).resolve().parents[2] / ".env"
 if _mcp_env_path.exists():
     load_dotenv(_mcp_env_path, override=True)

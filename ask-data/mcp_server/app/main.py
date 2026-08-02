@@ -2,8 +2,6 @@ import os
 import sys
 import json
 
-# 🩹 CRITICAL STEP 1: Swap out the outdated system SQLite layer immediately!
-# This MUST execute before any tools or third-party packages are imported.
 try:
     __import__('pysqlite3')
     sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
