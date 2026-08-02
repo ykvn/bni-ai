@@ -1,0 +1,79 @@
+flowchart TD
+    subgraph Access_Layer ["App (Frontend)"]
+        FE["Gradio Front End UI"]
+        DOCS["Documents Store (PDFs)"]
+    end
+
+    subgraph Backend_App ["App (Backend / Orchestration)"]
+        BACKEND_ENTRY["backend_entry.py"]
+        BACKEND["FastAPI Backend API"]
+        TRANSLATOR["SQLTranslationService"]
+        CREW["CrewAI Agents"]
+        INGEST["Ingest Knowledge Pipeline"]
+        REINDEX["Reindex Knowledge"]
+    end
+
+    subgraph MCP_Server ["MCP Server (Protocol Gateway)"]
+        MCP["FastMCP Server (SSE)"]
+        TOOL_SCHEMA["get_database_schema tool"]
+        TOOL_SQL["execute_banking_query tool"]
+        TOOL_RAG["search_policy_documents tool"]
+        TOOL_RISK["evaluate_dormant_account_risk tool"]
+        IMPALA_CLIENT["Impala Client"]
+        MCP_CONFIG["MCP Settings (Pydantic)"]
+    end
+
+    subgraph Data_Services ["Data & AI Services"]
+        CHROMA["ChromaDB HTTP Server"]
+        LITELLM["LiteLLM Proxy"]
+        QWEN["Qwen Inference Engine"]
+        IMPALA_DB["Cloudera Impala Database"]
+        DOMAIN_CONFIG["domain_config.yaml"]
+        ENV[".env (Global Config)"]
+    end
+
+    subgraph Bootstrap_Layer ["Ingestion & Bootstrap"]
+        CONFIG_LOADER["Shared Config Loader"]
+        DOWNLOAD["download_requirements.py"]
+        BOOTSTRAP["cml_bootstrap.sh"]
+        SYNTHETIC["generate_synthetic.py"]
+    end
+
+    FE -->|"HTTP POST /ask - frontend_entry.py"| BACKEND
+    BACKEND -->|"Route Question - app/main.py"| TRANSLATOR
+
+    TRANSLATOR -->|"get_database_schema - translator.py"| MCP
+    MCP -->|"call tool - app/main.py"| TOOL_SCHEMA
+    TOOL_SCHEMA -->|"reads file - get_database_schema.py"| DOMAIN_CONFIG
+    TRANSLATOR -->|"CrewAI kickoff - translator.py"| CREW
+    CREW -->|"LLM call - translator.py"| LITELLM
+    LITELLM -->|"route /v1/chat/completions - litellm_config.yaml"| QWEN
+    TRANSLATOR -->|"execute_banking_query - translator.py"| MCP
+    MCP -->|"call tool - app/main.py"| TOOL_SQL
+    TOOL_SQL -->|"execute_query - execute_banking_query.py"| IMPALA_CLIENT
+    IMPALA_CLIENT -->|"SQL query - impala_client.py"| IMPALA_DB
+
+    TRANSLATOR -->|"search_policy_documents - translator.py"| MCP
+    MCP -->|"call tool - app/main.py"| TOOL_RAG
+    TOOL_RAG -->|"REST query - rag_search.py"| CHROMA
+
+    BACKEND_ENTRY -->|"auto-ingest on startup - backend_entry.py"| INGEST
+    DOCS -->|"read PDFs - ingest_knowledge.py"| INGEST
+    INGEST -->|"embed & store vectors - ingest_knowledge.py"| CHROMA
+    REINDEX -->|"trigger re-index - reindex_knowledge.py"| INGEST
+
+    BACKEND_ENTRY -->|"bootstrap - backend_entry.py"| CONFIG_LOADER
+    MCP -->|"load settings - config.py"| MCP_CONFIG
+    MCP_CONFIG -->|"read - config.py"| ENV
+    CONFIG_LOADER -->|"load - config_loader.py"| ENV
+    BOOTSTRAP -->|"setup workspace - cml_bootstrap.sh"| DOWNLOAD
+    SYNTHETIC -->|"seed data - generate_synthetic.py"| IMPALA_DB
+
+    IMPALA_DB -->|"result rows - impala_client.py"| TOOL_SQL
+    CHROMA -->|"context fragments - rag_search.py"| TOOL_RAG
+    QWEN -->|"generated SQL / answer - app/main.py"| LITELLM
+    LITELLM -->|"LLM response - translator.py"| CREW
+    TOOL_SQL -->|"JSON records - translator.py"| TRANSLATOR
+    TOOL_RAG -->|"context docs - translator.py"| TRANSLATOR
+    TRANSLATOR -->|"API response - app/main.py"| BACKEND
+    BACKEND -->|"JSON result - frontend_entry.py"| FE
