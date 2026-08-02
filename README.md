@@ -43,7 +43,7 @@ ask-data/
 │   │   │   ├── config.py                 # Pydantic settings for MCP server
 │   │   │   ├── execute_banking_query.py  # Dedicated Impala query executor
 │   │   │   ├── impala_client.py          # PyImpala DB connection manager
-│   │   │   └── rag_search.py             # 🆕 Tool for semantic PDF context retrieval
+│   │   │   └── rag_search.py             # Tool for semantic PDF context retrieval
 │   │   └── main.py                       # FastMCP server registration & SSE routes
 │   ├── mcp_entry.py                      # CML container startup runner for MCP
 │   ├── test_impala.py                    # Standalone Impala connectivity tester
