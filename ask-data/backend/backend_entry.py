@@ -69,7 +69,7 @@ def ensure_dependencies(backend_dir: Path, env: dict) -> None:
 
 
 def trigger_rag_auto_ingest(backend_dir: Path, env: dict | None = None) -> None:
-    """Database Synchronization. Pre-populates ChromaDB vector maps via Chroma HTTP Endpoint."""
+    """Database Synchronization. Pre-populates Qdrant vector collection via Qdrant HTTP Endpoint."""
     print("\n📡 [RAG STARTUP] Synchronizing Knowledge Base document vector nodes...")
     try:
         if str(backend_dir) not in sys.path:
@@ -77,17 +77,20 @@ def trigger_rag_auto_ingest(backend_dir: Path, env: dict | None = None) -> None:
 
         config = build_ingest_config(backend_dir=backend_dir, env=env)
         print(f"[RAG STARTUP] Scanning file directory target: {config['docs_dir']}")
-        print(f"[RAG STARTUP] Target ChromaDB Endpoint: {config['chroma_server_url']} (SSL: {config['chroma_ssl']})")
+        print(f"[RAG STARTUP] Target Qdrant Endpoint: {config['qdrant_server_url']} (SSL: {config['qdrant_ssl']})")
+        print(f"[RAG STARTUP] Target Collection: {config['collection_name']}")
+        print(f"[RAG STARTUP] Embedding Model: {config.get('embedding_model_name', 'all-MiniLM-L6-v2')}")
         
         if config.get("cml_token"):
-            print("[RAG STARTUP] CML Authentication: Token loaded for chroma_server access.")
+            print("[RAG STARTUP] CML Authentication: Token loaded for qdrant_server access.")
 
-        # 🔑 Updated to pass standalone Chroma HTTP parameters + CML authentication token
+        # Pass Qdrant HTTP parameters + embedding model + CML authentication token
         run_auto_ingest(
             docs_dir=config["docs_dir"],
-            chroma_server_url=config["chroma_server_url"],
-            chroma_ssl=config["chroma_ssl"],
+            qdrant_server_url=config["qdrant_server_url"],
+            qdrant_ssl=config["qdrant_ssl"],
             collection_name=config["collection_name"],
+            embedding_model_name=config.get("embedding_model_name", "all-MiniLM-L6-v2"),
             cml_token=config.get("cml_token"),
         )
         print("[RAG STARTUP] Document processing loop verified successfully.\n")

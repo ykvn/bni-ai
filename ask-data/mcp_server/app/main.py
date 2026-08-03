@@ -2,12 +2,6 @@ import os
 import sys
 import json
 
-try:
-    __import__('pysqlite3')
-    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-except ImportError:
-    pass
-
 from fastapi import FastAPI, Request
 from starlette.routing import Mount
 from fastmcp import FastMCP
@@ -46,9 +40,8 @@ def mcp_execute_banking_query(sql_query: str) -> str:
 def mcp_search_policy_documents(query: str) -> str:
     """
     Performs a semantic vector distance search against local persistent enterprise banking manuals,
-    compliance guidelines, and SOP documentation (ChromaDB) to return matching structural context fragments.
+    compliance guidelines, and SOP documentation (Qdrant) to return matching structural context fragments.
     """
-    # Execute the newly fixed HTTP requests routine from rag_search.py
     return perform_rag_search(query=query, n_results=3)
 
 @mcp.tool(name="evaluate_dormant_account_risk")

@@ -1,13 +1,6 @@
 import sys
 from fastapi import FastAPI, HTTPException
 
-# 🩹 ENTERPRISE RUNTIME PATCH: Force modern SQLite layers immediately!
-try:
-    __import__('pysqlite3')
-    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-except ImportError:
-    pass
-
 from app.schemas.query import QueryRequest
 from app.services.translator import SQLTranslationService
 
@@ -56,7 +49,7 @@ def ask_ai(payload: QueryRequest):
     try:
         user_question = payload.question
 
-        # 📑 PATH B: Document / Policy / SOP Intent Detected (ChromaDB RAG)
+        # 📑 PATH B: Document / Policy / SOP Intent Detected (Qdrant RAG)
         if is_policy_question(user_question):
             print("📚 Policy Inquiry Intercepted. Triggering RAG Strategy...")
             rag_answer = translator_service.generate_rag_answer(user_question)
@@ -77,7 +70,7 @@ def ask_ai(payload: QueryRequest):
                 "Security Violation: This destructive request was terminated by system guardrails."
             )
 
-        # 🔌 THE FIX: Fetch records entirely via the MCP server protocol stream!
+        # Fetch records via the MCP server protocol stream
         records = translator_service.run_mcp_query(generated_sql)
         return _build_response(user_question, "Success", "SQL", generated_sql, records, None)
         

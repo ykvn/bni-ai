@@ -1,7 +1,7 @@
 """
 Global configuration loader for the ask-data project.
 
-Allows every service (mcp_server, backend, frontend, chroma_server,
+Allows every service (mcp_server, backend, frontend, qdrant_server,
 qwen_inference, litellm_proxy) to share a single .env file placed at
 the ask-data/ root, instead of maintaining per-folder .env files.
 
