@@ -24,7 +24,11 @@ class CMLQdrantClient:
         self.session.verify = False  # Bypasses internal CML SSL certificate issues
         
         if token:
-            self.session.headers.update({"Authorization": f"Bearer {token}"})
+            # Send BOTH Bearer token for CML and api-key for Qdrant authentication
+            self.session.headers.update({
+                "Authorization": f"Bearer {token}",
+                "api-key": token
+            })
         else:
             print("⚠️ Notice: No CML token loaded. Request may fail if CML Application authentication is enabled.", flush=True)
 
@@ -165,7 +169,10 @@ def run_auto_ingest(
     # Load model first to dynamically determine vector dimensions
     print(f"🧠 Loading {embedding_model_name} embedding weights...", flush=True)
     embedding_model = SentenceTransformer(embedding_model_name)
-    vector_dim = embedding_model.get_sentence_embedding_dimension()
+    
+    # Fixed deprecation warning here
+    vector_dim = embedding_model.get_embedding_dimension()
+    
     print(f"✅ Embedding model loaded into memory! (Vector Dimension: {vector_dim})", flush=True)
 
     # Reset and recreate collection with dynamic dimensions
