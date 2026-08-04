@@ -5,3 +5,4 @@ model_list:
       custom_llm_provider: openai
       api_base: os.environ/QWEN_APP_URL
       api_key: os.environ/CML_TOKEN
+      ssl_verify: false
