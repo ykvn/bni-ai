@@ -1,6 +1,8 @@
 import os
 import sys
 import subprocess
+import threading
+import time
 from pathlib import Path
 
 # Global config: load the single ask-data/.env BEFORE any service code reads env vars.
@@ -10,6 +12,30 @@ if str(_ASK_DATA_ROOT) not in sys.path:
 
 import shared.config_loader as config_loader
 config_loader.bootstrap(hint=_ASK_DATA_ROOT)
+
+# Import token generator helper from the local litellm_proxy directory
+from generate_token import get_cdp_token
+
+
+def start_token_refresher(env_dict: dict, interval_minutes: int = 45) -> None:
+    """
+    Background daemon thread that periodically refreshes the CDP_TOKEN 
+    in both os.environ and the subprocess env dictionary before JWT expiration.
+    """
+    def _refresh_loop():
+        while True:
+            time.sleep(interval_minutes * 60)
+            print("🔄 [AUTH ENGINE] Triggering periodic CDP_TOKEN refresh...", flush=True)
+            new_token = get_cdp_token()
+            if new_token:
+                os.environ["CDP_TOKEN"] = new_token
+                env_dict["CDP_TOKEN"] = new_token
+                print("✅ [AUTH ENGINE] Successfully updated CDP_TOKEN in runtime context.", flush=True)
+            else:
+                print("⚠️ [AUTH ENGINE WARNING] Periodic token refresh failed. Retrying next cycle...", flush=True)
+
+    thread = threading.Thread(target=_refresh_loop, daemon=True)
+    thread.start()
 
 
 def ensure_dependencies(proxy_dir: Path, env: dict) -> None:
@@ -39,7 +65,6 @@ def resolve_proxy_dir() -> Path:
     """Robustly finds the litellm_proxy directory regardless of where CML launches the script."""
     cwd = Path.cwd()
     
-    # Generate a list of probable locations for the config file
     candidates = [
         Path(__file__).parent.resolve() if '__file__' in globals() else cwd,
         cwd / "litellm_proxy",
@@ -47,7 +72,6 @@ def resolve_proxy_dir() -> Path:
         Path("/home/cdsw/ask-data/litellm_proxy")
     ]
     
-    # Return the first path that actually contains the yaml config
     for c in candidates:
         if (c / "litellm_config.yaml").exists():
             return c
@@ -73,22 +97,36 @@ def main() -> None:
         
     print(f"🔗 Target routing context successfully bound to: {os.environ['QWEN_APP_URL']}")
 
-    # 3. Enforce the dynamically allocated port by the CML environment
-    app_port = int(os.environ.get("CDSW_APP_PORT"))
+    # 3. GENERATE INITIAL CDP TOKEN BEFORE SERVICE LAUNCH
+    print("🔑 [AUTH STARTUP] Requesting initial fresh CDP_TOKEN from Cloudera IAM...")
+    initial_token = get_cdp_token()
+    if not initial_token:
+        print("❌ CRITICAL PLATFORM ERROR: Failed to generate initial CDP_TOKEN!")
+        sys.exit(1)
+        
+    os.environ["CDP_TOKEN"] = initial_token
+    print("✅ [AUTH STARTUP] Initial CDP_TOKEN injected into execution environment.")
+
+    # 4. Enforce the dynamically allocated port by the CML environment
+    app_port = int(os.environ.get("CDSW_APP_PORT", 8100))
     
-    # 4. Inject PYTHONPATH for isolated subprocess execution
+    # 5. Inject PYTHONPATH and runtime variables for isolated subprocess execution
     env = os.environ.copy()
     pythonpath = env.get("PYTHONPATH", "")
     env["PYTHONPATH"] = f"{proxy_dir}:{pythonpath}" if pythonpath else str(proxy_dir)
+    env["CDP_TOKEN"] = initial_token
 
-    # 5. Run standard dependency validation routine
+    # 6. Run standard dependency validation routine
     ensure_dependencies(proxy_dir, env)
     
-    # 6. Standardized command execution pattern
+    # 7. Start background thread to keep token refreshed every 45 minutes
+    start_token_refresher(env_dict=env, interval_minutes=45)
+
+    # 8. Standardized command execution pattern
     cmd = [
         "litellm",
         "--config", str(config_path),
-        "--host", "127.0.0.1",        # 🎯 Locked strictly to localized loopback core interface
+        "--host", "127.0.0.1",
         "--port", str(app_port)
     ]
     
