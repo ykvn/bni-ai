@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 import urllib3
@@ -55,7 +54,7 @@ class CMLQdrantClient:
         except Exception as e:
             print(f"ℹ️ [RAG ENGINE] Notice during collection reset: {e}", flush=True)
 
-    def create_collection(self, name: str, vector_size: int = 384) -> None:
+    def create_collection(self, name: str, vector_size: int) -> None:
         """Creates a new collection in Qdrant configured for vector embeddings."""
         url = f"{self.base_url}/collections/{name}"
         payload = {
@@ -73,31 +72,37 @@ class CMLQdrantClient:
         documents: list[str], 
         embeddings: list[list[float]], 
         metadatas: list[dict], 
-        ids: list[int]
+        ids: list[int],
+        batch_size: int = 100
     ) -> None:
-        """Pushes text fragments and vector embeddings to Qdrant."""
+        """Pushes text fragments and vector embeddings to Qdrant in safe batches."""
         url = f"{self.base_url}/collections/{collection_name}/points?wait=true"
         
-        points = []
+        all_points = []
         for point_id, doc, emb, meta in zip(ids, documents, embeddings, metadatas):
             payload = {**meta, "page_content": doc}
-            points.append({
+            all_points.append({
                 "id": point_id,
                 "vector": emb,
                 "payload": payload
             })
 
-        request_body = {"points": points}
-        res = self.session.put(url, json=request_body, timeout=300)  # 300s timeout for large payloads
-        res.raise_for_status()
+        # Batch upload points to prevent HTTP 413 / Gateway Timeout errors
+        for i in range(0, len(all_points), batch_size):
+            batch = all_points[i:i + batch_size]
+            request_body = {"points": batch}
+            res = self.session.put(url, json=request_body, timeout=120)
+            res.raise_for_status()
 
     def get_count(self, collection_name: str) -> int:
         """Returns active vector count in collection."""
-        url = f"{self.base_url}/collections/{collection_name}"
-        res = self.session.get(url, timeout=120)
-        if res.status_code == 200:
-            data = res.json()
-            return data.get("result", {}).get("points_count", 0)
+        url = f"{self.base_url}/collections/{collection_name}/points/count"
+        try:
+            res = self.session.post(url, json={"exact": True}, timeout=120)
+            if res.status_code == 200:
+                return res.json().get("result", {}).get("count", 0)
+        except Exception:
+            pass
         return 0
 
 
@@ -122,20 +127,11 @@ def build_ingest_config(backend_dir, env=None):
     if not docs_dir:
         docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
 
-    qdrant_server_url = (
-        env_map.get("QDRANT_SERVER_URL")
-    ).strip()
-
-    collection_name = (
-        env_map.get("QDRANT_COLLECTION")
-    ).strip()
-
-    # Read embedding model from .env variable QDRANT_MODEL
-    embedding_model_name = env_map.get("QDRANT_MODEL", "all-MiniLM-L6-v2").strip()
-
-    cml_token = (
-        env_map.get("CML_TOKEN")
-    ).strip()
+    # Safely handle missing env variables without crashing on .strip()
+    qdrant_server_url = (env_map.get("QDRANT_SERVER_URL") or "").strip()
+    collection_name = (env_map.get("QDRANT_COLLECTION") or "").strip()
+    embedding_model_name = (env_map.get("QDRANT_MODEL") or "all-MiniLM-L6-v2").strip()
+    cml_token = (env_map.get("CML_TOKEN") or "").strip()
 
     parsed_url = urlparse(qdrant_server_url)
     qdrant_ssl = parsed_url.scheme == 'https'
@@ -159,14 +155,22 @@ def run_auto_ingest(
     cml_token: str | None = None
 ):
     """Scans documents, flushes old context, and re-indexes into Qdrant via REST API."""
-    print(f"📡 Connecting to Qdrant Endpoint at {qdrant_server_url}...", flush=True)
+    if not qdrant_server_url or not collection_name:
+        print("❌ [RAG ENGINE] Error: QDRANT_SERVER_URL or QDRANT_COLLECTION is not configured.", flush=True)
+        return
 
-    # Instantiate custom requests-backed client
+    print(f"📡 Connecting to Qdrant Endpoint at {qdrant_server_url}...", flush=True)
     qdrant_client = CMLQdrantClient(base_url=qdrant_server_url, token=cml_token or "")
 
-    # Reset and recreate collection
+    # Load model first to dynamically determine vector dimensions
+    print(f"🧠 Loading {embedding_model_name} embedding weights...", flush=True)
+    embedding_model = SentenceTransformer(embedding_model_name)
+    vector_dim = embedding_model.get_sentence_embedding_dimension()
+    print(f"✅ Embedding model loaded into memory! (Vector Dimension: {vector_dim})", flush=True)
+
+    # Reset and recreate collection with dynamic dimensions
     qdrant_client.delete_collection(name=collection_name)
-    qdrant_client.create_collection(name=collection_name, vector_size=384)
+    qdrant_client.create_collection(name=collection_name, vector_size=vector_dim)
     print(f"✅ Successfully created/reset collection: '{collection_name}'", flush=True)
 
     if not os.path.exists(docs_dir):
@@ -180,11 +184,6 @@ def run_auto_ingest(
 
     print(f"📄 Found {len(pdf_files)} PDF file(s) in {docs_dir}: {pdf_files}", flush=True)
     
-    # Dynamic model loading from .env
-    print(f"🧠 Loading {embedding_model_name} embedding weights...", flush=True)
-    embedding_model = SentenceTransformer(embedding_model_name)
-    print("✅ Embedding model loaded into memory!", flush=True)
-
     global_chunk_counter = 1
 
     for pdf_file in pdf_files:
@@ -193,32 +192,35 @@ def run_auto_ingest(
 
         try:
             reader = PdfReader(file_path)
-            raw_document_text = ""
-
-            for page in reader.pages:
-                extracted_text = page.extract_text()
-                if extracted_text:
-                    raw_document_text += extracted_text + "\n"
+            text_fragments = []
+            metadata_payloads = []
 
             chunk_size = 1500
             overlap = 300
-            text_fragments = []
 
-            for i in range(0, len(raw_document_text), chunk_size - overlap):
-                fragment = raw_document_text[i:i + chunk_size].strip()
-                if len(fragment) > 50:
-                    text_fragments.append(fragment)
+            # Page-aware extraction to preserve page metadata
+            for page_idx, page in enumerate(reader.pages, start=1):
+                extracted_text = page.extract_text()
+                if not extracted_text:
+                    continue
+
+                for i in range(0, len(extracted_text), chunk_size - overlap):
+                    fragment = extracted_text[i:i + chunk_size].strip()
+                    if len(fragment) > 50:
+                        text_fragments.append(fragment)
+                        metadata_payloads.append({
+                            "source_file": pdf_file,
+                            "page_number": page_idx
+                        })
 
             if not text_fragments:
-                print(f"⚠️ No text extracted from {pdf_file}", flush=True)
+                print(f"⚠️ No usable text extracted from {pdf_file}", flush=True)
                 continue
 
             print(f"✂️ Fragmented into {len(text_fragments)} chunks. Generating embeddings...", flush=True)
-            vector_embeddings = embedding_model.encode(text_fragments).tolist()
+            vector_embeddings = embedding_model.encode(text_fragments, show_progress_bar=False).tolist()
 
-            # Qdrant requires unsigned integer IDs or valid UUIDs
             document_ids = [global_chunk_counter + idx for idx in range(len(text_fragments))]
-            metadata_payloads = [{"source_file": pdf_file} for _ in text_fragments]
 
             qdrant_client.add_documents(
                 collection_name=collection_name,
