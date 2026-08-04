@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import anyio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from starlette.routing import Mount
@@ -8,11 +10,14 @@ from fastmcp import FastMCP
 from mcp.server.sse import SseServerTransport
 
 # --- ACTIVE TOOL REGISTRATION ---
-from app.tools.config import settings  # Centralized application configuration settings
+from app.tools.config import settings  
 from app.tools.execute_banking_query import execute_banking_query
 from app.tools.get_database_schema import get_database_schema
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 from app.tools.dormant_risk import calculate_dormant_account_risk
+
+# Import the embedder directly so we can pre-warm it without needing extra functions
+from app.tools.qdrant_client import _get_embedding_model 
 
 # 1. Initialize the central FastMCP application state
 mcp = FastMCP("Bank-ABC-Modular-Orchestrator")
@@ -37,12 +42,13 @@ def mcp_execute_banking_query(sql_query: str) -> str:
     return execute_banking_query(sql_query)
 
 @mcp.tool(name="search_policy_documents")
-def mcp_search_policy_documents(query: str) -> str:
+async def mcp_search_policy_documents(query: str) -> str:
     """
     Performs a semantic vector distance search against local persistent enterprise banking manuals,
     compliance guidelines, and SOP documentation (Qdrant) to return matching structural context fragments.
     """
-    return perform_rag_search(query=query, n_results=3)
+    # ⚡ Offload the heavy search to a background thread to prevent the SSE stream from disconnecting
+    return await anyio.to_thread.run_sync(perform_rag_search, query, 3)
 
 @mcp.tool(name="evaluate_dormant_account_risk")
 def mcp_evaluate_dormant_account_risk(days_inactive: int, account_balance: float, sudden_withdrawal_amount: float = 0.0) -> str:
@@ -54,7 +60,17 @@ def mcp_evaluate_dormant_account_risk(days_inactive: int, account_balance: float
 
 
 # 3. Create the FastAPI container to manage incoming enterprise cluster traffic
-app = FastAPI(title="Bank ABC Production MCP Gateway")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🧠 [MCP STARTUP] Pre-warming embedding model weights...", flush=True)
+    try:
+        _get_embedding_model()  # Loads the HuggingFace model into memory at startup
+        print("✅ [MCP STARTUP] Embedding model pre-warmed and ready.", flush=True)
+    except Exception as e:
+        print(f"⚠️ [MCP STARTUP WARNING] Failed to pre-warm embedder: {e}", flush=True)
+    yield
+
+app = FastAPI(title="Bank ABC Production MCP Gateway", lifespan=lifespan)
 
 # Route incoming protocol control packets cleanly into the SSE transport layer
 app.router.routes.append(Mount("/messages", app=sse.handle_post_message))
