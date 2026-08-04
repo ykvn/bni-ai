@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import httpx
 
 # CrewAI Framework Engine Integration Modules
 from crewai import Agent, Task, Crew, LLM
@@ -9,10 +10,21 @@ from crewai import Agent, Task, Crew, LLM
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 
+
+def _make_insecure_httpx_client(**kwargs) -> httpx.AsyncClient:
+    """
+    Custom HTTPX factory that disables SSL verification and enables redirect
+    following for internal CML Application microservice routes.
+    """
+    kwargs["verify"] = False
+    kwargs["follow_redirects"] = True
+    return httpx.AsyncClient(**kwargs)
+
+
 class SQLTranslationService:
     def __init__(self):
         # 🌐 Microservice network endpoints
-        self.mcp_server_url = os.getenv("MCP_SERVER_URL", "")
+        self.mcp_server_url = os.getenv("MCP_SERVER_URL", "").rstrip("/")
         
         # POINT TO STANDALONE LITELLM PROXY GATEWAY
         self.litellm_proxy_url = (
@@ -26,7 +38,7 @@ class SQLTranslationService:
             os.getenv("CML_TOKEN") 
             or os.getenv("LITELLM_API_KEY") 
             or "litellm-dummy-token"
-        )
+        ).strip()
 
         # Pass CML_MODEL_NAME directly so it matches litellm_config.yaml
         target_model = os.getenv("CML_MODEL_NAME", "")
@@ -44,11 +56,22 @@ class SQLTranslationService:
         /sse channel, initializes a session, and routes any arbitrary tool execution 
         request across the protocol stream.
         """
-        sse_endpoint = f"{self.mcp_server_url.rstrip('/')}/sse"
-        headers = {"Authorization": f"Bearer {self.api_token}"}
+        sse_endpoint = f"{self.mcp_server_url}/sse"
+        
+        # Pass both Authorization and X-CDSW-API-Key headers for CML ingress compatibility
+        headers = {}
+        if self.api_token:
+            headers["Authorization"] = f"Bearer {self.api_token}"
+            headers["X-CDSW-API-Key"] = self.api_token
         
         try:
-            async with sse_client(url=sse_endpoint, headers=headers) as (read_stream, write_stream):
+            # ⚡ Pass custom httpx_client_factory to disable SSL verification inside TaskGroup
+            async with sse_client(
+                url=sse_endpoint, 
+                headers=headers,
+                sse_read_timeout=60.0,
+                httpx_client_factory=_make_insecure_httpx_client
+            ) as (read_stream, write_stream):
                 async with ClientSession(read_stream, write_stream) as session:
                     # Perform official protocol initialization handshake
                     await session.initialize()
