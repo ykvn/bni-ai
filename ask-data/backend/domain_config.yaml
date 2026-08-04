@@ -1,11 +1,11 @@
 # ask-data/backend/domain_config.yaml
 version: "1.0"
-domain: "Bank ABC Customer Analytics"
+domain: "Bank Negara Indonesia Customer Analytics"
 database_type: "Cloudera Impala"
-database_name: "default"
+database_name: "test"
 
 tables:
-  customers:
+  cai_customers:
     description: |
       Contains core customer demographic profiles. 
       CRITICAL: This table does NOT have a 'status' column. If a user asks for 'active' customers, 
@@ -35,7 +35,7 @@ tables:
         type: "DATE"
         description: "The exact date the customer first registered an account with the bank."
       
-  savings:
+  cai_savings:
     description: "Liquid savings account data including current balances and interest rates."
     columns:
       savings_id:
@@ -59,7 +59,7 @@ tables:
         type: "STRING"
         description: "Account state. Expected values are 'ACTIVE' or 'DORMANT'."
 
-  deposits:
+  cai_deposits:
     description: "Time deposits / fixed-term investment accounts with specific lock-in periods."
     columns:
       deposit_id:
@@ -86,7 +86,7 @@ tables:
         type: "STRING"
         description: "The current status state of the investment term (e.g., 'ACTIVE')."
 
-  loans:
+  cai_loans:
     description: "Credit facilities and borrowing data extended to customers."
     columns:
       loan_id:
@@ -113,7 +113,7 @@ tables:
         type: "STRING"
         description: "Operational loan indicator flag status state (e.g., 'ACTIVE')."
 
-  credit_cards:
+  cai_credit_cards:
     description: "Credit card account statements, revolving limits, and balances extended to customers."
     columns:
       card_id:
@@ -140,7 +140,7 @@ tables:
         type: "STRING"
         description: "Revolving line risk indicators. Expected values are 'ACTIVE' or 'WARNING'."
 
-  transactions:
+  cai_transactions:
     description: "Tracks all financial ledger postings, operational deposits, cash extractions, and adjustments across accounts."
     columns:
       transaction_id:
@@ -163,7 +163,7 @@ tables:
         type: "STRING"
         description: "The descriptive transaction text annotation (e.g., 'ATM Withdrawal', 'Payroll Transfer')."
 
-  branch_performance:
+  cai_branch_performance:
     description: "Regional business analytics metrics and performance dashboards indicating growth metrics."
     columns:
       branch_id:
