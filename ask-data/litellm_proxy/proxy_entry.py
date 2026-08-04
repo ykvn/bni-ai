@@ -5,7 +5,7 @@ import threading
 import time
 from pathlib import Path
 
-# Global config: load the single ask-data/.env BEFORE any service code reads env vars.
+# 1. Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
@@ -13,7 +13,11 @@ if str(_ASK_DATA_ROOT) not in sys.path:
 import shared.config_loader as config_loader
 config_loader.bootstrap(hint=_ASK_DATA_ROOT)
 
-# Import token generator helper from the local litellm_proxy directory
+# 2. Add litellm_proxy directory to sys.path BEFORE importing generate_token
+_PROXY_DIR = Path(__file__).resolve().parent if "__file__" in globals() else _ASK_DATA_ROOT / "litellm_proxy"
+if str(_PROXY_DIR) not in sys.path:
+    sys.path.insert(0, str(_PROXY_DIR))
+
 from generate_token import get_cdp_token
 
 
