@@ -6,3 +6,10 @@ model_list:
       api_base: os.environ/QWEN_APP_URL
       api_key: os.environ/CDP_TOKEN
       ssl_verify: false
+      request_timeout: 300    # 👈 Extends HTTP timeout to 5 minutes for CoT generation
+      num_retries: 3         # 👈 Automatically retries on dropped TCP connections
+
+router_settings:
+  routing_strategy: simple-shuffle
+  timeout: 300
+  num_retries: 3
