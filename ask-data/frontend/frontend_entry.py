@@ -93,7 +93,7 @@ def build_ui() -> object:
                 backend_url,
                 json={"question": question},
                 headers=headers,
-                timeout=120,
+                timeout=300,
             )
             response.raise_for_status()
             payload = response.json()
