@@ -45,6 +45,7 @@ def search_documents(query: str, collection_name: str, top_k: int = 5) -> list[d
         headers = {}
         if cml_token:
             headers["Authorization"] = f"Bearer {cml_token}"
+            headers["api-key"] = cml_token  # 👈 Add the Qdrant native auth header
 
         payload = {
             "vector": query_vector,
