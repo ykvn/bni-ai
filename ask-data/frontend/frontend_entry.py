@@ -106,8 +106,8 @@ def build_ui() -> object:
         except Exception as exc:
             return f"Error contacting backend: {exc}"
 
-    with gr.Blocks(title="Bank ABC Q&A") as demo:
-        gr.Markdown("# Bank ABC Question Assistant")
+    with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
+        gr.Markdown("# Bank Negara Indonesia Question Assistant")
         gr.Markdown("Ask a question and it will be sent to the backend API.")
 
         question_box = gr.Textbox(label="Question", lines=3)
