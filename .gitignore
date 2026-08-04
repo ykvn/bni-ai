@@ -11,7 +11,7 @@ node_modules/
 dist/
 
 # PoC Data Exclusions (Per specifications)
-ask-data/data/documents/
+#ask-data/data/documents/*
 !ask-data/data/documents/.gitkeep
 ask-data/chroma_server/chroma_db/
 
