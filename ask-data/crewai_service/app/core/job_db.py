@@ -4,9 +4,13 @@ from typing import Dict, Optional, Any
 
 _DB_PATH = Path(__file__).resolve().parent.parent.parent / "crewai_jobs.db"
 
+
 def init_db():
-    """Initializes the SQLite job queue table (NFS compatible)."""
+    """Initializes the SQLite job queue table (Explicitly disables WAL for NFS)."""
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
+        # Explicitly enforce standard journal mode to prevent NFS lock crashes
+        conn.execute("PRAGMA journal_mode=DELETE;")
+        
         conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 job_id TEXT PRIMARY KEY,
@@ -20,6 +24,7 @@ def init_db():
         """)
         conn.commit()
 
+
 def create_job(job_id: str, question: str) -> Dict[str, Any]:
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
         conn.execute(
@@ -28,6 +33,7 @@ def create_job(job_id: str, question: str) -> Dict[str, Any]:
         )
         conn.commit()
     return {"job_id": job_id, "status": "pending"}
+
 
 def get_job(job_id: str) -> Optional[Dict[str, Any]]:
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
@@ -38,6 +44,7 @@ def get_job(job_id: str) -> Optional[Dict[str, Any]]:
             return dict(row)
     return None
 
+
 def fetch_next_pending_job() -> Optional[Dict[str, Any]]:
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
         conn.row_factory = sqlite3.Row
@@ -46,6 +53,7 @@ def fetch_next_pending_job() -> Optional[Dict[str, Any]]:
         if row:
             return dict(row)
     return None
+
 
 def update_job_status(job_id: str, status: str, result: Optional[str] = None, error: Optional[str] = None):
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
