@@ -12,6 +12,8 @@ model_list:
       request_timeout: 300
       num_retries: 3
       reasoning_effort: "none"
+      temperature: 0.7
+      top_p: 0.8
       extra_body:
         thinking:
           type: "disabled"
