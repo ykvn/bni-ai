@@ -5,16 +5,27 @@ import json
 import subprocess
 from pathlib import Path
 
-_CREWAI_DIR = Path(__file__).resolve().parent
-_ASK_DATA_ROOT = _CREWAI_DIR.parent
-
-for path in [_ASK_DATA_ROOT, _CREWAI_DIR]:
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+# 1. Resolve Root Directory
+_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
+if str(_ASK_DATA_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ASK_DATA_ROOT))
 
 import shared.config_loader as config_loader
 config_loader.bootstrap(hint=_ASK_DATA_ROOT)
 
+
+# 2. Resolve Service Directory
+def _resolve_crewai_dir() -> Path:
+    if "__file__" in globals():
+        return Path(__file__).resolve().parent
+    return _ASK_DATA_ROOT / "crewai_service"
+
+
+CREWAI_DIR = _resolve_crewai_dir()
+if str(CREWAI_DIR) not in sys.path:
+    sys.path.insert(0, str(CREWAI_DIR))
+
+# 3. Imports after path registration
 from crewai_service.app.core import job_db
 from crewai_service.app.services.translator import SQLTranslationService
 
@@ -23,8 +34,10 @@ POLICY_KEYWORDS = (
     "aturan", "regulasi", "dokumen", "syarat", "sk", "surat keputusan"
 )
 
+
 def is_policy_question(question: str) -> bool:
     return any(keyword in question.casefold() for keyword in POLICY_KEYWORDS)
+
 
 def _build_payload(question: str, status: str, response_type: str, predicted_sql=None, records=None, response=None):
     normalized_records = records or []
@@ -37,6 +50,7 @@ def _build_payload(question: str, status: str, response_type: str, predicted_sql
         "data": normalized_records,
         "response": response,
     }
+
 
 def run_worker_loop():
     print("🤖 [CrewAI Service Engine] Starting worker loop...", flush=True)
@@ -80,11 +94,12 @@ def run_worker_loop():
                 job_db.update_job_status(job_id, status="failed", error=str(e))
             time.sleep(2.0)
 
+
 def main():
     app_port = int(os.environ.get("CDSW_APP_PORT", 8091))
     env = os.environ.copy()
     pythonpath = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = f"{_CREWAI_DIR}:{pythonpath}" if pythonpath else str(_CREWAI_DIR)
+    env["PYTHONPATH"] = f"{CREWAI_DIR}:{pythonpath}" if pythonpath else str(CREWAI_DIR)
 
     # Launch HTTP Server for CrewAI Service
     api_cmd = [
@@ -102,6 +117,7 @@ def main():
     except KeyboardInterrupt:
         print("\n🛑 Shutting down CrewAI Service...")
         api_process.terminate()
+
 
 if __name__ == "__main__":
     main()
