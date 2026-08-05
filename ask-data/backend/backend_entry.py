@@ -3,6 +3,7 @@ import sys
 import subprocess
 from pathlib import Path
 
+# 1. Resolve Root Directory
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
@@ -10,8 +11,13 @@ if str(_ASK_DATA_ROOT) not in sys.path:
 import shared.config_loader as config_loader
 config_loader.bootstrap(hint=_ASK_DATA_ROOT)
 
+
+# 2. Resolve Service Directory safely (notebook/session safe)
 def _resolve_backend_dir() -> Path:
-    return Path(__file__).resolve().parent
+    if "__file__" in globals():
+        return Path(__file__).resolve().parent
+    return _ASK_DATA_ROOT / "backend"
+
 
 BACKEND_DIR = _resolve_backend_dir()
 if str(BACKEND_DIR) not in sys.path:
@@ -19,10 +25,12 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
 
+
 def ensure_dependencies(backend_dir: Path, env: dict) -> None:
     req_file = backend_dir / "requirements.txt"
     if req_file.exists():
         subprocess.run([sys.executable, "-m", "pip", "install", "-r", str(req_file), "-q"], check=True, env=env)
+
 
 def trigger_rag_auto_ingest(backend_dir: Path, env: dict | None = None) -> None:
     try:
@@ -37,6 +45,7 @@ def trigger_rag_auto_ingest(backend_dir: Path, env: dict | None = None) -> None:
         )
     except Exception as e:
         print(f"⚠️ [RAG STARTUP WARNING] Bypass: {str(e)}")
+
 
 def main() -> None:
     backend_dir = _resolve_backend_dir()
@@ -61,6 +70,7 @@ def main() -> None:
         process.wait()
     except KeyboardInterrupt:
         process.terminate()
+
 
 if __name__ == "__main__":
     main()
