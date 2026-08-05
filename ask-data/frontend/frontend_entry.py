@@ -86,8 +86,8 @@ def build_ui() -> object:
                 job_id = payload["job_id"]
                 yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking..."
                 
-                # Check your custom /status/ endpoint based on the logs
-                job_status_url = f"{base_api_url}/status/{job_id}"
+                # Corrected endpoint to match the backend FastAPI implementation
+                job_status_url = f"{base_api_url}/job/{job_id}"
                 
                 while True:
                     time.sleep(2.0)
