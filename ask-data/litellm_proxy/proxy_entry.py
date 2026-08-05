@@ -79,10 +79,18 @@ def main() -> None:
         "--port", str(app_port)
     ]
     
-    from litellm.proxy.proxy_cli import main as litellm_main
+    # ⚡ FIX: Handle LiteLLM version differences for the CLI entry point
+    try:
+        from litellm.proxy.proxy_cli import run_server as litellm_proxy_start
+    except ImportError:
+        # Fallback for newer/older versions of the library
+        from litellm.proxy.proxy_cli import cli as litellm_proxy_start
     
     try:
-        litellm_main()
+        litellm_proxy_start()
+    except SystemExit:
+        # Click CLI naturally raises SystemExit when it finishes, we can safely ignore it
+        pass
     except KeyboardInterrupt:
         print("\n🛑 Shutting down Proxy Gateway...")
 
