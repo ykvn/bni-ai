@@ -1,7 +1,6 @@
 import os
 import sys
-import threading
-import time
+import Path
 from pathlib import Path
 
 # 1. Global config: load the single ask-data/.env BEFORE any service code reads env vars.
@@ -17,30 +16,32 @@ _PROXY_DIR = Path(__file__).resolve().parent if "__file__" in globals() else _AS
 if str(_PROXY_DIR) not in sys.path:
     sys.path.insert(0, str(_PROXY_DIR))
 
+import litellm
+from litellm.integrations.custom_logger import CustomLogger
 from generate_token import get_cdp_token
 
 
-def start_token_refresher(interval_minutes: int = 45) -> None:
+class DynamicCDPAuthHandler(CustomLogger):
     """
-    Background daemon thread that periodically refreshes the CDP_TOKEN 
-    directly in the proxy's active OS environment memory space.
+    Interceptor hook that overwrites the outgoing Authorization header 
+    with a fresh CDP token on EVERY request to Knox Gateway.
     """
-    def _refresh_loop():
-        while True:
-            time.sleep(interval_minutes * 60)
-            print("\n🔄 [AUTH ENGINE] Triggering periodic CDP_TOKEN refresh...", flush=True)
+    async def async_pre_call_hook(self, user_api_key, alias, model, messages, kwargs, model_response):
+        fresh_token = get_cdp_token() or os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN")
+        
+        if fresh_token:
+            if "extra_headers" not in kwargs or kwargs["extra_headers"] is None:
+                kwargs["extra_headers"] = {}
             
-            new_token = get_cdp_token()
-            if new_token:
-                # Because LiteLLM is running in THIS exact Python process, updating os.environ 
-                # instantly applies to all new incoming requests without needing a restart!
-                os.environ["CDP_TOKEN"] = new_token
-                print("✅ [AUTH ENGINE] Successfully updated CDP_TOKEN in active runtime context.", flush=True)
-            else:
-                print("⚠️ [AUTH ENGINE WARNING] Periodic token refresh failed. Retrying next cycle...", flush=True)
+            # Force-overwrite outgoing Authorization header sent to Knox
+            kwargs["extra_headers"]["Authorization"] = f"Bearer {fresh_token}"
+            kwargs["extra_headers"]["X-CDSW-API-Key"] = fresh_token
+            
+        return kwargs
 
-    thread = threading.Thread(target=_refresh_loop, daemon=True)
-    thread.start()
+
+# Register the auth hook globally inside LiteLLM
+litellm.callbacks = [DynamicCDPAuthHandler()]
 
 
 def resolve_proxy_dir() -> Path:
@@ -63,29 +64,15 @@ def main() -> None:
     proxy_dir = resolve_proxy_dir()
     os.chdir(proxy_dir)
     config_path = proxy_dir / "litellm_config.yaml"
-    print(f"📍 Successfully located configuration file at: {config_path}")
     
     if "QWEN_APP_URL" not in os.environ:
         print("❌ CRITICAL PLATFORM ERROR: 'QWEN_APP_URL' environment variable is missing!")
         sys.exit(1)
-        
-    print("🔑 [AUTH STARTUP] Requesting initial fresh CDP_TOKEN from Cloudera IAM...")
-    initial_token = get_cdp_token()
-    if not initial_token:
-        print("❌ CRITICAL PLATFORM ERROR: Failed to generate initial CDP_TOKEN!")
-        sys.exit(1)
-        
-    os.environ["CDP_TOKEN"] = initial_token
-    print("✅ [AUTH STARTUP] Initial CDP_TOKEN injected into execution environment.")
 
     app_port = int(os.environ.get("CDSW_APP_PORT", 8100))
     
-    # 3. Start background thread to keep token refreshed every 45 minutes
-    start_token_refresher(interval_minutes=30)
-
-    print(f"\n📡 Launching In-Process CML LiteLLM Proxy Gateway service on http://127.0.0.1:{app_port}")
+    print(f"📡 Launching In-Process LiteLLM Proxy Gateway with Dynamic CDP Auth on http://127.0.0.1:{app_port}")
     
-    # 4. Override sys.argv so LiteLLM's programmatic CLI parses our arguments
     sys.argv = [
         "litellm",
         "--config", str(config_path),
@@ -93,13 +80,12 @@ def main() -> None:
         "--port", str(app_port)
     ]
     
-    # 5. Import and run LiteLLM directly in the current process loop
     from litellm.proxy.proxy_cli import main as litellm_main
     
     try:
         litellm_main()
     except KeyboardInterrupt:
-        print("\n🛑 Proxy Gateway execution interrupted. Shutting down...")
+        print("\n🛑 Shutting down Proxy Gateway...")
 
 
 if __name__ == "__main__":
