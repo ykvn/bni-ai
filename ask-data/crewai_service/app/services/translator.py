@@ -97,12 +97,14 @@ class SQLTranslationService:
 
         draft_sql_task = Task(
             config=self.tasks_config["draft_sql_task"],
-            agent=sql_developer
+            agent=sql_developer,
+            verbose=True
         )
 
         orchestration_crew = Crew(
             agents=[sql_developer],
-            tasks=[draft_sql_task]
+            tasks=[draft_sql_task],
+            verbose=True
         )
 
         print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...")
