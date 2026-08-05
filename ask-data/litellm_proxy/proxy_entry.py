@@ -2,6 +2,10 @@ import os
 import sys
 from pathlib import Path
 
+# ⚡ FIX: Patch the asyncio event loop to allow LiteLLM to run inside a CML/Jupyter kernel
+import nest_asyncio
+nest_asyncio.apply()
+
 # 1. Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
@@ -79,17 +83,15 @@ def main() -> None:
         "--port", str(app_port)
     ]
     
-    # ⚡ FIX: Handle LiteLLM version differences for the CLI entry point
+    # Handle LiteLLM version differences for the CLI entry point
     try:
         from litellm.proxy.proxy_cli import run_server as litellm_proxy_start
     except ImportError:
-        # Fallback for newer/older versions of the library
         from litellm.proxy.proxy_cli import cli as litellm_proxy_start
     
     try:
         litellm_proxy_start()
     except SystemExit:
-        # Click CLI naturally raises SystemExit when it finishes, we can safely ignore it
         pass
     except KeyboardInterrupt:
         print("\n🛑 Shutting down Proxy Gateway...")
