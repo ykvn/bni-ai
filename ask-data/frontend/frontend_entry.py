@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+import json
 import subprocess
 from pathlib import Path
 
@@ -73,11 +75,18 @@ def build_ui() -> object:
     import gradio as gr
     import requests
 
-    backend_url = os.environ.get("BACKEND_URL", "")
+    backend_url = os.environ.get("BACKEND_URL", "").rstrip("/")
+    
+    # Intelligently extract the base URL for polling endpoints
+    if backend_url.endswith("/process") or backend_url.endswith("/ask"):
+        base_api_url = backend_url.rsplit("/", 1)[0]
+    else:
+        base_api_url = backend_url
 
     def ask_backend(question: str):
         if not question.strip():
-            return "Please enter a question."
+            yield "Please enter a question."
+            return
 
         try:
             # 🔑 Read CML_TOKEN from environment and prepare headers
@@ -89,22 +98,73 @@ def build_ui() -> object:
             if cml_token:
                 headers["Authorization"] = f"Bearer {cml_token}"
 
+            # 1. Submit the initial job
+            yield "Submitting question to CrewAI Engine..."
             response = requests.post(
                 backend_url,
                 json={"question": question},
                 headers=headers,
-                timeout=300,
+                timeout=30
             )
             response.raise_for_status()
             payload = response.json()
 
-            if payload.get("response"):
-                return payload["response"]
-            if payload.get("data"):
-                return payload["data"]
-            return str(payload)
+            # Check if this is an async job response
+            if "job_id" in payload:
+                job_id = payload["job_id"]
+                yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking..."
+                
+                # 2. Polling Loop
+                job_status_url = f"{base_api_url}/job/{job_id}"
+                
+                while True:
+                    time.sleep(2.0) # Wait 2 seconds between checks
+                    
+                    status_response = requests.get(job_status_url, headers=headers, timeout=10)
+                    status_response.raise_for_status()
+                    job_data = status_response.json()
+                    
+                    status = job_data.get("status")
+                    
+                    if status == "completed":
+                        result_str = job_data.get("result", "{}")
+                        try:
+                            # Parse the JSON string payload stored in the database
+                            final_payload = json.loads(result_str)
+                            
+                            # Format output cleanly
+                            if final_payload.get("response"):
+                                yield final_payload["response"]
+                            elif final_payload.get("data"):
+                                yield json.dumps(final_payload["data"], indent=2)
+                            else:
+                                yield "✅ Task completed, but no data was returned."
+                        except Exception as parse_exc:
+                            yield f"✅ Task completed. Raw Result:\n{result_str}"
+                        break
+                        
+                    elif status == "failed":
+                        error_msg = job_data.get("error", "Unknown error")
+                        yield f"❌ CrewAI Task Failed:\n{error_msg}"
+                        break
+                        
+                    else:
+                        # Job is still pending or processing
+                        yield f"⏳ CrewAI is currently {status} your request..."
+
+            else:
+                # Fallback for older synchronous backend endpoints
+                if payload.get("response"):
+                    yield payload["response"]
+                elif payload.get("data"):
+                    yield json.dumps(payload["data"], indent=2)
+                else:
+                    yield str(payload)
+                    
+        except requests.exceptions.RequestException as exc:
+            yield f"❌ Network Error contacting backend:\n{exc}"
         except Exception as exc:
-            return f"Error contacting backend: {exc}"
+            yield f"❌ Unexpected Error:\n{exc}"
 
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
         gr.Markdown("# Bank Negara Indonesia Question Assistant")
@@ -114,6 +174,7 @@ def build_ui() -> object:
         submit_btn = gr.Button("Ask")
         output_box = gr.Textbox(label="Answer", lines=10)
 
+        # Connect the generator function
         submit_btn.click(fn=ask_backend, inputs=question_box, outputs=output_box)
 
     return demo
