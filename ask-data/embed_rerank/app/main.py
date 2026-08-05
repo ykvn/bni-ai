@@ -166,15 +166,21 @@ class RerankRequest(BaseModel):
 # ---------------------------------------------------------------------
 # API Endpoints
 # ---------------------------------------------------------------------
-@app.get("/health")
-def health_check():
+@app.get("/")
+def root_health_check():
+    """Satisfies CML Application health checks on GET /"""
     return {
         "status": "healthy",
         "service": "embed-rerank",
-        "embedding_model": model_metadata["embed_model"],
-        "reranker_model": model_metadata["rerank_model"],
+        "embedding_model": model_metadata["embed_model"]["name"],
+        "reranker_model": model_metadata["rerank_model"]["name"],
         "vector_dimension": VECTOR_DIMENSION
     }
+
+
+@app.get("/health")
+def health_check():
+    return root_health_check()
 
 
 @app.get("/v1/dimension", dependencies=[Depends(verify_cml_token)])

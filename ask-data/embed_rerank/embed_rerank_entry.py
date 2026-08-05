@@ -39,7 +39,7 @@ def main() -> None:
         sys.executable, "-m", "uvicorn", "embed_rerank.app.main:app",
         "--host", "127.0.0.1",
         "--port", str(app_port),
-        "--log-level", "info"
+        "--log-level", "warning"
     ]
 
     process = subprocess.Popen(api_cmd, cwd=str(_ASK_DATA_ROOT), env=env)
