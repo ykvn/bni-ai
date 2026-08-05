@@ -1,6 +1,6 @@
 import os
 import sys
-import time
+import Path
 from pathlib import Path
 
 # 1. Global config: load the single ask-data/.env BEFORE any service code reads env vars.
@@ -21,56 +21,27 @@ from litellm.integrations.custom_logger import CustomLogger
 from generate_token import get_cdp_token
 
 
-class CDPTokenManager:
+class DynamicCDPAuthHandler(CustomLogger):
     """
-    Self-healing Token Manager that caches the CDP_TOKEN in memory
-    and automatically fetches a fresh one from Cloudera IAM when it reaches 40 minutes old.
+    Interceptor hook that overwrites the outgoing Authorization header 
+    with a fresh CDP token on EVERY request to Knox Gateway.
     """
-    _token = None
-    _fetched_at = 0
-    _TTL_SECONDS = 40 * 60  # 40 minutes (tokens expire at 60 mins)
-
-    @classmethod
-    def get_valid_token(cls) -> str:
-        now = time.time()
-        if cls._token is None or (now - cls._fetched_at) > cls._TTL_SECONDS:
-            print("🔄 [AUTH GATEWAY] Generating fresh CDP Workload Token from Cloudera IAM...", flush=True)
-            new_tok = get_cdp_token()
-            if new_tok:
-                cls._token = new_tok
-                cls._fetched_at = now
-                os.environ["CDP_TOKEN"] = new_tok
-                print("✅ [AUTH GATEWAY] CDP Workload Token refreshed and cached successfully.", flush=True)
-            else:
-                print("⚠️ [AUTH GATEWAY WARNING] Token generation failed. Falling back to environment variable.", flush=True)
-                cls._token = os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN", "")
-        return cls._token
-
-
-class DynamicKnoxAuthHook(CustomLogger):
-    """
-    LiteLLM Interceptor Callback that injects the active CDP_TOKEN into 
-    the Authorization header sent to Knox Gateway on EVERY request.
-    """
-    def _inject_auth(self, kwargs):
-        token = CDPTokenManager.get_valid_token()
-        if token:
+    async def async_pre_call_hook(self, user_api_key, alias, model, messages, kwargs, model_response):
+        fresh_token = get_cdp_token() or os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN")
+        
+        if fresh_token:
             if "extra_headers" not in kwargs or kwargs["extra_headers"] is None:
                 kwargs["extra_headers"] = {}
-            kwargs["extra_headers"]["Authorization"] = f"Bearer {token}"
-            kwargs["extra_headers"]["X-CDSW-API-Key"] = token
-
-    def log_pre_api_call(self, model, messages, kwargs):
-        self._inject_auth(kwargs)
-        return kwargs
-
-    async def async_pre_call_hook(self, user_api_key, alias, model, messages, kwargs, model_response):
-        self._inject_auth(kwargs)
+            
+            # Force-overwrite outgoing Authorization header sent to Knox
+            kwargs["extra_headers"]["Authorization"] = f"Bearer {fresh_token}"
+            kwargs["extra_headers"]["X-CDSW-API-Key"] = fresh_token
+            
         return kwargs
 
 
-# Register the auth interceptor callback inside LiteLLM
-litellm.callbacks = [DynamicKnoxAuthHook()]
+# Register the auth hook globally inside LiteLLM
+litellm.callbacks = [DynamicCDPAuthHandler()]
 
 
 def resolve_proxy_dir() -> Path:
@@ -93,17 +64,14 @@ def main() -> None:
     proxy_dir = resolve_proxy_dir()
     os.chdir(proxy_dir)
     config_path = proxy_dir / "litellm_config.yaml"
-    print(f"📍 Located configuration file at: {config_path}")
     
     if "QWEN_APP_URL" not in os.environ:
         print("❌ CRITICAL PLATFORM ERROR: 'QWEN_APP_URL' environment variable is missing!")
         sys.exit(1)
 
-    # Pre-warm initial token in cache
-    CDPTokenManager.get_valid_token()
-
     app_port = int(os.environ.get("CDSW_APP_PORT", 8100))
-    print(f"📡 Launching LiteLLM Gateway Service with Dynamic Auth Interceptor on http://127.0.0.1:{app_port}")
+    
+    print(f"📡 Launching In-Process LiteLLM Proxy Gateway with Dynamic CDP Auth on http://127.0.0.1:{app_port}")
     
     sys.argv = [
         "litellm",
@@ -117,7 +85,7 @@ def main() -> None:
     try:
         litellm_main()
     except KeyboardInterrupt:
-        print("\n🛑 Gateway execution interrupted. Shutting down...")
+        print("\n🛑 Shutting down Proxy Gateway...")
 
 
 if __name__ == "__main__":
