@@ -103,8 +103,8 @@ def main() -> None:
     os.chdir(proxy_dir)
     config_path = proxy_dir / "litellm_config.yaml"
 
-    if "QWEN_APP_URL" not in os.environ:
-        print("❌ CRITICAL PLATFORM ERROR: 'QWEN_APP_URL' environment variable is missing!")
+    if "AI_INFERENCE_URL" not in os.environ:
+        print("❌ CRITICAL PLATFORM ERROR: 'AI_INFERENCE_URL' environment variable is missing!")
         sys.exit(1)
 
     app_port = int(os.environ.get("CDSW_APP_PORT", 8100))

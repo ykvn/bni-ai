@@ -6,7 +6,7 @@ model_list:
     litellm_params:
       model: os.environ/CML_MODEL_NAME
       custom_llm_provider: openai
-      api_base: os.environ/QWEN_APP_URL
+      api_base: os.environ/AI_INFERENCE_URL
       api_key: os.environ/CDP_TOKEN
       ssl_verify: false
       request_timeout: 300
