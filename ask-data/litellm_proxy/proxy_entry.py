@@ -27,7 +27,8 @@ class DynamicCDPAuthHandler(CustomLogger):
     Interceptor hook that overwrites the outgoing Authorization header 
     with a fresh CDP token on EVERY request to Knox Gateway.
     """
-    async def async_pre_call_hook(self, user_api_key, alias, model, messages, kwargs, model_response):
+    # ⚡ FIX: Added **extra_kwargs to absorb 'user_api_key_dict' and future LiteLLM updates
+    async def async_pre_call_hook(self, user_api_key, alias, model, messages, kwargs, model_response, **extra_kwargs):
         fresh_token = get_cdp_token() or os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN")
         
         if fresh_token:
