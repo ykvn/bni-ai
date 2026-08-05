@@ -27,19 +27,22 @@ class DynamicCDPAuthHandler(CustomLogger):
     Interceptor hook that overwrites the outgoing Authorization header 
     with a fresh CDP token on EVERY request to Knox Gateway.
     """
-    # ⚡ FIX: Added **extra_kwargs to absorb 'user_api_key_dict' and future LiteLLM updates
-    async def async_pre_call_hook(self, user_api_key, alias, model, messages, kwargs, model_response, **extra_kwargs):
+    # ⚡ FIX: Use a catch-all signature (*args, **kwargs) to immune the proxy from LiteLLM version updates
+    async def async_pre_call_hook(self, *args, **kwargs):
         fresh_token = get_cdp_token() or os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN")
         
+        # LiteLLM passes the actual API request arguments inside a nested 'kwargs' dictionary key
+        req_kwargs = kwargs.get("kwargs", {})
+        
         if fresh_token:
-            if "extra_headers" not in kwargs or kwargs["extra_headers"] is None:
-                kwargs["extra_headers"] = {}
+            if "extra_headers" not in req_kwargs or req_kwargs["extra_headers"] is None:
+                req_kwargs["extra_headers"] = {}
             
             # Force-overwrite outgoing Authorization header sent to Knox
-            kwargs["extra_headers"]["Authorization"] = f"Bearer {fresh_token}"
-            kwargs["extra_headers"]["X-CDSW-API-Key"] = fresh_token
+            req_kwargs["extra_headers"]["Authorization"] = f"Bearer {fresh_token}"
+            req_kwargs["extra_headers"]["X-CDSW-API-Key"] = fresh_token
             
-        return kwargs
+        return req_kwargs
 
 
 # Register the auth hook globally inside LiteLLM
