@@ -131,14 +131,30 @@ def build_ui() -> object:
                         try:
                             # Parse the JSON string payload stored in the database
                             final_payload = json.loads(result_str)
+                            output_parts = []
                             
-                            # Format output cleanly
+                            # Handle RAG/Policy Responses
                             if final_payload.get("response"):
-                                yield final_payload["response"]
-                            elif final_payload.get("data"):
-                                yield json.dumps(final_payload["data"], indent=2)
+                                output_parts.append(final_payload["response"])
+                            
+                            # Handle SQL Engine Responses
+                            if final_payload.get("predicted_sql"):
+                                output_parts.append(f"### 🤖 Generated SQL:\n```sql\n{final_payload['predicted_sql']}\n```")
+                            
+                            # Safely check for data existence (even if it's an empty list)
+                            if "data" in final_payload and final_payload.get("type") == "SQL":
+                                data = final_payload["data"]
+                                if not data:
+                                    output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
+                                else:
+                                    row_count = final_payload.get("row_count", len(data))
+                                    output_parts.append(f"### 📊 Query Results ({row_count} rows):\n```json\n{json.dumps(data, indent=2)}\n```")
+                            
+                            if not output_parts:
+                                yield "✅ Task completed, but payload was empty."
                             else:
-                                yield "✅ Task completed, but no data was returned."
+                                yield "\n\n".join(output_parts)
+                                
                         except Exception as parse_exc:
                             yield f"✅ Task completed. Raw Result:\n{result_str}"
                         break
@@ -172,7 +188,7 @@ def build_ui() -> object:
 
         question_box = gr.Textbox(label="Question", lines=3)
         submit_btn = gr.Button("Ask")
-        output_box = gr.Textbox(label="Answer", lines=10)
+        output_box = gr.Markdown(label="Answer") # Changed to Markdown for rich SQL rendering
 
         # Connect the generator function
         submit_btn.click(fn=ask_backend, inputs=question_box, outputs=output_box)
