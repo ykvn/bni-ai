@@ -2,6 +2,8 @@ import os
 import json
 import asyncio
 import httpx
+import yaml
+from pathlib import Path
 
 # CrewAI Framework Engine Integration Modules
 from crewai import Agent, Task, Crew, LLM
@@ -9,6 +11,9 @@ from crewai import Agent, Task, Crew, LLM
 # Official Model Context Protocol Client Packages
 from mcp import ClientSession
 from mcp.client.sse import sse_client
+
+# Resolves crewai_service/config directory
+_CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
 
 def _make_insecure_httpx_client(**kwargs) -> httpx.AsyncClient:
@@ -47,8 +52,20 @@ class SQLTranslationService:
             model=f"openai/{target_model}",
             base_url=self.litellm_proxy_url,
             api_key=self.api_token,
-            temperature=0.0
+            temperature=0.0,
+            timeout=300,
+            request_timeout=300
         )
+
+        # 📄 Load YAML configurations from crewai_service/config
+        agents_yaml_path = _CONFIG_DIR / "agents.yaml"
+        tasks_yaml_path = _CONFIG_DIR / "tasks.yaml"
+
+        with open(agents_yaml_path, "r", encoding="utf-8") as f:
+            self.agents_config = yaml.safe_load(f)
+
+        with open(tasks_yaml_path, "r", encoding="utf-8") as f:
+            self.tasks_config = yaml.safe_load(f)
 
     async def _call_mcp_tool(self, tool_name: str, arguments: dict = None) -> str:
         """
@@ -96,30 +113,16 @@ class SQLTranslationService:
         print("📡 Fetching unified database blueprint natively over MCP protocol streams...")
         db_blueprint = asyncio.run(self._call_mcp_tool("get_database_schema"))
 
-        # 2. Define the structural engineering persona
+        # 2. Define the structural engineering persona from YAML
         sql_developer = Agent(
-            role="Senior Cloudera Impala Analytics Architect",
-            goal="Convert conversational user requests into valid, highly optimized read-only Impala SQL statements.",
-            backstory=(
-                "You are an expert big data analytics engineer at Bank Jatim specializing in Cloudera SDX environments. "
-                "You strictly write queries compatible with the Cloudera Impala engine, using standard ANSI/Hive SQL syntax "
-                "and adhering exactly to the provided database blueprint rules."
-            ),
+            config=self.agents_config["sql_developer"],
             llm=self.llm,
             verbose=True
         )
 
-        # 3. Streamlined Task targeting the centralized blueprint rules
+        # 3. Streamlined Task targeting the centralized blueprint rules from YAML
         draft_sql_task = Task(
-            description=(
-                f"Process the following user query: '{user_question}'.\n\n"
-                f"📊 UNIFIED DATABASE BLUEPRINT & SYSTEM OPERATIONAL RULES:\n"
-                f"{db_blueprint}\n\n"
-                "INSTRUCTION: You must strictly read, respect, and execute your response according "
-                "to the metadata layouts, formatting rules, and security boundaries specified in the "
-                "UNIFIED DATABASE BLUEPRINT above."
-            ),
-            expected_output="A clean Cloudera Impala SELECT statement matching the formatting rules and constraints defined in the blueprint context.",
+            config=self.tasks_config["draft_sql_task"],
             agent=sql_developer
         )
 
@@ -130,7 +133,11 @@ class SQLTranslationService:
         )
 
         print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...")
-        ai_result = str(orchestration_crew.kickoff()).strip()
+        ai_result = str(orchestration_crew.kickoff(inputs={
+            "user_question": user_question,
+            "db_blueprint": db_blueprint
+        })).strip()
+        
         return self._extract_sql_from_response(ai_result)
 
     @staticmethod
@@ -175,22 +182,13 @@ class SQLTranslationService:
             document_context = raw_context
         
         compliance_officer = Agent(
-            role="Authoritative Corporate Policy Compliance Specialist",
-            goal="Formulate high-fidelity textual responses based exclusively on provided manuals.",
-            backstory="You represent the internal policy audit team. You match facts exactly and never speculate.",
+            config=self.agents_config["compliance_officer"],
             llm=self.llm,
             verbose=True
         )
 
         evaluate_policy_task = Task(
-            description=(
-                f"Review the following corporate reference manuals carefully:\n\n"
-                f"VERIFIED CONTEXT FROM KNOWLEDGE STORE:\n{document_context}\n\n"
-                f"USER QUESTION: {user_question}\n\n"
-                f"MANDATE: Rely strictly on the reference text above. If details cannot be derived, "
-                f"state clearly that you do not possess that information. Do not hallucinate facts."
-            ),
-            expected_output="A perfectly formatted conversational text response ready for UI display.",
+            config=self.tasks_config["evaluate_policy_task"],
             agent=compliance_officer
         )
 
@@ -199,4 +197,7 @@ class SQLTranslationService:
             tasks=[evaluate_policy_task]
         )
 
-        return str(rag_crew.kickoff()).strip()
+        return str(rag_crew.kickoff(inputs={
+            "user_question": user_question,
+            "document_context": document_context
+        })).strip()

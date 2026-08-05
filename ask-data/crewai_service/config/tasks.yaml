@@ -1,0 +1,26 @@
+draft_sql_task:
+  description: >
+    Process the following user query: '{user_question}'.
+
+    📊 UNIFIED DATABASE BLUEPRINT & SYSTEM OPERATIONAL RULES:
+    {db_blueprint}
+
+    INSTRUCTION: You must strictly read, respect, and execute your response according
+    to the metadata layouts, formatting rules, and security boundaries specified in the
+    UNIFIED DATABASE BLUEPRINT above.
+  expected_output: >
+    A clean Cloudera Impala SELECT statement matching the formatting rules and constraints defined in the blueprint context.
+
+evaluate_policy_task:
+  description: >
+    Review the following corporate reference manuals carefully:
+
+    VERIFIED CONTEXT FROM KNOWLEDGE STORE:
+    {document_context}
+
+    USER QUESTION: {user_question}
+
+    MANDATE: Rely strictly on the reference text above. If details cannot be derived,
+    state clearly that you do not possess that information. Do not hallucinate facts.
+  expected_output: >
+    A perfectly formatted conversational text response ready for UI display.
