@@ -19,4 +19,4 @@ model_list:
 router_settings:
   routing_strategy: simple-shuffle
   timeout: 300
-  num_retries: 3
+  num_retries: 2
