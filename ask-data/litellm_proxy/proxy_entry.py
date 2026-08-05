@@ -3,6 +3,7 @@ import sys
 import threading
 import asyncio
 from pathlib import Path
+from dotenv import load_dotenv
 
 # 1. Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
