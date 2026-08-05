@@ -1,6 +1,6 @@
 import os
 import sys
-import time
+import asyncio
 import json
 import subprocess
 from pathlib import Path
@@ -52,7 +52,7 @@ def _build_payload(question: str, status: str, response_type: str, predicted_sql
     }
 
 
-def run_worker_loop():
+async def run_worker_loop():
     print("🤖 [CrewAI Service Engine] Starting worker loop...", flush=True)
     job_db.init_db()
     translator_service = SQLTranslationService()
@@ -61,7 +61,7 @@ def run_worker_loop():
         try:
             job = job_db.fetch_next_pending_job()
             if not job:
-                time.sleep(1.0)
+                await asyncio.sleep(1.0)
                 continue
 
             job_id = job["job_id"]
@@ -71,10 +71,10 @@ def run_worker_loop():
             job_db.update_job_status(job_id, status="processing")
 
             if is_policy_question(user_question):
-                rag_answer = translator_service.generate_rag_answer(user_question)
+                rag_answer = await translator_service.generate_rag_answer(user_question)
                 payload = _build_payload(user_question, "Success", "RAG", None, [], rag_answer)
             else:
-                generated_sql = translator_service.generate_sql(user_question)
+                generated_sql = await translator_service.generate_sql(user_question)
 
                 if "CRITICAL_SECURITY_ALERT" in generated_sql:
                     payload = _build_payload(
@@ -82,7 +82,7 @@ def run_worker_loop():
                         "Security Violation: Destroy request blocked."
                     )
                 else:
-                    records = translator_service.run_mcp_query(generated_sql)
+                    records = await translator_service.run_mcp_query(generated_sql)
                     payload = _build_payload(user_question, "Success", "SQL", generated_sql, records, None)
 
             job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
@@ -92,7 +92,7 @@ def run_worker_loop():
             print(f"❌ [CrewAI Engine Error] Task failed: {e}", flush=True)
             if 'job_id' in locals():
                 job_db.update_job_status(job_id, status="failed", error=str(e))
-            time.sleep(2.0)
+            await asyncio.sleep(2.0)
 
 
 def main():
@@ -111,9 +111,9 @@ def main():
     print(f"🌐 [CrewAI Service App] Starting HTTP REST Engine on http://127.0.0.1:{app_port}")
     api_process = subprocess.Popen(api_cmd, cwd=str(_ASK_DATA_ROOT), env=env)
 
-    # Run Worker Loop in main thread
+    # Run Worker Loop in asyncio event loop
     try:
-        run_worker_loop()
+        asyncio.run(run_worker_loop())
     except KeyboardInterrupt:
         print("\n🛑 Shutting down CrewAI Service...")
         api_process.terminate()
