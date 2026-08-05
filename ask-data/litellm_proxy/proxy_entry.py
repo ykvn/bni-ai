@@ -1,10 +1,8 @@
 import os
 import sys
+import threading
+import asyncio
 from pathlib import Path
-
-# ⚡ FIX: Patch the asyncio event loop to allow LiteLLM to run inside a CML/Jupyter kernel
-import nest_asyncio
-nest_asyncio.apply()
 
 # 1. Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
@@ -63,6 +61,23 @@ def resolve_proxy_dir() -> Path:
     sys.exit(1)
 
 
+def _start_isolated_proxy():
+    """Runs LiteLLM inside an isolated thread to bypass Uvicorn's event loop restrictions."""
+    # ⚡ Give this thread a clean event loop so Uvicorn doesn't crash
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    try:
+        from litellm.proxy.proxy_cli import run_server as litellm_proxy_start
+    except ImportError:
+        from litellm.proxy.proxy_cli import cli as litellm_proxy_start
+    
+    try:
+        litellm_proxy_start()
+    except SystemExit:
+        pass
+
+
 def main() -> None:
     proxy_dir = resolve_proxy_dir()
     os.chdir(proxy_dir)
@@ -83,16 +98,13 @@ def main() -> None:
         "--port", str(app_port)
     ]
     
-    # Handle LiteLLM version differences for the CLI entry point
-    try:
-        from litellm.proxy.proxy_cli import run_server as litellm_proxy_start
-    except ImportError:
-        from litellm.proxy.proxy_cli import cli as litellm_proxy_start
+    # Launch Proxy in a background thread to hide it from CML's active Jupyter loop
+    proxy_thread = threading.Thread(target=_start_isolated_proxy, daemon=True)
+    proxy_thread.start()
     
     try:
-        litellm_proxy_start()
-    except SystemExit:
-        pass
+        # Keep the main thread alive so the CML App doesn't exit
+        proxy_thread.join()
     except KeyboardInterrupt:
         print("\n🛑 Shutting down Proxy Gateway...")
 
