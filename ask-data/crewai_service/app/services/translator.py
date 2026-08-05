@@ -43,8 +43,8 @@ class SQLTranslationService:
             model=f"openai/{target_model}",
             base_url=self.litellm_proxy_url,
             api_key=self.api_token,
-            temperature=0.7,
-            top_p=0.8,
+            temperature=0.0,
+            top_p=1.0,
             enable_thinking=False,
             timeout=300,
             request_timeout=300
