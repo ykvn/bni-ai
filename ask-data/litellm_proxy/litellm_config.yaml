@@ -1,5 +1,8 @@
+litellm_settings:
+  drop_params: true
+
 model_list:
-  - model_name: os.environ/CML_MODEL_NAME      # Registers: Qwen/Qwen2.5-3B-Instruct
+  - model_name: os.environ/CML_MODEL_NAME
     litellm_params:
       model: os.environ/CML_MODEL_NAME
       custom_llm_provider: openai
@@ -8,7 +11,6 @@ model_list:
       ssl_verify: false
       request_timeout: 300
       num_retries: 3
-      # DISABLE INFERENCE THINKING MODE & COT GENERATION
       reasoning_effort: "none"
       extra_body:
         thinking:
