@@ -8,7 +8,7 @@ model_list:
       ssl_verify: false
       request_timeout: 300
       num_retries: 3
-      # ⚡ DISABLE INFERENCE THINKING MODE & COT GENERATION
+      # DISABLE INFERENCE THINKING MODE & COT GENERATION
       reasoning_effort: "none"
       extra_body:
         thinking:
