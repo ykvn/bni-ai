@@ -4,6 +4,7 @@ import asyncio
 import httpx
 import yaml
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 # CrewAI Framework Engine Integration Modules
 from crewai import Agent, Task, Crew, LLM
@@ -67,6 +68,22 @@ class SQLTranslationService:
         with open(tasks_yaml_path, "r", encoding="utf-8") as f:
             self.tasks_config = yaml.safe_load(f)
 
+    @staticmethod
+    def _run_async(coro):
+        """
+        Safely executes an async coroutine from synchronous code,
+        handling cases where an event loop is already active in the current thread.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                return executor.submit(asyncio.run, coro).result()
+        return asyncio.run(coro)
+
     async def _call_mcp_tool(self, tool_name: str, arguments: dict = None) -> str:
         """
         UNIVERSAL NATIVE MCP CLIENT ROUTINE: Connects directly to the universal 
@@ -111,7 +128,7 @@ class SQLTranslationService:
         
         # 1. Fetch unified blueprint (Schema + Centralized Guardrails) over MCP tool stream
         print("📡 Fetching unified database blueprint natively over MCP protocol streams...")
-        db_blueprint = asyncio.run(self._call_mcp_tool("get_database_schema"))
+        db_blueprint = self._run_async(self._call_mcp_tool("get_database_schema"))
 
         # 2. Define the structural engineering persona from YAML
         sql_developer = Agent(
@@ -154,7 +171,7 @@ class SQLTranslationService:
 
     def run_mcp_query(self, sql_query: str) -> list:
         """Synchronous wrapper to execute relational queries via MCP."""
-        raw_json = asyncio.run(self._call_mcp_tool("execute_banking_query", {"sql_query": sql_query}))
+        raw_json = self._run_async(self._call_mcp_tool("execute_banking_query", {"sql_query": sql_query}))
         try:
             return json.loads(raw_json)
         except Exception:
@@ -169,7 +186,7 @@ class SQLTranslationService:
         print("📡 Fetching semantic document context blocks natively over MCP protocol streams...")
         
         # 🔌 Fetch vector snippets completely through the standardized MCP data layer tool!
-        raw_context = asyncio.run(self._call_mcp_tool("search_policy_documents", {"query": user_question}))
+        raw_context = self._run_async(self._call_mcp_tool("search_policy_documents", {"query": user_question}))
         
         try:
             parsed_docs = json.loads(raw_context)
