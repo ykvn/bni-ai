@@ -3,6 +3,7 @@ import sys
 import asyncio
 import json
 import subprocess
+import threading
 from pathlib import Path
 
 # 1. Resolve Root Directory
@@ -95,6 +96,11 @@ async def run_worker_loop():
             await asyncio.sleep(2.0)
 
 
+def _start_worker_thread():
+    """Runs the async worker loop in a dedicated thread with an isolated event loop."""
+    asyncio.run(run_worker_loop())
+
+
 def main():
     app_port = int(os.environ.get("CDSW_APP_PORT", 8091))
     env = os.environ.copy()
@@ -111,12 +117,18 @@ def main():
     print(f"🌐 [CrewAI Service App] Starting HTTP REST Engine on http://127.0.0.1:{app_port}")
     api_process = subprocess.Popen(api_cmd, cwd=str(_ASK_DATA_ROOT), env=env)
 
-    # Run Worker Loop in asyncio event loop
+    # Launch Worker Engine in a dedicated background thread to prevent loop collisions
+    worker_thread = threading.Thread(target=_start_worker_thread, daemon=True)
+    worker_thread.start()
+
     try:
-        asyncio.run(run_worker_loop())
-    except KeyboardInterrupt:
+        api_process.wait()
+    except (KeyboardInterrupt, SystemExit):
         print("\n🛑 Shutting down CrewAI Service...")
-        api_process.terminate()
+    finally:
+        if api_process.poll() is None:
+            print("🧹 Terminating Uvicorn process...")
+            api_process.terminate()
 
 
 if __name__ == "__main__":
