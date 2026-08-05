@@ -12,6 +12,10 @@ if str(_ASK_DATA_ROOT) not in sys.path:
 import shared.config_loader as config_loader
 config_loader.bootstrap(hint=_ASK_DATA_ROOT)
 
+_env_path = _ASK_DATA_ROOT / ".env"
+if _env_path.exists():
+    load_dotenv(dotenv_path=_env_path, override=True)
+
 # 2. Add litellm_proxy directory to sys.path
 _PROXY_DIR = Path(__file__).resolve().parent if "__file__" in globals() else _ASK_DATA_ROOT / "litellm_proxy"
 if str(_PROXY_DIR) not in sys.path:
