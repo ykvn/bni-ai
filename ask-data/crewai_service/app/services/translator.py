@@ -30,10 +30,11 @@ class SQLTranslationService:
             or ""
         ).rstrip("/")
         
+        # Strictly uses CML_TOKEN for internal platform authentication
         self.api_token = (
             os.getenv("CML_TOKEN") 
             or os.getenv("LITELLM_API_KEY") 
-            or "litellm-dummy-token"
+            or ""
         ).strip()
 
         target_model = os.getenv("CML_MODEL_NAME", "")
@@ -97,8 +98,7 @@ class SQLTranslationService:
 
         draft_sql_task = Task(
             config=self.tasks_config["draft_sql_task"],
-            agent=sql_developer,
-            verbose=True
+            agent=sql_developer
         )
 
         orchestration_crew = Crew(
@@ -162,7 +162,8 @@ class SQLTranslationService:
 
         rag_crew = Crew(
             agents=[compliance_officer],
-            tasks=[evaluate_policy_task]
+            tasks=[evaluate_policy_task],
+            verbose=True
         )
 
         ai_result = await rag_crew.kickoff_async(inputs={

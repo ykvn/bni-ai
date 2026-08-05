@@ -6,8 +6,13 @@ model_list:
       api_base: os.environ/QWEN_APP_URL
       api_key: os.environ/CDP_TOKEN
       ssl_verify: false
-      request_timeout: 300    # 👈 Extends HTTP timeout to 5 minutes for CoT generation
-      num_retries: 3         # 👈 Automatically retries on dropped TCP connections
+      request_timeout: 300
+      num_retries: 3
+      # ⚡ DISABLE INFERENCE THINKING MODE & COT GENERATION
+      reasoning_effort: "none"
+      extra_body:
+        thinking:
+          type: "disabled"
 
 router_settings:
   routing_strategy: simple-shuffle
