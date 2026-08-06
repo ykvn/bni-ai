@@ -64,7 +64,6 @@ def parse_payload_to_ui(payload: dict):
     import gradio as gr
     
     text_parts = []
-    # Hide the table by default unless we have data
     df_update = gr.update(visible=False, value=None)
     
     if not isinstance(payload, dict):
@@ -82,7 +81,6 @@ def parse_payload_to_ui(payload: dict):
     if "data" in payload and payload["data"] is not None:
         data = payload["data"]
         
-        # Ensure stringified JSON is parsed
         if isinstance(data, str):
             try:
                 data = json.loads(data)
@@ -91,9 +89,7 @@ def parse_payload_to_ui(payload: dict):
                 
         if isinstance(data, list) and len(data) > 0:
             try:
-                # Convert the JSON array of dicts into a Pandas DataFrame
                 df = pd.DataFrame(data)
-                # Reveal the Dataframe component with the data
                 df_update = gr.update(visible=True, value=df)
             except Exception as e:
                 text_parts.append(f"*(Could not render table: {e})*")
@@ -160,18 +156,26 @@ def build_ui() -> object:
                     status = job_data.get("status")
                     
                     if status == "completed":
-                        final_payload = {}
-                        result_val = job_data.get("result")
                         
-                        if isinstance(result_val, str):
-                            try:
-                                final_payload = json.loads(result_val)
-                            except Exception:
-                                final_payload = {"response": result_val}
-                        elif isinstance(result_val, dict):
-                            final_payload = result_val
-                        else:
-                            final_payload = job_data
+                        # -------------------------------------------------------------
+                        # 🚀 NEW: Robust Payload Unwrapping
+                        # -------------------------------------------------------------
+                        final_payload = job_data
+                        
+                        if "result" in job_data:
+                            if isinstance(job_data["result"], str):
+                                try:
+                                    final_payload = json.loads(job_data["result"])
+                                except Exception:
+                                    final_payload = {"response": job_data["result"]}
+                            elif isinstance(job_data["result"], dict):
+                                final_payload = job_data["result"]
+                                
+                        # Matches the exact structure shown in your screenshot
+                        elif "data" in job_data and isinstance(job_data["data"], dict):
+                            if "predicted_sql" in job_data["data"]:
+                                final_payload = job_data["data"]
+                        # -------------------------------------------------------------
 
                         text_out, df_out = parse_payload_to_ui(final_payload)
                         yield text_out, df_out
@@ -196,7 +200,6 @@ def build_ui() -> object:
         question_box = gr.Textbox(label="Question", lines=3)
         submit_btn = gr.Button("Ask")
         
-        # 🚀 NEW: Split output into Text (for SQL/Answers) and a Dataframe (for the true Table)
         output_text = gr.Markdown(label="Answer & SQL")
         output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
