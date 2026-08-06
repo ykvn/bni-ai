@@ -89,37 +89,29 @@ class SQLTranslationService:
     # 📑 PATH A: OPTIMIZED TEXT-TO-SQL ENGINE (DYNAMIC RAG INJECTION)
     # =========================================================================
     async def generate_sql(self, user_question: str) -> str:
-        """Autonomous execution pipeline using dynamic tools for schema adherence."""
-        print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...")
+        """Deterministic execution pipeline that forces schema adherence."""
+        print("Forcing semantic retrieval via MCP embed & rerank modules...")
         
-        # ⚡ NEW: Wrap your async MCP calls into native CrewAI Tools
-        @tool("search_golden_queries")
-        async def mcp_search_golden_queries(question: str) -> str:
-            """Searches the Golden Queries database for verified SQL templates."""
-            return await self._call_mcp_tool("search_golden_queries", {"user_question": question})
+        # 1. GUARANTEE execution by running the tools in Python first
+        golden_context = await self._call_mcp_tool("search_golden_queries", {"question": user_question})
+        schema_context = await self._call_mcp_tool("get_database_schema", {"question": user_question})
 
-        @tool("get_database_schema")
-        async def mcp_get_database_schema(question: str) -> str:
-            """Dynamically retrieves the relevant database schema tables."""
-            return await self._call_mcp_tool("get_database_schema", {"user_question": question})
-            
+        # 2. Only give the agent the execution tool
         @tool("execute_banking_query")
         async def mcp_execute_banking_query(query: str) -> str:
             """Executes a SQL query against the database."""
             return await self._call_mcp_tool("execute_banking_query", {"sql_query": query})
 
-        # ⚡ NEW: Bind the tools directly to the agent
         sql_developer = Agent(
             config=self.agents_config["sql_developer"],
             llm=self.llm,
-            tools=[mcp_search_golden_queries, mcp_get_database_schema, mcp_execute_banking_query],
+            tools=[mcp_execute_banking_query],
             verbose=True
         )
 
         draft_sql_task = Task(
             config=self.tasks_config["draft_sql_task"],
-            agent=sql_developer,
-            tools=[mcp_search_golden_queries, mcp_get_database_schema, mcp_execute_banking_query]
+            agent=sql_developer
         )
 
         orchestration_crew = Crew(
@@ -128,10 +120,12 @@ class SQLTranslationService:
             verbose=True
         )
 
-        # ⚡ DELETED: db_blueprint context injection is gone! 
-        # The agent will fetch exactly what it needs using the bound tools.
+        print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...")
+        # 3. Inject the retrieved context directly into the prompt
         ai_result = await orchestration_crew.kickoff_async(inputs={
-            "user_question": user_question
+            "user_question": user_question,
+            "golden_context": golden_context,
+            "schema_context": schema_context
         })
         
         return self._extract_sql_from_response(str(ai_result))
