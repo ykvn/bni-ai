@@ -97,7 +97,9 @@ def search_documents(query: str, collection_name: str, top_k: int = 5) -> list[d
                 "document_id": str(item.get("id", "unknown")),
                 "title": f"{source_file} (halaman {page_num})" if page_num != "?" else source_file,
                 "excerpt": doc_text[:400] if doc_text else "",
+                "page_content": doc_text,  # Keep the full text for the reranker
                 "score": score,
+                "raw_payload": payload_data
             })
             
         return output
@@ -132,7 +134,8 @@ def rerank_documents(query: str, raw_documents: list[dict], top_n: int = 5) -> l
         headers["Authorization"] = f"Bearer {cml_token}"
         headers["X-CDSW-API-Key"] = cml_token
 
-    doc_texts = [d.get("excerpt", "") for d in raw_documents]
+    #doc_texts = [d.get("excerpt", "") for d in raw_documents]
+    doc_texts = [d.get("page_content", d.get("excerpt", "")) for d in raw_documents]
 
     try:
         res = requests.post(

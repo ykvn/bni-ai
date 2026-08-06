@@ -56,7 +56,7 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
             qdrant_server_url=config["qdrant_server_url"],
             embed_rerank_url=config["embed_rerank_url"],
             qdrant_ssl=config["qdrant_ssl"],
-            collection_name=config.get("collection_name", "bni_policy_documents"),
+            collection_name=config.get("collection_name", "bni_document_knowledge"),
             cml_token=config.get("cml_token"),
         )
     except Exception as e:

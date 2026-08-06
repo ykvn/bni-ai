@@ -1,26 +1,31 @@
 import os
-    
-def get_database_schema() -> str:
+from app.tools.qdrant_client import search_documents, rerank_documents
+
+def get_database_schema(user_question: str, top_k: int = 10, top_n: int = 4) -> str:
     """
-    Safely locates and reads the master domain configuration blueprint 
-    using absolute system routing paths to bypass container directory shifts.
+    Dynamically retrieves only the relevant database schema tables based on the user's question.
+    Drastically reduces prompt token consumption and improves LLM TTFT (Time-to-First-Token).
     """
-    # 🔒 Absolute enterprise path matching your repository layout
-    primary_production_path = "/home/cdsw/ask-data/backend/domain_config.yaml"
-    local_development_fallback = "../backend/domain_config.yaml"
+    collection_name = os.getenv("SCHEMA_COLLECTION", "bni_schema_definitions")
     
-    # Choose whichever path actively exists in the current container context
-    target_path = primary_production_path if os.path.exists(primary_production_path) else local_development_fallback
+    # 1. Fetch candidate schema tables
+    raw_results = search_documents(query=user_question, collection_name=collection_name, top_k=top_k)
     
-    try:
-        with open(target_path, "r", encoding="utf-8") as file:
-            schema_content = file.read().strip()
-            
-        if not schema_content:
-            return "Error: The domain_config.yaml file was found but it is completely empty."
-            
-        return schema_content
+    if not raw_results or "error" in raw_results[0]:
+        return "Error: Could not retrieve database schema."
+
+    # 2. Rerank the tables to find the exact columns needed for the query
+    reranked = rerank_documents(query=user_question, raw_documents=raw_results, top_n=top_n)
+
+    # 3. Reconstruct the YAML definition only for the top retrieved tables
+    output = ["### RELEVANT DATABASE SCHEMA (YAML FORMAT) ###\n"]
+    for doc in reranked:
+        payload = doc.get("raw_payload", {})
+        table_name = payload.get("table_name", "Unknown Table")
+        raw_yaml = payload.get("raw_yaml", "")
         
-    except Exception as e:
-        # Returns a detailed tracking message to identify the failure point immediately
-        return f"Error: Enterprise configuration mapping file could not be read at {target_path}. System Details: {str(e)}"
+        output.append(f"# Table: {table_name}")
+        output.append(raw_yaml)
+        output.append("-" * 40)
+        
+    return "\n".join(output)
