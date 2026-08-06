@@ -33,14 +33,15 @@ def ensure_dependencies(backend_dir: Path, env: dict) -> None:
 
 
 def trigger_rag_auto_ingest(backend_dir: Path, env: dict | None = None) -> None:
+    """Triggers the knowledge ingestion pipeline using the remote embed-rerank microservice."""
     try:
         config = build_ingest_config(backend_dir=backend_dir, env=env)
         run_auto_ingest(
             docs_dir=config["docs_dir"],
             qdrant_server_url=config["qdrant_server_url"],
+            embed_rerank_url=config["embed_rerank_url"],  # ⚡ Updated to route to remote semantic engine
             qdrant_ssl=config["qdrant_ssl"],
             collection_name=config["collection_name"],
-            embedding_model_name=config.get("embedding_model_name", "all-MiniLM-L6-v2"),
             cml_token=config.get("cml_token"),
         )
     except Exception as e:
