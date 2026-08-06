@@ -43,5 +43,6 @@ class Settings(BaseSettings):
 
     # Standardized Qdrant & Vector Embedding Storage
     qdrant_server_url: str = Field(default="http://localhost:6333", alias="VECTORDB_SERVER_URL")
+    document_collection: str = Field(default="bni_document_knowledge", alias="DOCUMENT_COLLECTION")
 
 settings = Settings()  # type: ignore[call-arg]
