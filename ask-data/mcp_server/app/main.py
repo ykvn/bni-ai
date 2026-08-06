@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import anyio
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from starlette.routing import Mount
@@ -16,8 +15,6 @@ from app.tools.get_database_schema import get_database_schema
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 from app.tools.dormant_risk import calculate_dormant_account_risk
 
-# Import the embedder directly so we can pre-warm it without needing extra functions
-from app.tools.qdrant_client import _get_embedding_model 
 
 # 1. Initialize the central FastMCP application state
 mcp = FastMCP("Bank-ABC-Modular-Orchestrator")
@@ -60,17 +57,8 @@ def mcp_evaluate_dormant_account_risk(days_inactive: int, account_balance: float
 
 
 # 3. Create the FastAPI container to manage incoming enterprise cluster traffic
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("🧠 [MCP STARTUP] Pre-warming embedding model weights...", flush=True)
-    try:
-        _get_embedding_model()  # Loads the HuggingFace model into memory at startup
-        print("✅ [MCP STARTUP] Embedding model pre-warmed and ready.", flush=True)
-    except Exception as e:
-        print(f"⚠️ [MCP STARTUP WARNING] Failed to pre-warm embedder: {e}", flush=True)
-    yield
-
-app = FastAPI(title="Bank ABC Production MCP Gateway", lifespan=lifespan)
+# ⚡ Removed local model pre-warming lifespan since embedding is now a remote microservice
+app = FastAPI(title="Bank Negara Indonesia Production MCP Gateway")
 
 # Route incoming protocol control packets cleanly into the SSE transport layer
 app.router.routes.append(Mount("/messages", app=sse.handle_post_message))
