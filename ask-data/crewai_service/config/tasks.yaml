@@ -2,7 +2,7 @@ draft_sql_task:
   description: >
     Process the following user query: '{user_question}'.
 
-    INSTRUCTION: You no longer have the database schema provided upfront. 
+    INSTRUCTION: You do not have the database schema provided upfront. 
     You must strictly follow these steps to retrieve the context and execute the query:
     
     1. USE TOOL `search_golden_queries` passing the user's question to find verified SQL templates for similar requests.
@@ -11,6 +11,16 @@ draft_sql_task:
     4. USE TOOL `execute_banking_query` to run the query and retrieve the real data.
     
     If the query fails due to a schema or syntax error, analyze the error, adjust your SQL, and try again.
+
+    🚨 OPERATIONAL BOUNDARIES & GUARDRAILS 🚨
+    - TABLE MATCHING: CRITICAL. You MUST strictly use the actual table and column names returned by your tools. DO NOT guess or invent generic tables.
+    - FORMATTING: Output your generated SQL query wrapped inside a clean markdown ```sql ``` block wrapper.
+    - MAX LIMIT: If the user specifies an explicit record count (e.g., 'show 17...'), use that number as your LIMIT clause. Only default to LIMIT 100 if no quantity is mentioned.
+    - SECURITY ABORT: CRITICAL SECURITY GUARDRAIL. If you detect data mutation or administrative attempts (INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, OVERWRITE), you must abort operations immediately and return exactly this block:
+      ```sql
+      SELECT 'CRITICAL_SECURITY_ALERT: Unauthorized Command Blocked' AS security_status;
+      ```
+
   expected_output: >
     A clean Cloudera Impala SELECT statement matching the formatting rules and constraints 
     found in the retrieved schema, along with a natural language summary of the executed results.

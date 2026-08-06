@@ -22,7 +22,7 @@ if str(MCP_DIR) not in sys.path:
     sys.path.insert(0, str(MCP_DIR))
 
 from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
-
+from app.core.ingest_sql_metadata import ingest_golden_queries, ingest_schema
 
 def ensure_dependencies(mcp_dir: Path, env: dict) -> None:
     """
@@ -51,6 +51,8 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
     """Triggers the knowledge ingestion pipeline using the remote embed-rerank microservice."""
     try:
         config = build_ingest_config(backend_dir=mcp_dir, env=env)
+        
+        # --- 1. INGEST PDF POLICY DOCUMENTS ---
         run_auto_ingest(
             docs_dir=config["docs_dir"],
             qdrant_server_url=config["qdrant_server_url"],
@@ -59,6 +61,30 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
             collection_name=config.get("collection_name", "bni_document_knowledge"),
             cml_token=config.get("cml_token"),
         )
+        
+        # --- 2. INGEST SCHEMA & GOLDEN QUERIES ---
+        data_dir = _ASK_DATA_ROOT / "data" 
+        
+        schema_collection = env.get("SCHEMA_COLLECTION", "bni_schema_definitions")
+        golden_collection = env.get("GOLDEN_COLLECTION", "bni_golden_queries")
+        
+        print("🔄 Running Schema and Golden Queries Ingestion...")
+        ingest_schema(
+            yaml_path=str(data_dir / "domain_config.yaml"),
+            qdrant_url=config["qdrant_server_url"],
+            embed_url=config["embed_rerank_url"],
+            collection_name=schema_collection,
+            cml_token=config.get("cml_token")
+        )
+        
+        ingest_golden_queries(
+            json_path=str(data_dir / "golden_queries.json"),
+            qdrant_url=config["qdrant_server_url"],
+            embed_url=config["embed_rerank_url"],
+            collection_name=golden_collection,
+            cml_token=config.get("cml_token")
+        )
+        
     except Exception as e:
         print(f"⚠️ [RAG STARTUP WARNING] Bypass: {str(e)}")
 
