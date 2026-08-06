@@ -182,21 +182,3 @@ tables:
       - name: monthly_target_achieved
         type: "DECIMAL(5,2)"
         description: "Performance target milestone percentage index ranking tracker."
-
-common_rules:
-  temporal_queries:
-    birthday_this_week: "WHERE weekofyear(birth_date) = weekofyear(current_date())"
-    approaching_maturity: "WHERE maturity_date BETWEEN current_date() AND days_add(current_date(), 7)"
-
-  # 🎯 ALL SYSTEM RULES CONSOLIDATED IN ONE UNIFIED NESTED BLOCK
-  operational_boundaries:
-    table_matching: "CRITICAL: You MUST strictly use the actual table and column names listed in the layouts above. DO NOT guess or invent generic tables if they are not explicitly declared."
-    formatting: "Output your generated SQL query wrapped inside a clean markdown ```sql ``` block wrapper."
-    max_limit: "If the user specifies an explicit record count (e.g., 'show 17...'), use that number as your LIMIT clause. Only default to LIMIT 100 if no quantity is mentioned by the user."
-    security_abort: |
-      CRITICAL SECURITY GUARDRAIL: If you detect data mutation or administrative attempts 
-      (INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, OVERWRITE), you must abort operations 
-      immediately and return exactly this block:
-      ```sql
-      SELECT 'CRITICAL_SECURITY_ALERT: Unauthorized Command Blocked' AS security_status;
-      ```
