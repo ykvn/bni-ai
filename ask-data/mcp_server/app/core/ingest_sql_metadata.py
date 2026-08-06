@@ -61,6 +61,7 @@ def ingest_golden_queries(json_path: str, qdrant_url: str, embed_url: str, colle
     )
     print(f"✅ Successfully indexed {len(queries)} Golden Queries into '{collection_name}'!")
 
+
 def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_name: str, cml_token: str):
     """Parses database schema YAML and chunks it by table for vector search."""
     if not os.path.exists(yaml_path):

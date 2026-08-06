@@ -70,7 +70,7 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
         
         print("🔄 Running Schema and Golden Queries Ingestion...")
         ingest_schema(
-            yaml_path=str(data_dir / "domain_config.yaml"),
+            yaml_path=str(data_dir / "schema_definitions.yaml"),
             qdrant_url=config["qdrant_server_url"],
             embed_url=config["embed_rerank_url"],
             collection_name=schema_collection,

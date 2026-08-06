@@ -5,11 +5,7 @@ database_name: "test"
 
 tables:
   - name: cai_customers
-    description: >
-      Contains core customer demographic profiles.
-      CRITICAL JOIN RULE: This table does NOT have a 'status' column. If a user asks for 'active' customers, 
-      you MUST INNER JOIN 'cai_savings' on customer_id and filter WHERE cai_savings.status = 'ACTIVE'. 
-      NEVER append 'WHERE status = ...' directly to cai_customers.
+    description: "Contains core customer demographic profiles."
     columns:
       - name: customer_id
         type: "INT"
