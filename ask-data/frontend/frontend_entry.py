@@ -86,7 +86,6 @@ def build_ui() -> object:
                 job_id = payload["job_id"]
                 yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking..."
                 
-                # Corrected endpoint to match the backend FastAPI implementation
                 job_status_url = f"{base_api_url}/job/{job_id}"
                 
                 while True:
@@ -100,17 +99,12 @@ def build_ui() -> object:
                     if status == "completed":
                         final_payload = {}
                         
-                        # 1. Is the payload wrapped in a JSON string?
                         if "result" in job_data and isinstance(job_data["result"], str):
                             try:
                                 final_payload = json.loads(job_data["result"])
                             except: pass
-                                
-                        # 2. Is the payload already parsed as a dictionary?
                         elif "result" in job_data and isinstance(job_data["result"], dict):
                             final_payload = job_data["result"]
-                            
-                        # 3. Did the backend flatten the payload directly into job_data?
                         elif "predicted_sql" in job_data or "data" in job_data:
                             final_payload = job_data
                             
@@ -122,16 +116,34 @@ def build_ui() -> object:
                         if final_payload.get("predicted_sql"):
                             output_parts.append(f"### 🤖 Generated SQL:\n```sql\n{final_payload['predicted_sql']}\n```")
                             
+                        # -----------------------------------------------------------------
+                        # 🚀 NEW: DYNAMIC MARKDOWN TABLE GENERATOR
+                        # -----------------------------------------------------------------
                         if "data" in final_payload:
                             data = final_payload["data"]
                             if not data:
                                 output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
                             else:
                                 row_count = final_payload.get("row_count", len(data))
-                                output_parts.append(f"### 📊 Query Results ({row_count} rows):\n```json\n{json.dumps(data, indent=2)}\n```")
+                                
+                                # Extract headers from the keys of the first dictionary
+                                headers_list = list(data[0].keys())
+                                
+                                # Build table structure
+                                md_table = f"### 📊 Query Results ({row_count} rows):\n\n"
+                                md_table += "| " + " | ".join(headers_list) + " |\n"
+                                md_table += "|" + "|".join(["---"] * len(headers_list)) + "|\n"
+                                
+                                # Populate rows
+                                for row in data:
+                                    # Convert to string and escape pipes to prevent table breaking
+                                    row_values = [str(row.get(h, "")).replace("|", "\\|") for h in headers_list]
+                                    md_table += "| " + " | ".join(row_values) + " |\n"
+                                    
+                                output_parts.append(md_table)
+                        # -----------------------------------------------------------------
                                 
                         if not output_parts:
-                            # 🚨 DEBUG MODE: Print exactly what the API returned so we can diagnose it!
                             yield f"✅ Task completed, but payload format was unrecognized.\n\n**Raw API Response:**\n```json\n{json.dumps(job_data, indent=2)}\n```"
                         else:
                             yield "\n\n".join(output_parts)
@@ -148,7 +160,8 @@ def build_ui() -> object:
                 if payload.get("response"):
                     yield payload["response"]
                 elif payload.get("data"):
-                    yield json.dumps(payload["data"], indent=2)
+                    # For immediate responses, format as a quick JSON block for safety
+                    yield f"```json\n{json.dumps(payload['data'], indent=2)}\n```"
                 else:
                     yield str(payload)
                     
