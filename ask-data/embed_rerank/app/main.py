@@ -18,7 +18,7 @@ VECTOR_DIMENSION = 0
 
 model_metadata = {
     "embed_model": {
-        "name": os.getenv("EMBEDDING_MODEL_NAME", ""),
+        "name": os.getenv("EMBED_MODEL_NAME", ""),
         "source": "UNINITIALIZED",
         "path": "N/A"
     },
