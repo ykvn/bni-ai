@@ -11,6 +11,9 @@ if str(_ASK_DATA_ROOT) not in sys.path:
 import shared.config_loader as config_loader
 config_loader.bootstrap(hint=_ASK_DATA_ROOT)
 
+from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
+
+
 def ensure_dependencies(mcp_dir: Path, env: dict) -> None:
     """
     Validates and installs packages from requirements.txt directly 
@@ -33,6 +36,7 @@ def ensure_dependencies(mcp_dir: Path, env: dict) -> None:
         print(f"❌ Critical Error: Failed to configure dependencies: {str(e)}")
         sys.exit(1)
 
+
 def resolve_mcp_dir() -> Path:
     """Robustly finds the mcp_server directory regardless of where CML launches the script."""
     cwd = Path.cwd()
@@ -51,6 +55,24 @@ def resolve_mcp_dir() -> Path:
     print(f"❌ Critical Error: Could not locate 'app/main.py'. Are you sure the folder structure is correct?")
     return cwd
 
+
+# The trigger function that hits embed-rerank microservice
+def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
+    """Triggers the knowledge ingestion pipeline using the remote embed-rerank microservice."""
+    try:
+        config = build_ingest_config(backend_dir=mcp_dir, env=env)
+        run_auto_ingest(
+            docs_dir=config["docs_dir"],
+            qdrant_server_url=config["qdrant_server_url"],
+            embed_rerank_url=config["embed_rerank_url"],
+            qdrant_ssl=config["qdrant_ssl"],
+            collection_name=config.get("collection_name", "bni_policy_documents"),
+            cml_token=config.get("cml_token"),
+        )
+    except Exception as e:
+        print(f"⚠️ [RAG STARTUP WARNING] Bypass: {str(e)}")
+
+
 def main() -> None:
     # 1. Lock in the correct directory execution context
     mcp_dir = resolve_mcp_dir()
@@ -66,6 +88,10 @@ def main() -> None:
     
     # 4. Handle dependency resolution before thread initialization
     ensure_dependencies(mcp_dir, env)
+    
+    # Execute pre-flight knowledge ingestion using MCP context before starting Uvicorn
+    print("🔄 Running pre-flight MCP Knowledge Ingestion checks...")
+    trigger_rag_auto_ingest(mcp_dir, env=env)
     
     # 5. Standardized operational startup parameter array targeting app.main:app
     cmd = [
