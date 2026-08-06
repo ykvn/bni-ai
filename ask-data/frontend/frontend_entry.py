@@ -85,7 +85,7 @@ def build_ui() -> object:
                 json={"question": question}, 
                 headers=headers, 
                 timeout=30,
-                verify=False  # Prevents SSL internal proxy failures in CML
+                verify=False
             )
             response.raise_for_status()
             payload = response.json()
@@ -103,7 +103,7 @@ def build_ui() -> object:
                         job_status_url, 
                         headers=headers, 
                         timeout=10,
-                        verify=False  # Prevents SSL internal proxy failures in CML
+                        verify=False
                     )
                     status_response.raise_for_status()
                     job_data = status_response.json()
@@ -137,7 +137,6 @@ def build_ui() -> object:
                             data = final_payload["data"]
                             if not data:
                                 output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
-                            # Verify data is a list of dictionaries before attempting table render
                             elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
                                 row_count = final_payload.get("row_count", len(data))
                                 
@@ -149,17 +148,17 @@ def build_ui() -> object:
                                 md_table += "| " + " | ".join(headers_list) + " |\n"
                                 md_table += "|" + "|".join(["---"] * len(headers_list)) + "|\n"
                                 
-                                # Populate rows
+                                # Populate rows safely without backslashes inside f-string brackets
                                 for row in data:
                                     if isinstance(row, dict):
                                         row_values = [str(row.get(h, "")).replace("|", "\\|") for h in headers_list]
                                         md_table += "| " + " | ".join(row_values) + " |\n"
                                     else:
-                                        md_table += f"| {str(row).replace('|', '\\|')} |\n"
+                                        clean_val = str(row).replace("|", "\\|")
+                                        md_table += f"| {clean_val} |\n"
                                     
                                 output_parts.append(md_table)
                             else:
-                                # Safe fallback if data contains non-dict elements or raw error objects
                                 output_parts.append(f"### 📊 Query Results:\n```json\n{json.dumps(data, indent=2, default=str)}\n```")
                         # -----------------------------------------------------------------
                                 
