@@ -115,8 +115,7 @@ def main() -> None:
         "litellm",
         "--config", str(config_path),
         "--host", "127.0.0.1",
-        "--port", str(app_port),
-        "--log-level", "warning"
+        "--port", str(app_port)
     ]
 
     # Launch Proxy in a background thread to hide it from CML's active Jupyter loop
