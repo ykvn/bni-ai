@@ -78,7 +78,7 @@ def main() -> None:
         "--port",
         str(app_port),
         "--log-level",
-        "info"
+        "warning"
     ]
     
     print(f"🌐 Starting Aligned Production MCP Server via subprocess on http://127.0.0.1:{app_port}")

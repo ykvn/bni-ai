@@ -112,7 +112,7 @@ def main():
         sys.executable, "-m", "uvicorn", "crewai_service.app.main:app",
         "--host", "127.0.0.1",
         "--port", str(app_port),
-        "--log-level", "info"
+        "--log-level", "warning"
     ]
     print(f"🌐 [CrewAI Service App] Starting HTTP REST Engine on http://127.0.0.1:{app_port}")
     api_process = subprocess.Popen(api_cmd, cwd=str(_ASK_DATA_ROOT), env=env)

@@ -61,7 +61,7 @@ def main() -> None:
     
     cmd = [
         sys.executable, "-m", "uvicorn", "app.main:app",       
-        "--host", "127.0.0.1", "--port", str(app_port), "--log-level", "info"
+        "--host", "127.0.0.1", "--port", str(app_port), "--log-level", "warning"
     ]
     print(f"🌐 [CML APP 1] Gateway REST API running on http://127.0.0.1:{app_port}")
     process = subprocess.Popen(cmd, cwd=str(backend_dir), env=env)
