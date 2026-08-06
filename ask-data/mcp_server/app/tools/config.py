@@ -42,6 +42,6 @@ class Settings(BaseSettings):
     db_name: str = Field(default="default", alias="DB_NAME")
 
     # Standardized Qdrant & Vector Embedding Storage
-    qdrant_server_url: str = Field(default="http://localhost:6333", alias="QDRANT_SERVER_URL")
+    qdrant_server_url: str = Field(default="http://localhost:6333", alias="VECTORDB_SERVER_URL")
 
 settings = Settings()  # type: ignore[call-arg]

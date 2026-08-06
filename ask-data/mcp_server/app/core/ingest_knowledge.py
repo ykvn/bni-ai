@@ -130,14 +130,12 @@ def build_ingest_config(backend_dir, env=None):
         docs_dir = os.path.abspath(os.path.join(backend_path, "..", "data", "documents"))
 
     # Safely handle missing env variables without crashing on .strip()[cite: 13]
-    qdrant_server_url = (env_map.get("QDRANT_SERVER_URL") or "").strip()
+    qdrant_server_url = (env_map.get("VECTORDB_SERVER_URL") or "").strip()
     embed_rerank_url = (
-        env_map.get("EMBED_RERANK_URL") 
-        or env_map.get("SEMANTIC_ENGINE_URL") 
-        or "http://127.0.0.1:8090"
+        env_map.get("EMBED_RERANK_URL")
     ).strip().rstrip("/")
     
-    collection_name = (env_map.get("QDRANT_COLLECTION") or "").strip()
+    collection_name = (env_map.get("DOCUMENT_COLLECTION") or "").strip()
     cml_token = (env_map.get("CML_TOKEN") or "").strip()
 
     parsed_url = urlparse(qdrant_server_url)
@@ -182,7 +180,7 @@ def run_auto_ingest(
 ):
     """Scans documents, flushes old context, and re-indexes into Qdrant via remote embed-rerank REST calls."""
     if not qdrant_server_url or not collection_name:
-        print("❌ [RAG ENGINE] Error: QDRANT_SERVER_URL or QDRANT_COLLECTION is not configured.", flush=True)
+        print("❌ [RAG ENGINE] Error: VECTORDB_SERVER_URL or DOCUMENT_COLLECTION is not configured.", flush=True)
         return
 
     print(f"📡 Connecting to Qdrant Endpoint at {qdrant_server_url}...", flush=True)

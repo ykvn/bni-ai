@@ -26,11 +26,11 @@ def main() -> None:
 
     # 2. Add validation guards to catch missing .env values early[cite: 14]
     if not config.get("qdrant_server_url"):
-        print("❌ CRITICAL ERROR: 'QDRANT_SERVER_URL' is missing or empty in .env!", flush=True)
+        print("❌ CRITICAL ERROR: 'VECTORDB_SERVER_URL' is missing or empty in .env!", flush=True)
         sys.exit(1)
 
     if not config.get("collection_name"):
-        print("❌ CRITICAL ERROR: 'QDRANT_COLLECTION' is missing or empty in .env!", flush=True)
+        print("❌ CRITICAL ERROR: 'DOCUMENT_COLLECTION' is missing or empty in .env!", flush=True)
         sys.exit(1)
 
     print("🔄 Re-indexing knowledge base...", flush=True)
