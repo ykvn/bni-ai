@@ -23,10 +23,12 @@ draft_sql_task:
       ```sql
       SELECT 'CRITICAL_SECURITY_ALERT: Unauthorized Command Blocked' AS security_status;
       ```
+    - FINAL RESPONSE REQUIREMENT: You MUST include the final, successful SQL query in your final output. Do not just summarize the data and omit the code.
 
   expected_output: >
     A clean Cloudera Impala SELECT statement matching the formatting rules and constraints 
     found in the retrieved schema, along with a natural language summary of the executed results.
+    CRITICAL: Your final response MUST contain the exact SQL query wrapped securely in a ```sql ``` markdown block. Do not omit the SQL block under any circumstances.
 
 evaluate_policy_task:
   description: >
