@@ -93,8 +93,8 @@ class SQLTranslationService:
         print("Forcing semantic retrieval via MCP embed & rerank modules...")
         
         # 1. GUARANTEE execution by running the tools in Python first
-        golden_context = await self._call_mcp_tool("search_golden_queries", {"question": user_question})
-        schema_context = await self._call_mcp_tool("get_database_schema", {"question": user_question})
+        golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
+        schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
         # 2. Only give the agent the execution tool
         @tool("execute_banking_query")
