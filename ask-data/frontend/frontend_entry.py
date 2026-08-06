@@ -58,6 +58,64 @@ def ensure_dependencies(frontend_dir: Path, env: dict) -> None:
     )
 
 
+def format_response_payload(payload: dict) -> str:
+    """
+    Formats any query payload (sync or async) into clean Markdown with 
+    SQL code blocks and structured Markdown tables.
+    """
+    if not isinstance(payload, dict):
+        return str(payload)
+
+    output_parts = []
+
+    # 1. Natural Language Response / Policy Text
+    if payload.get("response"):
+        output_parts.append(payload["response"])
+
+    # 2. SQL Query Code Block
+    if payload.get("predicted_sql"):
+        sql_text = payload["predicted_sql"].strip()
+        output_parts.append(f"### 🤖 Generated SQL:\n```sql\n{sql_text}\n```")
+
+    # 3. Data Results Table
+    if "data" in payload and payload["data"] is not None:
+        data = payload["data"]
+
+        # If data arrived as a stringified JSON string, parse it first
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except Exception:
+                pass
+
+        if not data:
+            output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
+        elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
+            row_count = payload.get("row_count", len(data))
+            headers_list = list(data[0].keys())
+
+            md_table = f"### 📊 Query Results ({row_count} rows):\n\n"
+            md_table += "| " + " | ".join(headers_list) + " |\n"
+            md_table += "|" + "|".join(["---"] * len(headers_list)) + "|\n"
+
+            for row in data:
+                if isinstance(row, dict):
+                    row_values = [str(row.get(h, "")).replace("|", "\\|") for h in headers_list]
+                    md_table += "| " + " | ".join(row_values) + " |\n"
+                else:
+                    clean_val = str(row).replace("|", "\\|")
+                    md_table += f"| {clean_val} |\n"
+
+            output_parts.append(md_table)
+        else:
+            output_parts.append(f"### 📊 Query Results:\n```json\n{json.dumps(data, indent=2, default=str)}\n```")
+
+    if not output_parts:
+        return f"```json\n{json.dumps(payload, indent=2, default=str)}\n```"
+
+    return "\n\n".join(output_parts)
+
+
 def build_ui() -> object:
     import gradio as gr
     import requests
@@ -90,6 +148,7 @@ def build_ui() -> object:
             response.raise_for_status()
             payload = response.json()
 
+            # Handle Asynchronous Job Queue Response
             if "job_id" in payload:
                 job_id = payload["job_id"]
                 yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking..."
@@ -122,50 +181,7 @@ def build_ui() -> object:
                         elif "predicted_sql" in job_data or "data" in job_data:
                             final_payload = job_data
                             
-                        output_parts = []
-                        
-                        if final_payload.get("response"):
-                            output_parts.append(final_payload["response"])
-                            
-                        if final_payload.get("predicted_sql"):
-                            output_parts.append(f"### 🤖 Generated SQL:\n```sql\n{final_payload['predicted_sql']}\n```")
-                            
-                        # -----------------------------------------------------------------
-                        # 🚀 SAFE DYNAMIC MARKDOWN TABLE GENERATOR
-                        # -----------------------------------------------------------------
-                        if "data" in final_payload:
-                            data = final_payload["data"]
-                            if not data:
-                                output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
-                            elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-                                row_count = final_payload.get("row_count", len(data))
-                                
-                                # Extract headers from the keys of the first dictionary
-                                headers_list = list(data[0].keys())
-                                
-                                # Build table structure
-                                md_table = f"### 📊 Query Results ({row_count} rows):\n\n"
-                                md_table += "| " + " | ".join(headers_list) + " |\n"
-                                md_table += "|" + "|".join(["---"] * len(headers_list)) + "|\n"
-                                
-                                # Populate rows safely without backslashes inside f-string brackets
-                                for row in data:
-                                    if isinstance(row, dict):
-                                        row_values = [str(row.get(h, "")).replace("|", "\\|") for h in headers_list]
-                                        md_table += "| " + " | ".join(row_values) + " |\n"
-                                    else:
-                                        clean_val = str(row).replace("|", "\\|")
-                                        md_table += f"| {clean_val} |\n"
-                                    
-                                output_parts.append(md_table)
-                            else:
-                                output_parts.append(f"### 📊 Query Results:\n```json\n{json.dumps(data, indent=2, default=str)}\n```")
-                        # -----------------------------------------------------------------
-                                
-                        if not output_parts:
-                            yield f"✅ Task completed, but payload format was unrecognized.\n\n**Raw API Response:**\n```json\n{json.dumps(job_data, indent=2, default=str)}\n```"
-                        else:
-                            yield "\n\n".join(output_parts)
+                        yield format_response_payload(final_payload)
                         break
                         
                     elif status == "failed":
@@ -175,14 +191,10 @@ def build_ui() -> object:
                     else:
                         yield f"⏳ CrewAI is currently {status} your request..."
 
+            # Handle Direct Synchronous API Response
             else:
-                if payload.get("response"):
-                    yield payload["response"]
-                elif payload.get("data"):
-                    yield f"```json\n{json.dumps(payload['data'], indent=2, default=str)}\n```"
-                else:
-                    yield str(payload)
-                    
+                yield format_response_payload(payload)
+
         except Exception as exc:
             error_details = str(exc) if str(exc) and str(exc) != "0" else repr(exc)
             yield f"❌ Error:\n{error_details}"
