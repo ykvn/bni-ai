@@ -118,7 +118,8 @@ class SQLTranslationService:
 
         draft_sql_task = Task(
             config=self.tasks_config["draft_sql_task"],
-            agent=sql_developer
+            agent=sql_developer,
+            tools=[mcp_search_golden_queries, mcp_get_database_schema, mcp_execute_banking_query]
         )
 
         orchestration_crew = Crew(

@@ -2,9 +2,10 @@ draft_sql_task:
   description: >
     Process the following user query: '{user_question}'.
 
-    INSTRUCTION: You do not have the database schema provided upfront. 
-    You must strictly follow these steps to retrieve the context and execute the query:
+    ZERO-TOLERANCE MANDATE: You possess NO prior knowledge of this database. 
+    You are FORBIDDEN from guessing table names, column names, or writing any SQL until you have successfully executed BOTH `search_golden_queries` and `get_database_schema`.
     
+    You must strictly follow these steps to retrieve the context and execute the query:
     1. USE TOOL `search_golden_queries` passing the user's question to find verified SQL templates for similar requests.
     2. USE TOOL `get_database_schema` passing the user's question to retrieve the exact table structures and column names needed.
     3. Draft a clean Cloudera Impala SELECT statement using the retrieved schema and templates.
@@ -12,7 +13,7 @@ draft_sql_task:
     
     If the query fails due to a schema or syntax error, analyze the error, adjust your SQL, and try again.
 
-    🚨 OPERATIONAL BOUNDARIES & GUARDRAILS 🚨
+    OPERATIONAL BOUNDARIES & GUARDRAILS
     - TABLE MATCHING: CRITICAL. You MUST strictly use the actual table and column names returned by your tools. DO NOT guess or invent generic tables.
     - FORMATTING: Output your generated SQL query wrapped inside a clean markdown ```sql ``` block wrapper.
     - MAX LIMIT: If the user specifies an explicit record count (e.g., 'show 17...'), use that number as your LIMIT clause. Only default to LIMIT 100 if no quantity is mentioned.
