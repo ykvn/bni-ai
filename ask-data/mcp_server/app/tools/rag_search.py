@@ -6,7 +6,7 @@ from app.tools.qdrant_client import search_documents
 
 def search_policy_documents(query: str, n_results: int = 3) -> str:
     """Searches the enterprise knowledge base for policy documents via Qdrant."""
-    results = search_documents(query, settings.qdrant_collection, top_k=n_results)
+    results = search_documents(query, settings.document_collection, top_k=n_results)
 
     if results and "error" in results[0]:
         return f"Error: {results[0]['error']}"
