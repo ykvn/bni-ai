@@ -5,6 +5,10 @@ import json
 import subprocess
 from pathlib import Path
 
+# Suppress SSL certificate verification warnings in enterprise CML environments
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 # Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
@@ -77,7 +81,11 @@ def build_ui() -> object:
 
             yield "Submitting question to CrewAI Engine..."
             response = requests.post(
-                backend_url, json={"question": question}, headers=headers, timeout=30
+                backend_url, 
+                json={"question": question}, 
+                headers=headers, 
+                timeout=30,
+                verify=False  # Prevents SSL internal proxy failures in CML
             )
             response.raise_for_status()
             payload = response.json()
@@ -91,7 +99,12 @@ def build_ui() -> object:
                 while True:
                     time.sleep(2.0)
                     
-                    status_response = requests.get(job_status_url, headers=headers, timeout=10)
+                    status_response = requests.get(
+                        job_status_url, 
+                        headers=headers, 
+                        timeout=10,
+                        verify=False  # Prevents SSL internal proxy failures in CML
+                    )
                     status_response.raise_for_status()
                     job_data = status_response.json()
                     status = job_data.get("status")
@@ -102,7 +115,8 @@ def build_ui() -> object:
                         if "result" in job_data and isinstance(job_data["result"], str):
                             try:
                                 final_payload = json.loads(job_data["result"])
-                            except: pass
+                            except Exception: 
+                                pass
                         elif "result" in job_data and isinstance(job_data["result"], dict):
                             final_payload = job_data["result"]
                         elif "predicted_sql" in job_data or "data" in job_data:
@@ -117,13 +131,14 @@ def build_ui() -> object:
                             output_parts.append(f"### 🤖 Generated SQL:\n```sql\n{final_payload['predicted_sql']}\n```")
                             
                         # -----------------------------------------------------------------
-                        # 🚀 NEW: DYNAMIC MARKDOWN TABLE GENERATOR
+                        # 🚀 SAFE DYNAMIC MARKDOWN TABLE GENERATOR
                         # -----------------------------------------------------------------
                         if "data" in final_payload:
                             data = final_payload["data"]
                             if not data:
                                 output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
-                            else:
+                            # Verify data is a list of dictionaries before attempting table render
+                            elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
                                 row_count = final_payload.get("row_count", len(data))
                                 
                                 # Extract headers from the keys of the first dictionary
@@ -136,15 +151,20 @@ def build_ui() -> object:
                                 
                                 # Populate rows
                                 for row in data:
-                                    # Convert to string and escape pipes to prevent table breaking
-                                    row_values = [str(row.get(h, "")).replace("|", "\\|") for h in headers_list]
-                                    md_table += "| " + " | ".join(row_values) + " |\n"
+                                    if isinstance(row, dict):
+                                        row_values = [str(row.get(h, "")).replace("|", "\\|") for h in headers_list]
+                                        md_table += "| " + " | ".join(row_values) + " |\n"
+                                    else:
+                                        md_table += f"| {str(row).replace('|', '\\|')} |\n"
                                     
                                 output_parts.append(md_table)
+                            else:
+                                # Safe fallback if data contains non-dict elements or raw error objects
+                                output_parts.append(f"### 📊 Query Results:\n```json\n{json.dumps(data, indent=2, default=str)}\n```")
                         # -----------------------------------------------------------------
                                 
                         if not output_parts:
-                            yield f"✅ Task completed, but payload format was unrecognized.\n\n**Raw API Response:**\n```json\n{json.dumps(job_data, indent=2)}\n```"
+                            yield f"✅ Task completed, but payload format was unrecognized.\n\n**Raw API Response:**\n```json\n{json.dumps(job_data, indent=2, default=str)}\n```"
                         else:
                             yield "\n\n".join(output_parts)
                         break
@@ -160,13 +180,13 @@ def build_ui() -> object:
                 if payload.get("response"):
                     yield payload["response"]
                 elif payload.get("data"):
-                    # For immediate responses, format as a quick JSON block for safety
-                    yield f"```json\n{json.dumps(payload['data'], indent=2)}\n```"
+                    yield f"```json\n{json.dumps(payload['data'], indent=2, default=str)}\n```"
                 else:
                     yield str(payload)
                     
         except Exception as exc:
-            yield f"❌ Error:\n{exc}"
+            error_details = str(exc) if str(exc) and str(exc) != "0" else repr(exc)
+            yield f"❌ Error:\n{error_details}"
 
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
         gr.Markdown("# Bank Negara Indonesia Question Assistant")
