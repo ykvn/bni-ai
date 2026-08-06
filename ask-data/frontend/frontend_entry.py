@@ -58,62 +58,53 @@ def ensure_dependencies(frontend_dir: Path, env: dict) -> None:
     )
 
 
-def format_response_payload(payload: dict) -> str:
-    """
-    Formats any query payload (sync or async) into clean Markdown with 
-    SQL code blocks and structured Markdown tables.
-    """
+def parse_payload_to_ui(payload: dict):
+    """Parses payload into text components and a Pandas DataFrame for UI rendering."""
+    import pandas as pd
+    import gradio as gr
+    
+    text_parts = []
+    # Hide the table by default unless we have data
+    df_update = gr.update(visible=False, value=None)
+    
     if not isinstance(payload, dict):
-        return str(payload)
-
-    output_parts = []
-
-    # 1. Natural Language Response / Policy Text
+        return str(payload), df_update
+        
+    # 1. Natural Language Response
     if payload.get("response"):
-        output_parts.append(payload["response"])
-
-    # 2. SQL Query Code Block
+        text_parts.append(payload["response"])
+        
+    # 2. SQL Code Block
     if payload.get("predicted_sql"):
-        sql_text = payload["predicted_sql"].strip()
-        output_parts.append(f"### 🤖 Generated SQL:\n```sql\n{sql_text}\n```")
-
-    # 3. Data Results Table
+        text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{payload['predicted_sql'].strip()}\n```")
+        
+    # 3. True Tabular DataFrame Parsing
     if "data" in payload and payload["data"] is not None:
         data = payload["data"]
-
-        # If data arrived as a stringified JSON string, parse it first
+        
+        # Ensure stringified JSON is parsed
         if isinstance(data, str):
             try:
                 data = json.loads(data)
             except Exception:
                 pass
-
-        if not data:
-            output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
-        elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict):
-            row_count = payload.get("row_count", len(data))
-            headers_list = list(data[0].keys())
-
-            md_table = f"### 📊 Query Results ({row_count} rows):\n\n"
-            md_table += "| " + " | ".join(headers_list) + " |\n"
-            md_table += "|" + "|".join(["---"] * len(headers_list)) + "|\n"
-
-            for row in data:
-                if isinstance(row, dict):
-                    row_values = [str(row.get(h, "")).replace("|", "\\|") for h in headers_list]
-                    md_table += "| " + " | ".join(row_values) + " |\n"
-                else:
-                    clean_val = str(row).replace("|", "\\|")
-                    md_table += f"| {clean_val} |\n"
-
-            output_parts.append(md_table)
-        else:
-            output_parts.append(f"### 📊 Query Results:\n```json\n{json.dumps(data, indent=2, default=str)}\n```")
-
-    if not output_parts:
-        return f"```json\n{json.dumps(payload, indent=2, default=str)}\n```"
-
-    return "\n\n".join(output_parts)
+                
+        if isinstance(data, list) and len(data) > 0:
+            try:
+                # Convert the JSON array of dicts into a Pandas DataFrame
+                df = pd.DataFrame(data)
+                # Reveal the Dataframe component with the data
+                df_update = gr.update(visible=True, value=df)
+            except Exception as e:
+                text_parts.append(f"*(Could not render table: {e})*")
+        elif isinstance(data, list) and len(data) == 0:
+            text_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
+            
+    # Fallback if entirely unrecognized
+    if not text_parts and df_update["visible"] is False:
+        text_parts.append(f"```json\n{json.dumps(payload, indent=2, default=str)}\n```")
+        
+    return "\n\n".join(text_parts), df_update
 
 
 def build_ui() -> object:
@@ -128,7 +119,7 @@ def build_ui() -> object:
 
     def ask_backend(question: str):
         if not question.strip():
-            yield "Please enter a question."
+            yield "Please enter a question.", gr.update(visible=False)
             return
 
         try:
@@ -137,7 +128,8 @@ def build_ui() -> object:
             if cml_token:
                 headers["Authorization"] = f"Bearer {cml_token}"
 
-            yield "Submitting question to CrewAI Engine..."
+            yield "Submitting question to CrewAI Engine...", gr.update(visible=False)
+            
             response = requests.post(
                 backend_url, 
                 json={"question": question}, 
@@ -148,10 +140,9 @@ def build_ui() -> object:
             response.raise_for_status()
             payload = response.json()
 
-            # Handle Asynchronous Job Queue Response
             if "job_id" in payload:
                 job_id = payload["job_id"]
-                yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking..."
+                yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking...", gr.update(visible=False)
                 
                 job_status_url = f"{base_api_url}/job/{job_id}"
                 
@@ -170,42 +161,50 @@ def build_ui() -> object:
                     
                     if status == "completed":
                         final_payload = {}
+                        result_val = job_data.get("result")
                         
-                        if "result" in job_data and isinstance(job_data["result"], str):
+                        if isinstance(result_val, str):
                             try:
-                                final_payload = json.loads(job_data["result"])
-                            except Exception: 
-                                pass
-                        elif "result" in job_data and isinstance(job_data["result"], dict):
-                            final_payload = job_data["result"]
-                        elif "predicted_sql" in job_data or "data" in job_data:
+                                final_payload = json.loads(result_val)
+                            except Exception:
+                                final_payload = {"response": result_val}
+                        elif isinstance(result_val, dict):
+                            final_payload = result_val
+                        else:
                             final_payload = job_data
-                            
-                        yield format_response_payload(final_payload)
+
+                        text_out, df_out = parse_payload_to_ui(final_payload)
+                        yield text_out, df_out
                         break
                         
                     elif status == "failed":
                         error_msg = job_data.get("error", "Unknown error")
-                        yield f"❌ CrewAI Task Failed:\n{error_msg}"
+                        yield f"❌ CrewAI Task Failed:\n{error_msg}", gr.update(visible=False)
                         break
                     else:
-                        yield f"⏳ CrewAI is currently {status} your request..."
-
-            # Handle Direct Synchronous API Response
+                        yield f"⏳ CrewAI is currently {status} your request...", gr.update(visible=False)
             else:
-                yield format_response_payload(payload)
-
+                text_out, df_out = parse_payload_to_ui(payload)
+                yield text_out, df_out
+                
         except Exception as exc:
             error_details = str(exc) if str(exc) and str(exc) != "0" else repr(exc)
-            yield f"❌ Error:\n{error_details}"
+            yield f"❌ Error:\n{error_details}", gr.update(visible=False)
 
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
         gr.Markdown("# Bank Negara Indonesia Question Assistant")
         question_box = gr.Textbox(label="Question", lines=3)
         submit_btn = gr.Button("Ask")
-        output_box = gr.Markdown(label="Answer")
+        
+        # 🚀 NEW: Split output into Text (for SQL/Answers) and a Dataframe (for the true Table)
+        output_text = gr.Markdown(label="Answer & SQL")
+        output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
-        submit_btn.click(fn=ask_backend, inputs=question_box, outputs=output_box)
+        submit_btn.click(
+            fn=ask_backend, 
+            inputs=question_box, 
+            outputs=[output_text, output_table]
+        )
 
     return demo
 
