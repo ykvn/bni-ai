@@ -41,11 +41,8 @@ class Settings(BaseSettings):
     cdp_pass: str = Field(alias="CDP_PASS")
     db_name: str = Field(default="default", alias="DB_NAME")
 
-    # Standardized Qdrant & Vector Embedding Storage (Local Transformers Layer)
-    # qdrant_persist_dir: str = Field(default="/home/cdsw/ask-data/qdrant_server/qdrant_db", alias="QDRANT_DATA_PATH")
-    qdrant_server_url: str = Field(default="http://localhost:6333", alias="QDRANT_SERVER_URL")
-    qdrant_collection: str = Field(default="bank_abc_knowledge", alias="QDRANT_COLLECTION")
-    qdrant_model: str = Field(default="all-MiniLM-L6-v2", alias="QDRANT_MODEL")
-
+    # Standardized Qdrant & Vector Embedding Storage
+    qdrant_server_url: str = Field(default="http://localhost:6333", alias="VECTORDB_SERVER_URL")
+    document_collection: str = Field(default="bni_document_knowledge", alias="DOCUMENT_COLLECTION")
 
 settings = Settings()  # type: ignore[call-arg]

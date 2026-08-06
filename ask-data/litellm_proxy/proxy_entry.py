@@ -29,35 +29,21 @@ class DynamicCDPAuthHandler(CustomLogger):
     """
 
     async def async_pre_call_hook(self, *args, **kwargs):
-        # LiteLLM's real signature is (user_api_key_dict, cache, data, call_type).
-        # We absorb *args/**kwargs to survive version differences across
-        # LiteLLM releases, but we must actually locate the real `data`
-        # dict rather than reading/writing a disconnected copy — otherwise
-        # the token injection silently does nothing.
         data = kwargs.get("data")
         if data is None and len(args) >= 3:
-            data = args[2]  # positional slot 3 (after self) = data
+            data = args[2] 
 
         if not isinstance(data, dict):
-            # Couldn't find the real request dict this call — do nothing
-            # rather than risk corrupting/replacing it with something empty.
-            print("⚠️ [DynamicCDPAuthHandler] Could not locate request 'data' dict; skipping auth injection this call.")
             return None
 
         fresh_token = get_cdp_token() or os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN")
 
         if fresh_token:
             extra_headers = data.get("extra_headers") or {}
-            # Mutate the dictionary in-place to inject the fresh token
             extra_headers["Authorization"] = f"Bearer {fresh_token}"
             extra_headers["X-CDSW-API-Key"] = fresh_token
             data["extra_headers"] = extra_headers
-        else:
-            print("⚠️ [DynamicCDPAuthHandler] No CDP token available; request sent without refreshed auth headers.")
 
-        # Returning the same (now-enriched) data dict is safe — it still
-        # has 'model', 'messages', etc. intact, unlike returning a fresh
-        # or empty dict which would silently strip them downstream.
         return data
 
 
@@ -83,7 +69,6 @@ def resolve_proxy_dir() -> Path:
 
 def _start_isolated_proxy():
     """Runs LiteLLM inside an isolated thread to bypass Uvicorn's event loop restrictions."""
-    # ⚡ Give this thread a clean event loop so Uvicorn doesn't crash
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
@@ -109,21 +94,25 @@ def main() -> None:
 
     app_port = int(os.environ.get("CDSW_APP_PORT", 8100))
 
+    # ⚡ NEW: Silence LiteLLM and Uvicorn log flooding
+    os.environ["LITELLM_LOG"] = "ERROR"
+    os.environ["UVICORN_LOG_LEVEL"] = "warning"
+    litellm.suppress_debug_info = True
+    litellm.set_verbose = False
+
     print(f"📡 Launching In-Process LiteLLM Proxy Gateway with Dynamic CDP Auth on http://127.0.0.1:{app_port}")
 
     sys.argv = [
         "litellm",
         "--config", str(config_path),
         "--host", "127.0.0.1",
-        "--port", str(app_port),
+        "--port", str(app_port)
     ]
 
-    # Launch Proxy in a background thread to hide it from CML's active Jupyter loop
     proxy_thread = threading.Thread(target=_start_isolated_proxy, daemon=True)
     proxy_thread.start()
 
     try:
-        # Keep the main thread alive so the CML App doesn't exit
         proxy_thread.join()
     except KeyboardInterrupt:
         print("\n🛑 Shutting down Proxy Gateway...")

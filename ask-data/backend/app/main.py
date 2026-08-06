@@ -6,9 +6,7 @@ from app.schemas.query import QueryRequest
 app = FastAPI(title="Bank ABC NL-to-SQL Core API Gateway")
 
 CREWAI_SERVICE_URL = os.getenv("CREWAI_SERVICE_URL", "").rstrip("/")
-CML_TOKEN = (
-    os.getenv("CML_TOKEN")
-).strip()
+CML_TOKEN = os.getenv("CML_TOKEN", "").strip()
 
 
 def _get_httpx_client() -> httpx.Client:

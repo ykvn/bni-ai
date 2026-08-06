@@ -5,6 +5,10 @@ import json
 import subprocess
 from pathlib import Path
 
+# Suppress SSL certificate verification warnings in enterprise CML environments
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 # Global config: load the single ask-data/.env BEFORE any service code reads env vars.
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
@@ -54,6 +58,51 @@ def ensure_dependencies(frontend_dir: Path, env: dict) -> None:
     )
 
 
+def parse_payload_to_ui(payload: dict):
+    """Parses payload into text components and a Pandas DataFrame for UI rendering."""
+    import pandas as pd
+    import gradio as gr
+    
+    text_parts = []
+    df_update = gr.update(visible=False, value=None)
+    
+    if not isinstance(payload, dict):
+        return str(payload), df_update
+        
+    # 1. Natural Language Response
+    if payload.get("response"):
+        text_parts.append(payload["response"])
+        
+    # 2. SQL Code Block
+    if payload.get("predicted_sql"):
+        text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{payload['predicted_sql'].strip()}\n```")
+        
+    # 3. True Tabular DataFrame Parsing
+    if "data" in payload and payload["data"] is not None:
+        data = payload["data"]
+        
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except Exception:
+                pass
+                
+        if isinstance(data, list) and len(data) > 0:
+            try:
+                df = pd.DataFrame(data)
+                df_update = gr.update(visible=True, value=df)
+            except Exception as e:
+                text_parts.append(f"*(Could not render table: {e})*")
+        elif isinstance(data, list) and len(data) == 0:
+            text_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
+            
+    # Fallback if entirely unrecognized
+    if not text_parts and df_update["visible"] is False:
+        text_parts.append(f"```json\n{json.dumps(payload, indent=2, default=str)}\n```")
+        
+    return "\n\n".join(text_parts), df_update
+
+
 def build_ui() -> object:
     import gradio as gr
     import requests
@@ -66,7 +115,7 @@ def build_ui() -> object:
 
     def ask_backend(question: str):
         if not question.strip():
-            yield "Please enter a question."
+            yield "Please enter a question.", gr.update(visible=False)
             return
 
         try:
@@ -75,93 +124,90 @@ def build_ui() -> object:
             if cml_token:
                 headers["Authorization"] = f"Bearer {cml_token}"
 
-            yield "Submitting question to CrewAI Engine..."
+            yield "Submitting question to CrewAI Engine...", gr.update(visible=False)
+            
             response = requests.post(
-                backend_url, json={"question": question}, headers=headers, timeout=30
+                backend_url, 
+                json={"question": question}, 
+                headers=headers, 
+                timeout=30,
+                verify=False
             )
             response.raise_for_status()
             payload = response.json()
 
             if "job_id" in payload:
                 job_id = payload["job_id"]
-                yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking..."
+                yield f"⏳ Task queued (Job ID: {job_id}). CrewAI is thinking...", gr.update(visible=False)
                 
-                # Corrected endpoint to match the backend FastAPI implementation
                 job_status_url = f"{base_api_url}/job/{job_id}"
                 
                 while True:
                     time.sleep(2.0)
                     
-                    status_response = requests.get(job_status_url, headers=headers, timeout=10)
+                    status_response = requests.get(
+                        job_status_url, 
+                        headers=headers, 
+                        timeout=10,
+                        verify=False
+                    )
                     status_response.raise_for_status()
                     job_data = status_response.json()
                     status = job_data.get("status")
                     
                     if status == "completed":
-                        final_payload = {}
                         
-                        # 1. Is the payload wrapped in a JSON string?
-                        if "result" in job_data and isinstance(job_data["result"], str):
-                            try:
-                                final_payload = json.loads(job_data["result"])
-                            except: pass
-                                
-                        # 2. Is the payload already parsed as a dictionary?
-                        elif "result" in job_data and isinstance(job_data["result"], dict):
-                            final_payload = job_data["result"]
-                            
-                        # 3. Did the backend flatten the payload directly into job_data?
-                        elif "predicted_sql" in job_data or "data" in job_data:
-                            final_payload = job_data
-                            
-                        output_parts = []
+                        # -------------------------------------------------------------
+                        # 🚀 NEW: Robust Payload Unwrapping
+                        # -------------------------------------------------------------
+                        final_payload = job_data
                         
-                        if final_payload.get("response"):
-                            output_parts.append(final_payload["response"])
-                            
-                        if final_payload.get("predicted_sql"):
-                            output_parts.append(f"### 🤖 Generated SQL:\n```sql\n{final_payload['predicted_sql']}\n```")
-                            
-                        if "data" in final_payload:
-                            data = final_payload["data"]
-                            if not data:
-                                output_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
-                            else:
-                                row_count = final_payload.get("row_count", len(data))
-                                output_parts.append(f"### 📊 Query Results ({row_count} rows):\n```json\n{json.dumps(data, indent=2)}\n```")
+                        if "result" in job_data:
+                            if isinstance(job_data["result"], str):
+                                try:
+                                    final_payload = json.loads(job_data["result"])
+                                except Exception:
+                                    final_payload = {"response": job_data["result"]}
+                            elif isinstance(job_data["result"], dict):
+                                final_payload = job_data["result"]
                                 
-                        if not output_parts:
-                            # 🚨 DEBUG MODE: Print exactly what the API returned so we can diagnose it!
-                            yield f"✅ Task completed, but payload format was unrecognized.\n\n**Raw API Response:**\n```json\n{json.dumps(job_data, indent=2)}\n```"
-                        else:
-                            yield "\n\n".join(output_parts)
+                        # Matches the exact structure shown in your screenshot
+                        elif "data" in job_data and isinstance(job_data["data"], dict):
+                            if "predicted_sql" in job_data["data"]:
+                                final_payload = job_data["data"]
+                        # -------------------------------------------------------------
+
+                        text_out, df_out = parse_payload_to_ui(final_payload)
+                        yield text_out, df_out
                         break
                         
                     elif status == "failed":
                         error_msg = job_data.get("error", "Unknown error")
-                        yield f"❌ CrewAI Task Failed:\n{error_msg}"
+                        yield f"❌ CrewAI Task Failed:\n{error_msg}", gr.update(visible=False)
                         break
                     else:
-                        yield f"⏳ CrewAI is currently {status} your request..."
-
+                        yield f"⏳ CrewAI is currently {status} your request...", gr.update(visible=False)
             else:
-                if payload.get("response"):
-                    yield payload["response"]
-                elif payload.get("data"):
-                    yield json.dumps(payload["data"], indent=2)
-                else:
-                    yield str(payload)
-                    
+                text_out, df_out = parse_payload_to_ui(payload)
+                yield text_out, df_out
+                
         except Exception as exc:
-            yield f"❌ Error:\n{exc}"
+            error_details = str(exc) if str(exc) and str(exc) != "0" else repr(exc)
+            yield f"❌ Error:\n{error_details}", gr.update(visible=False)
 
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
         gr.Markdown("# Bank Negara Indonesia Question Assistant")
         question_box = gr.Textbox(label="Question", lines=3)
         submit_btn = gr.Button("Ask")
-        output_box = gr.Markdown(label="Answer")
+        
+        output_text = gr.Markdown(label="Answer & SQL")
+        output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
-        submit_btn.click(fn=ask_backend, inputs=question_box, outputs=output_box)
+        submit_btn.click(
+            fn=ask_backend, 
+            inputs=question_box, 
+            outputs=[output_text, output_table]
+        )
 
     return demo
 

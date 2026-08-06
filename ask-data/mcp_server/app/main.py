@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import anyio
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from starlette.routing import Mount
@@ -13,11 +12,9 @@ from mcp.server.sse import SseServerTransport
 from app.tools.config import settings  
 from app.tools.execute_banking_query import execute_banking_query
 from app.tools.get_database_schema import get_database_schema
+from app.tools.search_golden_queries import search_golden_queries  # ⚡ NEW RAG TOOL
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 from app.tools.dormant_risk import calculate_dormant_account_risk
-
-# Import the embedder directly so we can pre-warm it without needing extra functions
-from app.tools.qdrant_client import _get_embedding_model 
 
 # 1. Initialize the central FastMCP application state
 mcp = FastMCP("Bank-ABC-Modular-Orchestrator")
@@ -26,12 +23,21 @@ mcp = FastMCP("Bank-ABC-Modular-Orchestrator")
 sse = SseServerTransport("/messages")
 
 @mcp.tool(name="get_database_schema")
-def mcp_get_database_schema() -> str:
+async def mcp_get_database_schema(user_question: str) -> str:
     """
-    Retrieves the structural enterprise schema configuration, table layouts, 
-    available columns, column types, primary/foreign keys, and data relationships.
+    Dynamically retrieves the structural enterprise schema configuration, table layouts, 
+    and available columns relevant to the user's question. Use this to understand the data structure.
     """
-    return get_database_schema()
+    # ⚡ Offload the heavy search to a background thread to prevent the SSE stream from disconnecting
+    return await anyio.to_thread.run_sync(get_database_schema, user_question, 10, 4)
+
+@mcp.tool(name="search_golden_queries")
+async def mcp_search_golden_queries(user_question: str) -> str:
+    """
+    Searches the Golden Queries database for verified, highly accurate SQL templates 
+    matching the user's intent. Use this to learn complex SQL syntax (like window functions or joins).
+    """
+    return await anyio.to_thread.run_sync(search_golden_queries, user_question, 5, 2)
 
 @mcp.tool(name="execute_banking_query")
 def mcp_execute_banking_query(sql_query: str) -> str:
@@ -47,7 +53,6 @@ async def mcp_search_policy_documents(query: str) -> str:
     Performs a semantic vector distance search against local persistent enterprise banking manuals,
     compliance guidelines, and SOP documentation (Qdrant) to return matching structural context fragments.
     """
-    # ⚡ Offload the heavy search to a background thread to prevent the SSE stream from disconnecting
     return await anyio.to_thread.run_sync(perform_rag_search, query, 3)
 
 @mcp.tool(name="evaluate_dormant_account_risk")
@@ -60,21 +65,10 @@ def mcp_evaluate_dormant_account_risk(days_inactive: int, account_balance: float
 
 
 # 3. Create the FastAPI container to manage incoming enterprise cluster traffic
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("🧠 [MCP STARTUP] Pre-warming embedding model weights...", flush=True)
-    try:
-        _get_embedding_model()  # Loads the HuggingFace model into memory at startup
-        print("✅ [MCP STARTUP] Embedding model pre-warmed and ready.", flush=True)
-    except Exception as e:
-        print(f"⚠️ [MCP STARTUP WARNING] Failed to pre-warm embedder: {e}", flush=True)
-    yield
-
-app = FastAPI(title="Bank ABC Production MCP Gateway", lifespan=lifespan)
+app = FastAPI(title="Bank ABC Production MCP Gateway")
 
 # Route incoming protocol control packets cleanly into the SSE transport layer
 app.router.routes.append(Mount("/messages", app=sse.handle_post_message))
-
 
 @app.get("/")
 @app.get("/health")
@@ -85,7 +79,6 @@ def platform_health_check():
         "protocol": "Model Context Protocol v1", 
         "transport": "Server-Sent Events (SSE)"
     }
-
 
 @app.get("/sse")
 async def handle_sse_handshake(request: Request):
@@ -102,9 +95,14 @@ async def handle_sse_handshake(request: Request):
 # =====================================================================
 
 @app.get("/api/test/schema")
-def test_schema_tool():
+def test_schema_tool(user_question: str):
     """Interactive playground to test your get_database_schema tool"""
-    return {"raw_yaml_configuration": get_database_schema()}
+    return {"matched_schema": get_database_schema(user_question)}
+
+@app.get("/api/test/golden_queries")
+def test_golden_queries_tool(user_question: str):
+    """Interactive playground to test your search_golden_queries tool"""
+    return {"matched_queries": search_golden_queries(user_question)}
 
 @app.post("/api/test/sql")
 def test_sql_tool(sql_query: str):

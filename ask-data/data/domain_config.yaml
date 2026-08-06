@@ -1,202 +1,184 @@
-# ask-data/backend/domain_config.yaml
 version: "1.0"
 domain: "Bank Negara Indonesia Customer Analytics"
 database_type: "Cloudera Impala"
 database_name: "test"
 
 tables:
-  cai_customers:
-    description: |
-      Contains core customer demographic profiles. 
-      CRITICAL: This table does NOT have a 'status' column. If a user asks for 'active' customers, 
-      you MUST INNER JOIN the 'savings' table on customer_id and filter WHERE savings.status = 'ACTIVE'. 
-      NEVER append 'WHERE status = ...' directly to this table.
+  - name: cai_customers
+    description: >
+      Contains core customer demographic profiles.
+      CRITICAL JOIN RULE: This table does NOT have a 'status' column. If a user asks for 'active' customers, 
+      you MUST INNER JOIN 'cai_savings' on customer_id and filter WHERE cai_savings.status = 'ACTIVE'. 
+      NEVER append 'WHERE status = ...' directly to cai_customers.
     columns:
-      customer_id:
+      - name: customer_id
         type: "INT"
-        description: "Unique internal identity tracking number and primary key for each customer."
         primary_key: true
-      first_name:
+        description: "Unique internal identity tracking number and primary key for each customer."
+      - name: first_name
         type: "STRING"
         description: "The customer's first name."
-      last_name:
+      - name: last_name
         type: "STRING"
         description: "The customer's last name or surname."
-      email:
+      - name: email
         type: "STRING"
         description: "The electronic email address of the account holder."
-      birth_date:
+      - name: birth_date
         type: "DATE"
         description: "Date of birth. Crucial for calculating age or identifying upcoming birthdays."
-      bank_name:
+      - name: bank_name
         type: "STRING"
         description: "The banking institution name (e.g., 'ABC', 'BNI'). Filter by this when queries specify a particular bank's customers."
-      join_date:
+      - name: join_date
         type: "DATE"
         description: "The exact date the customer first registered an account with the bank."
-      
-  cai_savings:
-    description: "Liquid savings account data including current balances and interest rates."
+
+  - name: cai_savings
+    description: "Liquid savings account data including current balances and interest rates. Status values are 'ACTIVE' or 'DORMANT'."
     columns:
-      savings_id:
+      - name: savings_id
         type: "INT"
-        description: "Unique identity primary key for the savings record."
         primary_key: true
-      customer_id:
+        description: "Unique identity primary key for the savings record."
+      - name: customer_id
         type: "INT"
-        description: "Foreign key linking this account back to the customer profile."
-        references: "customers.customer_id"
-      account_number:
+        references: "cai_customers.customer_id"
+        description: "Foreign key linking this account back to cai_customers.customer_id."
+      - name: account_number
         type: "STRING"
         description: "The unique public-facing alphanumeric bank account identifier number."
-      balance:
+      - name: balance
         type: "DECIMAL(15,2)"
         description: "Current liquid money available. Use this for 'total savings' or 'wealthiest customers' metrics."
-      interest_rate:
+      - name: interest_rate
         type: "DECIMAL(4,2)"
         description: "The annual percentage yield interest tracking rate assigned to this savings account."
-      status:
+      - name: status
         type: "STRING"
         description: "Account state. Expected values are 'ACTIVE' or 'DORMANT'."
 
-  cai_deposits:
+  - name: cai_deposits
     description: "Time deposits / fixed-term investment accounts with specific lock-in periods."
     columns:
-      deposit_id:
+      - name: deposit_id
         type: "INT"
-        description: "Unique primary key for the fixed deposit record."
         primary_key: true
-      customer_id:
+        description: "Unique primary key for the fixed deposit record."
+      - name: customer_id
         type: "INT"
-        description: "Foreign key mapping back to the customer profile record."
-        references: "customers.customer_id"
-      account_number:
+        references: "cai_customers.customer_id"
+        description: "Foreign key mapping back to cai_customers.customer_id."
+      - name: account_number
         type: "STRING"
         description: "The unique account number identifier for this deposit facility."
-      principal_amount:
+      - name: principal_amount
         type: "DECIMAL(15,2)"
         description: "The initial locked investment asset amount."
-      maturity_date:
+      - name: maturity_date
         type: "DATE"
         description: "The date when the fixed deposit expires and pays out. Check this for 'approaching maturity' questions."
-      interest_rate:
+      - name: interest_rate
         type: "DECIMAL(4,2)"
         description: "The fixed contract interest rate paid out at maturity."
-      status:
+      - name: status
         type: "STRING"
         description: "The current status state of the investment term (e.g., 'ACTIVE')."
 
-  cai_loans:
+  - name: cai_loans
     description: "Credit facilities and borrowing data extended to customers."
     columns:
-      loan_id:
+      - name: loan_id
         type: "INT"
-        description: "Unique identity primary key for the loan entry."
         primary_key: true
-      customer_id:
+        description: "Unique identity primary key for the loan entry."
+      - name: customer_id
         type: "INT"
-        description: "Foreign key mapping back to the customer debtor record."
-        references: "customers.customer_id"
-      loan_type:
+        references: "cai_customers.customer_id"
+        description: "Foreign key mapping back to cai_customers.customer_id."
+      - name: loan_type
         type: "STRING"
         description: "Type of loan facility (e.g., 'Home', 'Auto', 'Personal')."
-      principal_amount:
+      - name: principal_amount
         type: "DECIMAL(15,2)"
         description: "The original total borrowed credit capital sum."
-      outstanding_balance:
+      - name: outstanding_balance
         type: "DECIMAL(15,2)"
         description: "The remaining debt balance amount the customer still owes the bank."
-      maturity_date:
+      - name: maturity_date
         type: "DATE"
         description: "The final payoff deadline date for the loan obligation."
-      status:
+      - name: status
         type: "STRING"
         description: "Operational loan indicator flag status state (e.g., 'ACTIVE')."
 
-  cai_credit_cards:
+  - name: cai_credit_cards
     description: "Credit card account statements, revolving limits, and balances extended to customers."
     columns:
-      card_id:
+      - name: card_id
         type: "INT"
-        description: "Unique primary key for the card instance."
         primary_key: true
-      customer_id:
+        description: "Unique primary key for the card instance."
+      - name: customer_id
         type: "INT"
-        description: "Foreign key tracking which customer owns the credit card account limit."
-        references: "customers.customer_id"
-      card_number:
+        references: "cai_customers.customer_id"
+        description: "Foreign key tracking customer ownership in cai_customers.customer_id."
+      - name: card_number
         type: "STRING"
         description: "The unique plastic card PAN number format identifier sequence."
-      credit_limit:
+      - name: credit_limit
         type: "DECIMAL(15,2)"
         description: "The maximum revolving credit threshold limit extended to the customer."
-      current_balance:
+      - name: current_balance
         type: "DECIMAL(15,2)"
         description: "The active amount spent and currently owed on the credit card balance."
-      expiry_date:
+      - name: expiry_date
         type: "DATE"
         description: "The operational expiration timeline date of the card."
-      status:
+      - name: status
         type: "STRING"
         description: "Revolving line risk indicators. Expected values are 'ACTIVE' or 'WARNING'."
 
-  cai_transactions:
+  - name: cai_transactions
     description: "Tracks all financial ledger postings, operational deposits, cash extractions, and adjustments across accounts."
     columns:
-      transaction_id:
+      - name: transaction_id
         type: "INT"
-        description: "Unique internal tracking sequential ledger primary key."
         primary_key: true
-      account_number:
+        description: "Unique internal tracking sequential ledger primary key."
+      - name: account_number
         type: "STRING"
-        description: "The account target number receiving or sending the asset allocation. Joins back to savings or deposits account numbers."
-      amount:
+        references: "cai_savings.account_number OR cai_deposits.account_number"
+        description: "The account target number receiving or sending funds. Joins back to cai_savings or cai_deposits."
+      - name: amount
         type: "DECIMAL(15,2)"
         description: "The absolute numerical money value of the execution."
-      transaction_type:
+      - name: transaction_type
         type: "STRING"
-        description: "Accounting ledger category direction indicator flags. Expected values are 'DEBIT' (withdrawals/charges) or 'CREDIT' (deposits/payroll)."
-      transaction_timestamp:
+        description: "Accounting ledger category direction. Expected values are 'DEBIT' (withdrawals/charges) or 'CREDIT' (deposits/payroll)."
+      - name: transaction_timestamp
         type: "TIMESTAMP"
         description: "The complete system timestamp tracker of when the execution posted to the ledger."
-      description:
+      - name: description
         type: "STRING"
         description: "The descriptive transaction text annotation (e.g., 'ATM Withdrawal', 'Payroll Transfer')."
 
-  cai_branch_performance:
+  - name: cai_branch_performance
     description: "Regional business analytics metrics and performance dashboards indicating growth metrics."
     columns:
-      branch_id:
+      - name: branch_id
         type: "INT"
-        description: "Unique branch identifier primary key."
         primary_key: true
-      branch_name:
+        description: "Unique branch identifier primary key."
+      - name: branch_name
         type: "STRING"
         description: "The clean geographical or municipal name designation of the branch location."
-      region:
+      - name: region
         type: "STRING"
         description: "The broader provincial administrative territory area grouping (e.g., 'DKI Jakarta')."
-      total_active_customers:
+      - name: total_active_customers
         type: "INT"
-        description: "Total foot-traffic client profile count actively assigned to this node."
-      monthly_target_achieved:
+        description: "Total client profile count actively assigned to this node."
+      - name: monthly_target_achieved
         type: "DECIMAL(5,2)"
         description: "Performance target milestone percentage index ranking tracker."
-
-common_rules:
-  temporal_queries:
-    birthday_this_week: "WHERE weekofyear(birth_date) = weekofyear(current_date())"
-    approaching_maturity: "WHERE maturity_date BETWEEN current_date() AND days_add(current_date(), 7)"
-
-  # 🎯 ALL SYSTEM RULES CONSOLIDATED IN ONE UNIFIED NESTED BLOCK
-  operational_boundaries:
-    table_matching: "CRITICAL: You MUST strictly use the actual table and column names listed in the layouts above. DO NOT guess or invent generic tables if they are not explicitly declared."
-    formatting: "Output your generated SQL query wrapped inside a clean markdown ```sql ``` block wrapper."
-    max_limit: "If the user specifies an explicit record count (e.g., 'show 17...'), use that number as your LIMIT clause. Only default to LIMIT 100 if no quantity is mentioned by the user."
-    security_abort: |
-      CRITICAL SECURITY GUARDRAIL: If you detect data mutation or administrative attempts 
-      (INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, OVERWRITE), you must abort operations 
-      immediately and return exactly this block:
-      ```sql
-      SELECT 'CRITICAL_SECURITY_ALERT: Unauthorized Command Blocked' AS security_status;
-      ```

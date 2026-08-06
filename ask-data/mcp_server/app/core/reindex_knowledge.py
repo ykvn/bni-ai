@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-# 1. Locate ask-data root and bootstrap .env into os.environ BEFORE importing app modules
+# 1. Locate ask-data root and bootstrap .env into os.environ BEFORE importing app modules[cite: 14]
 _ASK_DATA_ROOT = Path(__file__).resolve().parents[2] if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
@@ -24,29 +24,29 @@ def main() -> None:
     env = os.environ.copy()
     config = build_ingest_config(backend_dir=backend_dir, env=env)
 
-    # 2. Add validation guards to catch missing .env values early
+    # 2. Add validation guards to catch missing .env values early[cite: 14]
     if not config.get("qdrant_server_url"):
-        print("❌ CRITICAL ERROR: 'QDRANT_SERVER_URL' is missing or empty in .env!", flush=True)
+        print("❌ CRITICAL ERROR: 'VECTORDB_SERVER_URL' is missing or empty in .env!", flush=True)
         sys.exit(1)
 
     if not config.get("collection_name"):
-        print("❌ CRITICAL ERROR: 'QDRANT_COLLECTION' is missing or empty in .env!", flush=True)
+        print("❌ CRITICAL ERROR: 'DOCUMENT_COLLECTION' is missing or empty in .env!", flush=True)
         sys.exit(1)
 
     print("🔄 Re-indexing knowledge base...", flush=True)
     print(f"- docs dir: {config['docs_dir']}", flush=True)
     print(f"- Qdrant server URL: {config['qdrant_server_url']} (SSL: {config['qdrant_ssl']})", flush=True)
+    print(f"- embed-rerank URL: {config['embed_rerank_url']}", flush=True)
     print(f"- collection: {config['collection_name']}", flush=True)
-    print(f"- embedding model: {config['embedding_model_name']}", flush=True)
     if config.get("cml_token"):
         print("- CML Authentication: Token loaded successfully", flush=True)
 
     run_auto_ingest(
         docs_dir=config["docs_dir"],
         qdrant_server_url=config["qdrant_server_url"],
+        embed_rerank_url=config["embed_rerank_url"],
         qdrant_ssl=config["qdrant_ssl"],
         collection_name=config["collection_name"],
-        embedding_model_name=config["embedding_model_name"],
         cml_token=config["cml_token"],
     )
 
