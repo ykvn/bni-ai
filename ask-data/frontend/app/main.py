@@ -68,15 +68,12 @@ def build_ui() -> object:
         elif status_upper == "FAILED":
             badge = "❌ FAILED"
         else:
-            badge = f"🟡 {status_upper}"
+            badge = f"⏳ {status_upper}"
 
         time_label = "Completed Time" if is_final else "Current Time"
 
         return (
-            f"### 🆔 Job Execution Information\n"
-            f"* **JOB ID:** `{job_id}`\n"
-            f"* **Status:** `{badge}`\n"
-            f"* **{time_label}:** `{now_str}` (Duration: `{elapsed}s`)\n"
+            f"**Job ID:** `{job_id}` | **Status:** {badge} | **{time_label}:** `{now_str}` (Duration: `{elapsed}s`)"
         )
 
     def ask_backend(question: str):
@@ -92,10 +89,7 @@ def build_ui() -> object:
         
         # Initial yield before network dispatch
         initial_job_box = (
-            f"### Job Execution Information\n"
-            f"* **JOB ID:** `Submitting...`\n"
-            f"* **Status:** `🟡 ENQUEUEING`\n"
-            f"* **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
+            f"**Job ID:** `Submitting...` | **Status:** ⏳ ENQUEUEING | **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`"
         )
         yield gr.update(visible=True, value=initial_job_box), "Submitting question to CrewAI Engine...", gr.update(visible=False)
 
@@ -173,11 +167,12 @@ def build_ui() -> object:
             job_box_err = format_job_info("ERROR", "FAILED", start_time, is_final=True)
             yield gr.update(visible=True, value=job_box_err), f"❌ Exception Error:\n{error_details}", gr.update(visible=False)
 
-    with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
+    # Added gr.themes.Soft() to fix text color contrast issues
+    with gr.Blocks(title="Bank Negara Indonesia Q&A", theme=gr.themes.Soft()) as demo:
         gr.Markdown("# Bank Negara Indonesia Zero Query Assistant")
         
-        question_box = gr.Textbox(label="Question", lines=3)
-        submit_btn = gr.Button("Ask")
+        question_box = gr.Textbox(label="Question", lines=3, placeholder="Ask a question about the database...")
+        submit_btn = gr.Button("Ask", variant="primary")
 
         # Separate Information Box for JOB ID & Running Status
         job_info_box = gr.Markdown(visible=False)
@@ -188,7 +183,9 @@ def build_ui() -> object:
         submit_btn.click(
             fn=ask_backend, 
             inputs=question_box, 
-            outputs=[job_info_box, output_text, output_table]
+            outputs=[job_info_box, output_text, output_table],
+            concurrency_limit=None,  # 🚀 Fixes the queuing issue (Allows parallel tab execution)
+            show_progress="hidden"   # 🚀 Fixes the UI layout (Hides Gradio's floating orange boxes)
         )
 
     return demo
