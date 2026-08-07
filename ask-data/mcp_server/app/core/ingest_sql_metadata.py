@@ -82,14 +82,21 @@ def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_na
     metadatas = []
     
     # Chunk by table to keep context windows small and precise
-    for table in tables:
-        table_name = table.get("name", "unknown")
-        desc = table.get("description", "")
-        cols = ", ".join([c.get("name", "") for c in table.get("columns", [])])
+    for table in tables: #[cite: 15]
+        table_name = table.get("name", "unknown") #[cite: 15]
+        desc = table.get("description", "") #[cite: 15]
         
-        # This is the string the embedder will read to match user questions
-        searchable_text = f"Table: {table_name}\nDescription: {desc}\nColumns: {cols}"
-        table_texts.append(searchable_text)
+        # Include column names AND descriptions for richer semantic matching
+        col_details = []
+        for c in table.get("columns", []): #[cite: 15]
+            c_name = c.get("name", "")
+            c_desc = c.get("description", "")
+            col_details.append(f"{c_name} ({c_desc})" if c_desc else c_name)
+            
+        cols_formatted = ", ".join(col_details)
+        
+        searchable_text = f"Table: {table_name}\nDescription: {desc}\nColumns: {cols_formatted}"
+        table_texts.append(searchable_text) #[cite: 15]
         
         metadatas.append({
             "table_name": table_name,
