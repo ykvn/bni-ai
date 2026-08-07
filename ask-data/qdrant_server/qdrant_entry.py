@@ -16,50 +16,26 @@ import time
 import urllib.request
 from pathlib import Path
 
-# Global config: load the single ask-data/.env BEFORE any service code reads env vars.
+# Ensure ask-data/ root is importable before importing shared.*
 _ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
 
-import shared.config_loader as config_loader
-config_loader.bootstrap(hint=_ASK_DATA_ROOT)
+from shared.entry_utils import bootstrap_service, resolve_port, resolve_data_path, keep_alive_monitor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
-def resolve_port() -> int:
-    """Resolves the active port assigned by CML."""
-    for var in ["CDSW_APP_PORT", "PORT", "CDSW_PUBLIC_PORT"]:
-        logging.info("ENV %s = %s", var, os.getenv(var, "(not set)"))
-    raw = os.getenv("CDSW_APP_PORT") or os.getenv("PORT") or "8080"
-    try:
-        return int(raw)
-    except ValueError:
-        return 8080
-
-
-def resolve_data_path() -> str:
-    """Resolves and ensures the Qdrant persistence folder on disk."""
-    default = "/home/cdsw/ask-data/qdrant_server/qdrant_db"
-    path = os.getenv("QDRANT_DATA_PATH", default).strip()
-
-    if not os.path.isabs(path):
-        path = os.path.abspath(os.path.join("/home/cdsw", path.lstrip("/")))
-
-    Path(path).mkdir(parents=True, exist_ok=True)
-    return path
-
-
-from importlib.metadata import version, PackageNotFoundError
-
 def ensure_qdrant_client() -> None:
     """Ensures qdrant-client is installed in the current environment."""
+    from importlib.metadata import version, PackageNotFoundError
     try:
         qdrant_ver = version("qdrant-client")
         logging.info("qdrant-client %s already installed", qdrant_ver)
     except PackageNotFoundError:
         logging.info("Installing qdrant-client...")
         subprocess.run([sys.executable, "-m", "pip", "install", "-q", "qdrant-client>=1.7.0"], check=True)
+
 
 def ensure_qdrant_binary(server_dir: Path) -> Path:
     """
@@ -121,66 +97,68 @@ telemetry_disabled: true
     return config_path
 
 
-# 1. Validate environment dependencies
-ensure_qdrant_client()
+def main() -> None:
+    ask_data_root = bootstrap_service("qdrant")
+    server_dir = Path(__file__).resolve().parent if "__file__" in globals() else ask_data_root / "qdrant_server"
 
-import qdrant_client
+    # Ensure the service directory is importable in this process (CML runs from here)
+    if str(server_dir) not in sys.path:
+        sys.path.insert(0, str(server_dir))
 
-server_dir = Path(__file__).resolve().parent if "__file__" in globals() else Path("/home/cdsw/ask-data/qdrant_server")
-port = resolve_port()
-data_path = resolve_data_path()
-host = "127.0.0.1"  # Bound explicitly to loopback for CML Ingress Proxy
+    # 1. Validate environment dependencies
+    ensure_qdrant_client()
 
-qdrant_binary = ensure_qdrant_binary(server_dir)
-config_file = generate_qdrant_config(server_dir, data_path, host, port)
+    import qdrant_client
 
-from importlib.metadata import version
-logging.info("qdrant-client version : %s", version("qdrant-client"))
-logging.info("Host                  : %s", host)
-logging.info("Port                  : %s", port)
-logging.info("Data path             : %s", data_path)
-logging.info("Binary path           : %s", qdrant_binary)
+    port = resolve_port(default=8080)
+    data_path = resolve_data_path("QDRANT_DATA_PATH", "/home/cdsw/ask-data/qdrant_server/qdrant_db")
+    host = "127.0.0.1"  # Bound explicitly to loopback for CML Ingress Proxy
 
-# 2. Start Qdrant Server Subprocess
-logging.info("=== STARTING QDRANT SERVER ===")
+    qdrant_binary = ensure_qdrant_binary(server_dir)
+    config_file = generate_qdrant_config(server_dir, data_path, host, port)
 
-env = {
-    **os.environ,
-    "QDRANT__SERVICE__HOST": host,
-    "QDRANT__SERVICE__HTTP_PORT": str(port),
-    "QDRANT__STORAGE__STORAGE_PATH": data_path,
-}
+    from importlib.metadata import version
+    logging.info("qdrant-client version : %s", version("qdrant-client"))
+    logging.info("Host                  : %s", host)
+    logging.info("Port                  : %s", port)
+    logging.info("Data path             : %s", data_path)
+    logging.info("Binary path           : %s", qdrant_binary)
+
+    # 2. Start Qdrant Server Subprocess
+    logging.info("=== STARTING QDRANT SERVER ===")
+
+    env = {
+        **os.environ,
+        "QDRANT__SERVICE__HOST": host,
+        "QDRANT__SERVICE__HTTP_PORT": str(port),
+        "QDRANT__STORAGE__STORAGE_PATH": data_path,
+    }
+
+    def start_proc():
+        # Stream stderr directly to sys.stderr to prevent 64KB pipe buffer deadlocks
+        cmd = [str(qdrant_binary), "--config-path", str(config_file)]
+        return subprocess.Popen(
+            cmd,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            env=env,
+            text=True,
+        )
+
+    proc = start_proc()
+    logging.info("Qdrant PID: %s", proc.pid)
+
+    time.sleep(5)
+
+    if proc.poll() is not None:
+        logging.error("Qdrant died immediately with exit code %s!", proc.returncode)
+        raise RuntimeError(f"qdrant failed to start (exit code {proc.returncode})")
+
+    logging.info("✅ Qdrant is actively listening on %s:%s", host, port)
+
+    # Keep-alive process monitoring loop
+    keep_alive_monitor(proc, start_proc, "Qdrant")
 
 
-def start_proc():
-    # Stream stderr directly to sys.stderr to prevent 64KB pipe buffer deadlocks
-    cmd = [str(qdrant_binary), "--config-path", str(config_file)]
-    return subprocess.Popen(
-        cmd,
-        stdout=sys.stdout,
-        stderr=sys.stderr,
-        env=env,
-        text=True,
-    )
-
-
-proc = start_proc()
-logging.info("Qdrant PID: %s", proc.pid)
-
-time.sleep(5)
-
-if proc.poll() is not None:
-    logging.error("Qdrant died immediately with exit code %s!", proc.returncode)
-    raise RuntimeError(f"qdrant failed to start (exit code {proc.returncode})")
-
-logging.info("✅ Qdrant is actively listening on %s:%s", host, port)
-
-# Keep-alive process monitoring loop
-while True:
-    ret = proc.poll()
-    if ret is not None:
-        logging.error("Qdrant process exited unexpectedly (code %s). Restarting in 5s...", ret)
-        time.sleep(5)
-        proc = start_proc()
-        logging.info("Qdrant restarted, new PID: %s", proc.pid)
-    time.sleep(2)
+if __name__ == "__main__":
+    main()
