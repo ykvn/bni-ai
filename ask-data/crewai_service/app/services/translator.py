@@ -15,6 +15,9 @@ from pydantic import BaseModel, Field
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 
+from shared.sql_guard import sanitize_sql, has_forbidden_keyword
+from shared.cml_auth import build_cml_headers
+
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
 
@@ -79,10 +82,7 @@ class SQLTranslationService:
     async def _call_mcp_tool(self, tool_name: str, arguments: dict = None) -> str:
         sse_endpoint = f"{self.mcp_server_url}/sse"
         
-        headers = {}
-        if self.api_token:
-            headers["Authorization"] = f"Bearer {self.api_token}"
-            headers["X-CDSW-API-Key"] = self.api_token
+        headers = build_cml_headers(self.api_token)
         
         try:
             async with sse_client(
@@ -183,12 +183,10 @@ class SQLTranslationService:
         @tool("execute_banking_query")
         async def mcp_execute_banking_query(query: str) -> str:
             """Executes a SQL query against the database and stops the agent upon success."""
-            clean_query = re.sub(r"^```(?:sql)?\s*|^sql\s*", "", query.strip(), flags=re.IGNORECASE)
-            clean_query = re.sub(r"```$", "", clean_query).strip()
+            clean_query = sanitize_sql(query)
 
             # 🛡️ HARD GUARDRAIL: Intercept destructive commands BEFORE they reach the database
-            forbidden_keywords = r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|MERGE|OVERWRITE|GRANT|REVOKE)\b"
-            if re.search(forbidden_keywords, clean_query, re.IGNORECASE):
+            if has_forbidden_keyword(clean_query):
                 # Hard Guardrail: Immediately raise a security violation to terminate the CrewAI task.
                 raise SQLSecurityViolation("CRITICAL_SECURITY_ALERT: Destructive SQL commands are strictly prohibited.")
 

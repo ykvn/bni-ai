@@ -1,0 +1,144 @@
+"""
+Shared service entry-point utilities.
+
+Consolidates the repeated bootstrap, dependency installation, and
+Uvicorn launch boilerplate used by every service entry point.
+"""
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+def bootstrap_service(service_name: str, hint: Path | None = None) -> Path:
+    """
+    Resolves the ask-data/ project root, adds it to sys.path, and loads
+    the global .env. Returns the resolved project root.
+
+    Args:
+        service_name: Name of the service (used for logging).
+        hint: Optional path to prefer as a candidate root.
+    """
+    _ASK_DATA_ROOT = (
+        Path(__file__).resolve().parent.parent
+        if "__file__" in globals()
+        else Path("/home/cdsw/ask-data")
+    )
+    if str(_ASK_DATA_ROOT) not in sys.path:
+        sys.path.insert(0, str(_ASK_DATA_ROOT))
+
+    import shared.config_loader as config_loader
+    config_loader.bootstrap(hint=hint or _ASK_DATA_ROOT)
+
+    return _ASK_DATA_ROOT
+
+
+def resolve_service_dir(service_name: str, ask_data_root: Path) -> Path:
+    """
+    Resolves the service directory safely (notebook/session safe).
+    """
+    if "__file__" in globals():
+        return Path(__file__).resolve().parent
+    return ask_data_root / service_name
+
+
+def ensure_dependencies(service_dir: Path, env: dict) -> None:
+    """
+    Validates and installs packages from requirements.txt directly
+    into the CML application container runtime environment.
+    """
+    req_file = service_dir / "requirements.txt"
+    if not req_file.exists():
+        print(f"⚠️ No requirements.txt found at {req_file}. Skipping dependency installation.")
+        return
+
+    print(f"📦 Validating dependencies from {req_file}...")
+    try:
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-r", str(req_file), "-q"],
+            check=True,
+            env=env,
+        )
+        print("✅ Dependencies verified successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Critical Error: Failed to configure dependencies: {str(e)}")
+        sys.exit(1)
+
+
+def build_pythonpath(*dirs: Path, env: dict | None = None) -> str:
+    """Builds a PYTHONPATH string from the given directories plus any existing value."""
+    env = env or os.environ
+    existing = env.get("PYTHONPATH", "")
+    parts = [str(d) for d in dirs if d]
+    if existing:
+        parts.append(existing)
+    return ":".join(parts)
+
+
+def launch_uvicorn(
+    service_dir: Path,
+    app_module: str,
+    port: int,
+    env: dict,
+    host: str = "127.0.0.1",
+    log_level: str = "warning",
+) -> subprocess.Popen:
+    """
+    Launches a Uvicorn server as a subprocess in the given service directory.
+    """
+    cmd = [
+        sys.executable, "-m", "uvicorn", app_module,
+        "--host", host, "--port", str(port), "--log-level", log_level
+    ]
+    print(f"🌐 Starting service on http://{host}:{port}")
+    return subprocess.Popen(cmd, cwd=str(service_dir), env=env)
+
+
+def wait_for_process(process: subprocess.Popen, service_name: str) -> None:
+    """
+    Blocks until the subprocess exits, handling KeyboardInterrupt gracefully.
+    """
+    try:
+        process.wait()
+    except KeyboardInterrupt:
+        print(f"\n🛑 Shutting down {service_name}...")
+        process.terminate()
+
+
+def resolve_port(default: int = 8080) -> int:
+    """Resolves the active port assigned by CML."""
+    raw = os.getenv("CDSW_APP_PORT") or os.getenv("PORT") or str(default)
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def resolve_data_path(env_var: str, default: str) -> str:
+    """
+    Resolves and ensures a persistence folder on disk.
+    """
+    path = os.getenv(env_var, default).strip()
+
+    if not os.path.isabs(path):
+        path = os.path.abspath(os.path.join("/home/cdsw", path.lstrip("/")))
+
+    Path(path).mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def keep_alive_monitor(process: subprocess.Popen, restart_fn, service_name: str) -> None:
+    """
+    Monitors a subprocess and restarts it if it exits unexpectedly.
+    """
+    while True:
+        ret = process.poll()
+        if ret is not None:
+            print(f"❌ {service_name} process exited unexpectedly (code {ret}). Restarting in 5s...")
+            time.sleep(5)
+            process = restart_fn()
+            print(f"✅ {service_name} restarted, new PID: {process.pid}")
+        time.sleep(2)
