@@ -97,24 +97,40 @@ class SQLTranslationService:
     # =========================================================================
     async def generate_sql(self, user_question: str) -> str:
         """Deterministic execution pipeline that forces schema adherence."""
-        print("Forcing semantic retrieval via MCP embed & rerank modules...")
+        print("\n🔍 [MCP Retrieval] Fetching schema and golden context...", flush=True)
         
         golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
+        # =====================================================================
+        # SCHEMA VERIFICATION LOGS
+        # =====================================================================
+        print("=" * 80, flush=True)
+        print("📊 [RETRIEVED DATABASE SCHEMA]", flush=True)
+        print("=" * 80, flush=True)
+        print(schema_context if schema_context else "⚠️ Warning: Schema context is empty!", flush=True)
+        print("=" * 80, flush=True)
+
+        if golden_context:
+            print("⭐ [RETRIEVED GOLDEN QUERIES]", flush=True)
+            print("=" * 80, flush=True)
+            print(golden_context, flush=True)
+            print("=" * 80 + "\n", flush=True)
+
         @tool("execute_banking_query")
         async def mcp_execute_banking_query(query: str) -> str:
             """Executes a SQL query against the database and stops the agent upon success."""
-            raw_result = await self._call_mcp_tool("execute_banking_query", {"sql_query": query})
+            clean_query = re.sub(r"^```(?:sql)?\s*|^sql\s*", "", query.strip(), flags=re.IGNORECASE)
+            clean_query = re.sub(r"```$", "", clean_query).strip()
+
+            raw_result = await self._call_mcp_tool("execute_banking_query", {"sql_query": clean_query})
             
             try:
                 records = json.loads(raw_result)
-                # If it's a valid list of records, short-circuit the execution immediately
                 if isinstance(records, list):
-                    raise SQLGeneratedSuccess(sql=query, records=records)
+                    raise SQLGeneratedSuccess(sql=clean_query, records=records)
                 return raw_result
             except json.JSONDecodeError:
-                # If it fails to parse (e.g. syntax error text), return the error so the agent can fix it
                 return f"SQL Error: {raw_result}"
 
         sql_developer = Agent(
@@ -135,7 +151,7 @@ class SQLTranslationService:
             verbose=True
         )
 
-        print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...")
+        print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...", flush=True)
         ai_result = await orchestration_crew.kickoff_async(inputs={
             "user_question": user_question,
             "golden_context": golden_context,
