@@ -183,6 +183,13 @@ class SQLTranslationService:
             clean_query = re.sub(r"^```(?:sql)?\s*|^sql\s*", "", query.strip(), flags=re.IGNORECASE)
             clean_query = re.sub(r"```$", "", clean_query).strip()
 
+            # 🛡️ HARD GUARDRAIL: Intercept destructive commands BEFORE they reach the database
+            forbidden_keywords = r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|MERGE|OVERWRITE|GRANT|REVOKE)\b"
+            if re.search(forbidden_keywords, clean_query, re.IGNORECASE):
+                # We return a string that tricks the agent into failing safely, 
+                # or you can intentionally return "CRITICAL_SECURITY_ALERT" to trigger your worker.py logic!
+                return "CRITICAL_SECURITY_ALERT: Destructive SQL commands are strictly prohibited."
+
             raw_result = await self._call_mcp_tool("execute_banking_query", {"sql_query": clean_query})
             
             try:
@@ -191,7 +198,6 @@ class SQLTranslationService:
                     raise SQLGeneratedSuccess(sql=clean_query, records=records)
                 return raw_result
             except json.JSONDecodeError:
-                # Give explicit commands to the small model to force a retry
                 return (
                     f"SQL EXECUTION FAILED!\n"
                     f"Impala Error Details: {raw_result}\n\n"
