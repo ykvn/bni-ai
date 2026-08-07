@@ -21,7 +21,7 @@ def _make_insecure_httpx_client(**kwargs) -> httpx.AsyncClient:
     return httpx.AsyncClient(**kwargs)
 
 
-class SQLGeneratedSuccess(Exception):
+class SQLGeneratedSuccess(BaseException):
     """Custom exception used to forcefully terminate the CrewAI task upon first successful query execution."""
     def __init__(self, sql: str, records: list):
         self.sql = sql
