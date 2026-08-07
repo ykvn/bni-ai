@@ -24,63 +24,75 @@ def _build_payload(question: str, status: str, response_type: str, predicted_sql
         "response": response,
     }
 
-async def run_worker_loop():
-    """Asynchronous background worker loop executed natively inside FastAPI's event loop."""
-    print("🤖 [CrewAI Service Engine] Starting worker loop...", flush=True)
+async def _process_single_job(job: dict, translator_service: SQLTranslationService):
+    """Executes a single job independently in its own async task context."""
+    job_id = job["job_id"]
+    user_question = job["question"]
+
+    try:
+        print(f"\n⚡ [CrewAI Engine] Executing Job {job_id}: '{user_question}'", flush=True)
+
+        if is_policy_question(user_question):
+            rag_answer = await translator_service.generate_rag_answer(user_question)
+            payload = _build_payload(user_question, "Success", "RAG", None, [], rag_answer)
+        else:
+            try:
+                generated_sql = await translator_service.generate_sql(user_question)
+
+                if "CRITICAL_SECURITY_ALERT" in generated_sql:
+                    payload = _build_payload(
+                        user_question, "Blocked", "SQL", generated_sql, [],
+                        "Security Violation: Destroy request blocked."
+                    )
+                else:
+                    records = await translator_service.run_mcp_query(generated_sql)
+                    payload = _build_payload(user_question, "Success", "SQL", generated_sql, records, None)
+                    
+            except SQLGeneratedSuccess as e:
+                payload = _build_payload(
+                    question=user_question, 
+                    status="Success", 
+                    response_type="SQL", 
+                    predicted_sql=e.sql, 
+                    records=e.records, 
+                    response=None
+                )
+
+        job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
+        print(f"✅ [CrewAI Engine] Finished Job {job_id}", flush=True)
+
+    except Exception as e:
+        print(f"❌ [CrewAI Engine Error] Task {job_id} failed: {e}", flush=True)
+        job_db.update_job_status(job_id, status="failed", error=str(e))
+
+
+async def run_worker_loop(max_concurrent_jobs: int = 5):
+    """Non-blocking worker loop that processes multiple pending jobs in parallel."""
+    print(f"🤖 [CrewAI Service Engine] Starting parallel worker loop (Max Concurrency: {max_concurrent_jobs})...", flush=True)
     job_db.init_db()
     translator_service = SQLTranslationService()
+    
+    # Limits maximum simultaneous LLM/MCP executions to prevent system overload
+    semaphore = asyncio.Semaphore(max_concurrent_jobs)
+
+    async def worker_task(job_data):
+        async with semaphore:
+            await _process_single_job(job_data, translator_service)
 
     while True:
-        # Keep stream hygiene in case third-party loggers modify stdout
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
-
         try:
             job = job_db.fetch_next_pending_job()
             if not job:
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.5)
                 continue
 
+            # Instantly update status in DB so another worker loop iteration won't pick it up
             job_id = job["job_id"]
-            user_question = job["question"]
-
-            print(f"\n⚡ [CrewAI Engine] Executing Job {job_id}", flush=True)
             job_db.update_job_status(job_id, status="processing")
 
-            if is_policy_question(user_question):
-                rag_answer = await translator_service.generate_rag_answer(user_question)
-                payload = _build_payload(user_question, "Success", "RAG", None, [], rag_answer)
-            else:
-                try:
-                    generated_sql = await translator_service.generate_sql(user_question)
-
-                    if "CRITICAL_SECURITY_ALERT" in generated_sql:
-                        payload = _build_payload(
-                            user_question, "Blocked", "SQL", generated_sql, [],
-                            "Security Violation: Destroy request blocked."
-                        )
-                    else:
-                        records = await translator_service.run_mcp_query(generated_sql)
-                        payload = _build_payload(user_question, "Success", "SQL", generated_sql, records, None)
-                        
-                except SQLGeneratedSuccess as e:
-                    payload = _build_payload(
-                        question=user_question, 
-                        status="Success", 
-                        response_type="SQL", 
-                        predicted_sql=e.sql, 
-                        records=e.records, 
-                        response=None
-                    )
-
-            job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
-            print(f"✅ [CrewAI Engine] Finished Job {job_id}", flush=True)
+            # Fire and forget: Launch job in background without blocking the queue loop
+            asyncio.create_task(worker_task(job))
 
         except Exception as e:
-            print(f"❌ [CrewAI Engine Error] Task failed: {e}", flush=True)
-            if 'job_id' in locals():
-                job_db.update_job_status(job_id, status="failed", error=str(e))
-            await asyncio.sleep(2.0)
-        finally:
-            sys.stdout = sys.__stdout__
-            sys.stderr = sys.__stderr__
+            print(f"❌ [CrewAI Engine Dispatch Error]: {e}", flush=True)
+            await asyncio.sleep(1.0)
