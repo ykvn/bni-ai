@@ -6,6 +6,8 @@ from datetime import datetime
 import pandas as pd
 import gradio as gr
 
+from shared.cml_auth import build_cml_headers
+
 
 def parse_payload_to_ui(payload: dict):
     """Parses payload into text components and a Pandas DataFrame for UI rendering."""
@@ -107,10 +109,7 @@ def build_ui() -> object:
         )
 
         try:
-            cml_token = os.environ.get("CML_TOKEN", "").strip()
-            headers = {"Content-Type": "application/json", "accept": "application/json"}
-            if cml_token:
-                headers["Authorization"] = f"Bearer {cml_token}"
+            headers = build_cml_headers(extra={"Content-Type": "application/json", "accept": "application/json"})
 
             response = requests.post(
                 backend_url, 
