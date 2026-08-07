@@ -221,7 +221,7 @@ class SQLTranslationService:
         ai_result = await orchestration_crew.kickoff_async(inputs={
             "user_question": user_question,
             "golden_context": golden_context,
-            "schema_context": schema_context
+            "schema_context": agent_schema_context
         })
         
         return self._extract_sql_from_response(str(ai_result))
