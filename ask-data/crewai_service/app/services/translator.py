@@ -150,7 +150,13 @@ class SQLTranslationService:
                     raise SQLGeneratedSuccess(sql=clean_query, records=records)
                 return raw_result
             except json.JSONDecodeError:
-                return f"SQL Error: {raw_result}"
+                # Give explicit commands to the small model to force a retry
+                return (
+                    f"SQL EXECUTION FAILED!\n"
+                    f"Impala Error Details: {raw_result}\n\n"
+                    f"INSTRUCTION: The query you just wrote has a syntax error. "
+                    f"Analyze the error message above, fix the SQL, and call this tool again with the corrected query."
+                )
 
         sql_developer = Agent(
             config=self.agents_config["sql_developer"],
