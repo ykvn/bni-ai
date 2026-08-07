@@ -2,7 +2,13 @@
 CAI / CML Application entry point for the Frontend Gradio UI.
 """
 import os
+import sys
 from pathlib import Path
+
+# Ensure ask-data/ root is importable before importing shared.*
+_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
+if str(_ASK_DATA_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ASK_DATA_ROOT))
 
 # Suppress SSL certificate verification warnings in enterprise CML environments
 import urllib3
