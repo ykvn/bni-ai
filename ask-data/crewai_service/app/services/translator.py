@@ -109,8 +109,38 @@ class SQLTranslationService:
         golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
+        # ---------------------------------------------------------------------
+        # Parse schema to display Reranking Scores ONLY in logs
+        # ---------------------------------------------------------------------
+        display_schema_text = schema_context if schema_context else "⚠️ Warning: Schema context is empty!"
+        
+        try:
+            # Safely parse as YAML/JSON to extract scores for logging purposes only
+            parsed_schema = yaml.safe_load(schema_context)
+            if isinstance(parsed_schema, dict) and "tables" in parsed_schema:
+                formatted_lines = [f"database_type: {parsed_schema.get('database_type', 'Unknown')}", "tables:"]
+                
+                for table in parsed_schema["tables"]:
+                    # Append Table Score if it exists
+                    t_score = f" (Reranking Score: {table['score']})" if "score" in table else ""
+                    formatted_lines.append(f"- name: {table.get('name', 'unknown')}{t_score}")
+                    if "description" in table:
+                        formatted_lines.append(f"  description: {table['description']}")
+                    
+                    formatted_lines.append("  columns:")
+                    for col in table.get("columns", []):
+                        # Append Column Score if it exists
+                        c_score = f" (Score: {col['score']})" if "score" in col else ""
+                        formatted_lines.append(f"  - name: {col.get('name', 'unknown')}{c_score}")
+                        if "type" in col:
+                            formatted_lines.append(f"    type: {col['type']}")
+                            
+                display_schema_text = "\n".join(formatted_lines)
+        except Exception:
+            pass # Keep original display_schema_text if parsing fails
+
         # =====================================================================
-        # 📋 RICH UI VERIFICATION LOGS (Bulletproof)
+        # 📋 RICH UI VERIFICATION LOGS
         # =====================================================================
         
         # 1. User Question Box
@@ -120,11 +150,10 @@ class SQLTranslationService:
             border_style="blue"
         ))
 
-        # 2. Database Schema Box
-        schema_text = schema_context if schema_context else "⚠️ Warning: Schema context is empty!"
+        # 2. Database Schema Box (Logs with scores, but DOES NOT change agent input)
         secure_console.print(Panel(
-            schema_text, 
-            title="📊 Retrieved Database Schema", 
+            display_schema_text, 
+            title="📊 Retrieved Database Schema (with Reranking Scores)", 
             border_style="green"
         ))
 
