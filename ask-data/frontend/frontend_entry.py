@@ -196,7 +196,7 @@ def build_ui() -> object:
             yield f"❌ Error:\n{error_details}", gr.update(visible=False)
 
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
-        gr.Markdown("# Bank Negara Indonesia Question Assistant")
+        gr.Markdown("# Bank Negara Indonesia Zero Query Assistant")
         question_box = gr.Textbox(label="Question", lines=3)
         submit_btn = gr.Button("Ask")
         
