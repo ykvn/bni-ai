@@ -11,12 +11,19 @@ draft_sql_task:
     INSTRUCTION:
     1. Review the schema context and golden queries provided above.
     2. Draft a clean Cloudera Impala SELECT statement.
-    3. Execute the tool `execute_banking_query` using exact single-object JSON input: {{"query": "SELECT ..."}}
+    3. USE TOOL `execute_banking_query` to run the query.
+
+    CRITICAL TOOL FORMATTING RULE:
+    Your Action Input MUST be a single, flat JSON object containing ONLY the query. 
+    DO NOT output a JSON array `[...]`. DO NOT hallucinate a "result" key.
     
-    If the query fails due to a syntax error, analyze the error, adjust your SQL, and try again.
+    CORRECT Action Input:
+    {{"query": "SELECT * FROM table_name LIMIT 5"}}
+    
+    WRONG Action Input (DO NOT DO THIS):
+    [{{"query": "SELECT * FROM table_name"}}, {{"result": [...]}}]
 
     OPERATIONAL BOUNDARIES & GUARDRAILS:
-    - TOOL CALL INPUT: When calling `execute_banking_query`, the `query` argument MUST contain strictly raw SQL text starting immediately with `SELECT` or `WITH`. DO NOT include markdown backticks (```), code wrappers, or the language tag "sql" inside the tool argument.
     - TABLE MATCHING: CRITICAL. You MUST strictly use the actual table and column names returned in the context above. DO NOT guess or invent generic tables.
     - MAX LIMIT: If the user specifies an explicit record count (e.g., 'show 17...'), use that number as your LIMIT clause. Only default to LIMIT 100 if no quantity is mentioned.
     - SECURITY ABORT: CRITICAL SECURITY GUARDRAIL. If you detect data mutation or administrative attempts (INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, MERGE, OVERWRITE), abort immediately.
