@@ -59,6 +59,10 @@ async def run_worker_loop():
     translator_service = SQLTranslationService()
 
     while True:
+        # Force restore standard output stream in case CrewAI's rich console left it hijacked
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+
         try:
             job = job_db.fetch_next_pending_job()
             if not job:
@@ -76,22 +80,18 @@ async def run_worker_loop():
                 payload = _build_payload(user_question, "Success", "RAG", None, [], rag_answer)
             else:
                 try:
-                    # Execute agent pipeline (which will now raise SQLGeneratedSuccess upon completion)
                     generated_sql = await translator_service.generate_sql(user_question)
 
-                    # Only reaches here if the agent bypasses the tool (e.g. security block)
                     if "CRITICAL_SECURITY_ALERT" in generated_sql:
                         payload = _build_payload(
                             user_question, "Blocked", "SQL", generated_sql, [],
                             "Security Violation: Destroy request blocked."
                         )
                     else:
-                        # Fallback for unexpected situations
                         records = await translator_service.run_mcp_query(generated_sql)
                         payload = _build_payload(user_question, "Success", "SQL", generated_sql, records, None)
                         
                 except SQLGeneratedSuccess as e:
-                    # Catch the short-circuit! Extract the exact working SQL and returned records immediately.
                     payload = _build_payload(
                         question=user_question, 
                         status="Success", 
@@ -109,6 +109,10 @@ async def run_worker_loop():
             if 'job_id' in locals():
                 job_db.update_job_status(job_id, status="failed", error=str(e))
             await asyncio.sleep(2.0)
+        finally:
+            # Always ensure terminal stdout is clean for the next job iteration
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
 
 
 def _start_worker_thread():

@@ -95,27 +95,38 @@ class SQLTranslationService:
     # =========================================================================
     # 📑 PATH A: OPTIMIZED TEXT-TO-SQL ENGINE
     # =========================================================================
-    async def generate_sql(self, user_question: str) -> str:
+   async def generate_sql(self, user_question: str) -> str:
         """Deterministic execution pipeline that forces schema adherence."""
-        print("\n🔍 [MCP Retrieval] Fetching schema and golden context...", flush=True)
+        sys.__stdout__.write("\n🔍 [MCP Retrieval] Fetching schema and golden context...\n")
+        sys.__stdout__.flush()
         
         golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
         # =====================================================================
-        # SCHEMA VERIFICATION LOGS
+        # 📋 EXPLICIT VERIFICATION LOGS (QUESTION, SCHEMA & GOLDEN QUERIES)
         # =====================================================================
-        print("=" * 80, flush=True)
-        print("📊 [RETRIEVED DATABASE SCHEMA]", flush=True)
-        print("=" * 80, flush=True)
-        print(schema_context if schema_context else "⚠️ Warning: Schema context is empty!", flush=True)
-        print("=" * 80, flush=True)
+        log_header = (
+            "\n" + "=" * 80 + "\n"
+            f"❓ [USER QUESTION]: '{user_question}'\n"
+            + "=" * 80 + "\n"
+            "📊 [RETRIEVED DATABASE SCHEMA]\n"
+            + "=" * 80 + "\n"
+            + (schema_context if schema_context else "⚠️ Warning: Schema context is empty!") + "\n"
+            + "=" * 80 + "\n"
+        )
+        sys.__stdout__.write(log_header)
+        sys.__stdout__.flush()
 
         if golden_context:
-            print("⭐ [RETRIEVED GOLDEN QUERIES]", flush=True)
-            print("=" * 80, flush=True)
-            print(golden_context, flush=True)
-            print("=" * 80 + "\n", flush=True)
+            golden_log = (
+                "⭐ [RETRIEVED GOLDEN QUERIES]\n"
+                + "=" * 80 + "\n"
+                + golden_context + "\n"
+                + "=" * 80 + "\n\n"
+            )
+            sys.__stdout__.write(golden_log)
+            sys.__stdout__.flush()
 
         @tool("execute_banking_query")
         async def mcp_execute_banking_query(query: str) -> str:
