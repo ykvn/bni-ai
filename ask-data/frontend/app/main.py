@@ -76,7 +76,7 @@ def build_ui() -> object:
 
         # Formatted vertically using Markdown bullets
         return (
-            f"### 🆔 Job Execution Information\n"
+            f"### Job Execution Information\n"
             f"- **Job ID:** `{job_id}`\n"
             f"- **Status:** {badge}\n"
             f"- **{time_label}:** `{now_str}` (Duration: `{elapsed}s`)\n"
@@ -96,7 +96,7 @@ def build_ui() -> object:
         
         # Initial yield before network dispatch (Disable button immediately)
         initial_job_box = (
-            f"### 🆔 Job Execution Information\n"
+            f"### Job Execution Information\n"
             f"- **Job ID:** `Submitting...`\n"
             f"- **Status:** ⏳ ENQUEUEING\n"
             f"- **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
