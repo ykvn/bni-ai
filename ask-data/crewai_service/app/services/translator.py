@@ -95,7 +95,7 @@ class SQLTranslationService:
     # =========================================================================
     # 📑 PATH A: OPTIMIZED TEXT-TO-SQL ENGINE
     # =========================================================================
-   async def generate_sql(self, user_question: str) -> str:
+    async def generate_sql(self, user_question: str) -> str:
         """Deterministic execution pipeline that forces schema adherence."""
         sys.__stdout__.write("\n🔍 [MCP Retrieval] Fetching schema and golden context...\n")
         sys.__stdout__.flush()
