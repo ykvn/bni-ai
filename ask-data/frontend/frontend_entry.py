@@ -30,6 +30,10 @@ def main() -> None:
     ask_data_root = bootstrap_service(_SERVICE_NAME)
     frontend_dir = resolve_service_dir(_SERVICE_NAME, ask_data_root, caller_file=_CALLER_FILE)
 
+    # Ensure the service directory is importable in this process (CML runs from here)
+    if str(frontend_dir) not in sys.path:
+        sys.path.insert(0, str(frontend_dir))
+
     env = os.environ.copy()
     env["PYTHONPATH"] = build_pythonpath(frontend_dir, ask_data_root, env=env)
 
