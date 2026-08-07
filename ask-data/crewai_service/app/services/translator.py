@@ -110,37 +110,49 @@ class SQLTranslationService:
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
         # ---------------------------------------------------------------------
-        # Parse schema to display Reranking Scores ONLY in logs
+        # Parse schema to display Reranking Scores in logs, 
+        # and STRIP them out before passing to the Agent.
         # ---------------------------------------------------------------------
         display_schema_text = schema_context if schema_context else "⚠️ Warning: Schema context is empty!"
+        agent_schema_context = schema_context  # Fallback if parsing fails
         
         try:
-            # Safely parse as YAML/JSON to extract scores for logging purposes only
             parsed_schema = yaml.safe_load(schema_context)
             if isinstance(parsed_schema, dict) and "tables" in parsed_schema:
                 formatted_lines = [f"database_type: {parsed_schema.get('database_type', 'Unknown')}", "tables:"]
                 
                 for table in parsed_schema["tables"]:
-                    # Append Table Score if it exists
+                    # 1. Read score for the logs
                     t_score = f" (Reranking Score: {table['score']})" if "score" in table else ""
                     formatted_lines.append(f"- name: {table.get('name', 'unknown')}{t_score}")
+                    
                     if "description" in table:
                         formatted_lines.append(f"  description: {table['description']}")
                     
                     formatted_lines.append("  columns:")
                     for col in table.get("columns", []):
-                        # Append Column Score if it exists
+                        # 2. Read score for the logs
                         c_score = f" (Score: {col['score']})" if "score" in col else ""
                         formatted_lines.append(f"  - name: {col.get('name', 'unknown')}{c_score}")
                         if "type" in col:
                             formatted_lines.append(f"    type: {col['type']}")
                             
+                        # 🚀 3. Remove score from column dictionary
+                        col.pop("score", None)
+                    
+                    # 🚀 4. Remove score from table dictionary
+                    table.pop("score", None)
+                            
                 display_schema_text = "\n".join(formatted_lines)
+                
+                # 🚀 5. Convert the cleaned dictionary back to YAML for the Agent
+                agent_schema_context = yaml.dump(parsed_schema, sort_keys=False, default_flow_style=False)
+                
         except Exception:
-            pass # Keep original display_schema_text if parsing fails
+            pass 
 
         # =====================================================================
-        # 📋 RICH UI VERIFICATION LOGS
+        # 📋 RICH UI VERIFICATION LOGS (Bulletproof)
         # =====================================================================
         
         # 1. User Question Box
@@ -150,7 +162,7 @@ class SQLTranslationService:
             border_style="blue"
         ))
 
-        # 2. Database Schema Box (Logs with scores, but DOES NOT change agent input)
+        # 2. Database Schema Box (Shows display_schema_text which HAS scores)
         secure_console.print(Panel(
             display_schema_text, 
             title="📊 Retrieved Database Schema (with Reranking Scores)", 
