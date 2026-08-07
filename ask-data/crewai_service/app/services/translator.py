@@ -7,6 +7,7 @@ from pathlib import Path
 
 from crewai import Agent, Task, Crew, LLM
 from crewai.tools import tool
+from pydantic import BaseModel, Field
 
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -18,6 +19,18 @@ def _make_insecure_httpx_client(**kwargs) -> httpx.AsyncClient:
     kwargs["verify"] = False
     kwargs["follow_redirects"] = True
     return httpx.AsyncClient(**kwargs)
+
+
+class SQLGeneratedSuccess(Exception):
+    """Custom exception used to forcefully terminate the CrewAI task upon first successful query execution."""
+    def __init__(self, sql: str, records: list):
+        self.sql = sql
+        self.records = records
+        super().__init__("SQL successfully executed.")
+
+
+class BankingQueryInput(BaseModel):
+    query: str = Field(..., description="The SQL query to execute against Cloudera Impala.")
 
 
 class SQLTranslationService:
@@ -93,10 +106,20 @@ class SQLTranslationService:
         golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
-        @tool("execute_banking_query")
+        @tool("execute_banking_query", args_schema=BankingQueryInput)
         async def mcp_execute_banking_query(query: str) -> str:
-            """Executes a SQL query against the database."""
-            return await self._call_mcp_tool("execute_banking_query", {"sql_query": query})
+            """Executes a SQL query against the database and stops the agent upon success."""
+            raw_result = await self._call_mcp_tool("execute_banking_query", {"sql_query": query})
+            
+            try:
+                records = json.loads(raw_result)
+                # If it's a valid list of records, short-circuit the execution immediately
+                if isinstance(records, list):
+                    raise SQLGeneratedSuccess(sql=query, records=records)
+                return raw_result
+            except json.JSONDecodeError:
+                # If it fails to parse (e.g. syntax error text), return the error so the agent can fix it
+                return f"SQL Error: {raw_result}"
 
         sql_developer = Agent(
             config=self.agents_config["sql_developer"],

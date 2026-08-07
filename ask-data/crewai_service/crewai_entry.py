@@ -28,7 +28,7 @@ if str(CREWAI_DIR) not in sys.path:
 
 # 3. Imports after path registration
 from crewai_service.app.core import job_db
-from crewai_service.app.services.translator import SQLTranslationService
+from crewai_service.app.services.translator import SQLTranslationService, SQLGeneratedSuccess # Import custom exception
 
 POLICY_KEYWORDS = (
     "kebijakan", "sop", "prosedur", "manual", "panduan", "kriteria",
@@ -75,16 +75,31 @@ async def run_worker_loop():
                 rag_answer = await translator_service.generate_rag_answer(user_question)
                 payload = _build_payload(user_question, "Success", "RAG", None, [], rag_answer)
             else:
-                generated_sql = await translator_service.generate_sql(user_question)
+                try:
+                    # Execute agent pipeline (which will now raise SQLGeneratedSuccess upon completion)
+                    generated_sql = await translator_service.generate_sql(user_question)
 
-                if "CRITICAL_SECURITY_ALERT" in generated_sql:
+                    # Only reaches here if the agent bypasses the tool (e.g. security block)
+                    if "CRITICAL_SECURITY_ALERT" in generated_sql:
+                        payload = _build_payload(
+                            user_question, "Blocked", "SQL", generated_sql, [],
+                            "Security Violation: Destroy request blocked."
+                        )
+                    else:
+                        # Fallback for unexpected situations
+                        records = await translator_service.run_mcp_query(generated_sql)
+                        payload = _build_payload(user_question, "Success", "SQL", generated_sql, records, None)
+                        
+                except SQLGeneratedSuccess as e:
+                    # Catch the short-circuit! Extract the exact working SQL and returned records immediately.
                     payload = _build_payload(
-                        user_question, "Blocked", "SQL", generated_sql, [],
-                        "Security Violation: Destroy request blocked."
+                        question=user_question, 
+                        status="Success", 
+                        response_type="SQL", 
+                        predicted_sql=e.sql, 
+                        records=e.records, 
+                        response=None
                     )
-                else:
-                    records = await translator_service.run_mcp_query(generated_sql)
-                    payload = _build_payload(user_question, "Success", "SQL", generated_sql, records, None)
 
             job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
             print(f"✅ [CrewAI Engine] Finished Job {job_id}", flush=True)
@@ -114,7 +129,7 @@ def main():
         "--port", str(app_port),
         "--log-level", "warning"
     ]
-    print(f"🌐 [CrewAI Service App] Starting HTTP REST Engine on http://127.0.0.1:{app_port}")
+    print(f"🌐 [CrewAI Service App] Starting HTTP REST Engine on [http://127.0.0.1](http://127.0.0.1):{app_port}")
     api_process = subprocess.Popen(api_cmd, cwd=str(_ASK_DATA_ROOT), env=env)
 
     # Launch Worker Engine in a dedicated background thread to prevent loop collisions
