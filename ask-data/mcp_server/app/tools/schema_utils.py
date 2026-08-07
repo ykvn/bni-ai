@@ -55,7 +55,12 @@ def get_smart_schema_context(
         return f"ROOT CAUSE DEBUG - Embedding API Failed: {str(e)} | URL: {embed_url}"
 
     # Search Qdrant Collection via REST API using VECTORDB_SERVER_URL
-    qdrant_headers = {"api-key": cml_token, "Content-Type": "application/json"}
+    qdrant_headers = {
+        "api-key": cml_token, 
+        "Authorization": f"Bearer {cml_token}", # <--- THIS WAS MISSING!
+        "Content-Type": "application/json"
+    }
+
     qdrant_payload = {
         "vector": query_vector,
         "limit": top_tables,
