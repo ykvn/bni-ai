@@ -72,7 +72,7 @@ async def run_worker_loop():
             job_id = job["job_id"]
             user_question = job["question"]
 
-            print(f"\n⚡ [CrewAI Engine] Executing Job {job_id}: '{user_question}'", flush=True)
+            print(f"\n⚡ [bold][[CrewAI Engine]][/bold] Executing Job {job_id}", flush=True)
             job_db.update_job_status(job_id, status="processing")
 
             if is_policy_question(user_question):
