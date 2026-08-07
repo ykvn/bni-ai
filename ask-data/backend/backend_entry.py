@@ -35,7 +35,7 @@ def main() -> None:
     app_port = resolve_port(default=8090)
 
     env = os.environ.copy()
-    env["PYTHONPATH"] = build_pythonpath(service_dir, env=env)
+    env["PYTHONPATH"] = build_pythonpath(service_dir, ask_data_root, env=env)
 
     ensure_dependencies(service_dir, env)
 
