@@ -11,7 +11,7 @@ draft_sql_task:
     INSTRUCTION:
     1. Review the schema context and golden queries provided above.
     2. Draft a clean Cloudera Impala SELECT statement.
-    3. USE TOOL `execute_banking_query` to run the query and retrieve the real data.
+    3. Execute the tool `execute_banking_query` using exact single-object JSON input: {{"query": "SELECT ..."}}
     
     If the query fails due to a syntax error, analyze the error, adjust your SQL, and try again.
 
