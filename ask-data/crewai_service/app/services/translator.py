@@ -29,10 +29,6 @@ class SQLGeneratedSuccess(Exception):
         super().__init__("SQL successfully executed.")
 
 
-class BankingQueryInput(BaseModel):
-    query: str = Field(..., description="The SQL query to execute against Cloudera Impala.")
-
-
 class SQLTranslationService:
     def __init__(self):
         self.mcp_server_url = os.getenv("MCP_SERVER_URL", "").rstrip("/")
@@ -106,7 +102,7 @@ class SQLTranslationService:
         golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
-        @tool("execute_banking_query", args_schema=BankingQueryInput)
+        @tool("execute_banking_query")
         async def mcp_execute_banking_query(query: str) -> str:
             """Executes a SQL query against the database and stops the agent upon success."""
             raw_result = await self._call_mcp_tool("execute_banking_query", {"sql_query": query})
