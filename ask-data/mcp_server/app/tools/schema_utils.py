@@ -32,8 +32,8 @@ def _normalize_table_dict(table: dict, columns: list = None) -> dict:
 
 def get_smart_schema_context(
     user_query: str, 
-    top_tables: int = 5, 
-    top_columns: int = 15, 
+    top_tables: int = 3, 
+    top_columns: int = 5, 
     threshold: float = 0.1
 ) -> str:
     cml_token = (os.getenv("CML_TOKEN") or os.getenv("CDSW_API_KEY") or "").strip()
