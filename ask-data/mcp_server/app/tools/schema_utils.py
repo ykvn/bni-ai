@@ -2,7 +2,6 @@ import os
 import yaml
 import requests
 import urllib3
-from pathlib import Path
 
 # Suppress SSL certificate verification warnings in enterprise CML environments
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -14,10 +13,11 @@ def get_smart_schema_context(
     threshold: float = 0.1
 ) -> str:
     """
-    Executes 2-Stage Retrieval reading environment variables directly from .env:
+    Executes STRICT 2-Stage Retrieval reading environment variables directly from .env:
     1. Vector Search (Qdrant) via VECTORDB_SERVER_URL & SCHEMA_COLLECTION
     2. Cross-Encoder Reranking via EMBED_RERANK_URL
     3. Reconstructs a pruned YAML schema with Primary/Foreign Key guardrails.
+    (STRICT MODE: No file fallbacks. Fails explicitly if Vector DB is unreachable.)
     """
     
     # ---------------------------------------------------------
@@ -51,8 +51,9 @@ def get_smart_schema_context(
         if query_vector and isinstance(query_vector[0], list): 
             query_vector = query_vector[0]
     except Exception as e:
-        print(f"⚠️ Embedding API failed: {e}. Returning raw schema file fallback.")
-        return _fallback_read_schema_file()
+        error_msg = f"CRITICAL ERROR: Embedding API failed: {e}"
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"error": error_msg}, sort_keys=False)
 
     # Search Qdrant Collection via REST API using VECTORDB_SERVER_URL
     qdrant_headers = {
@@ -78,8 +79,9 @@ def get_smart_schema_context(
         qdrant_res.raise_for_status()
         retrieved_points = qdrant_res.json().get("result", [])
     except Exception as e:
-        print(f"⚠️ Qdrant search failed at {vectordb_url}: {e}. Returning fallback.")
-        return _fallback_read_schema_file()
+        error_msg = f"CRITICAL ERROR: Qdrant search failed at {vectordb_url}: {e}"
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"error": error_msg}, sort_keys=False)
 
     # Extract `raw_yaml` metadata stored during ingestion
     retrieved_tables = []
@@ -90,8 +92,9 @@ def get_smart_schema_context(
             retrieved_tables.append(yaml.safe_load(raw_yaml_str))
 
     if not retrieved_tables:
-        print("⚠️ No matching tables found in Qdrant. Using schema file fallback.")
-        return _fallback_read_schema_file()
+        error_msg = "CRITICAL ERROR: No matching tables found in Qdrant (or missing 'raw_yaml' payload)."
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"error": error_msg}, sort_keys=False)
 
     # ==========================================
     # STAGE 2: RERANKING (Find Relevant Columns)
@@ -126,7 +129,7 @@ def get_smart_schema_context(
         rerank_res.raise_for_status()
         rerank_results = rerank_res.json().get("results", [])
     except Exception as e:
-        print(f"⚠️ Reranker failed: {e}. Returning retrieved tables directly.")
+        print(f"⚠️ Reranker failed: {e}. Returning un-pruned Vector DB tables directly.")
         return yaml.dump({"tables": retrieved_tables}, sort_keys=False)
 
     winning_columns = []
@@ -173,23 +176,3 @@ def get_smart_schema_context(
     }
     
     return yaml.dump(final_schema, sort_keys=False, default_flow_style=False)
-
-
-def _fallback_read_schema_file(schema_path: str = None) -> str:
-    """Fallback reader if Qdrant or Embedder microservices are temporarily unavailable."""
-    if not schema_path:
-        # Dynamically resolve the absolute path to the root 'ask-data' folder
-        try:
-            ask_data_root = Path(__file__).resolve().parents[3]
-            resolved_path = ask_data_root / "data" / "schema_definitions.yaml" 
-            schema_path = str(resolved_path)
-        except Exception:
-            schema_path = "schema_definitions.yaml"
-
-    if os.path.exists(schema_path):
-        print(f"📖 Loaded schema fallback directly from file: {schema_path}")
-        with open(schema_path, "r", encoding="utf-8") as f:
-            return f.read()
-            
-    print(f"❌ CRITICAL ERROR: Could not find schema fallback at {schema_path}")
-    return "Schema unavailable. Please check the file path."
