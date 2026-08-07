@@ -119,14 +119,23 @@ def get_smart_schema_context(
             timeout=15
         )
         rerank_res.raise_for_status()
-        rerank_results = rerank_res.json().get("results", [])
+        
+        # Safe response parsing supporting both List and Dict return types
+        res_data = rerank_res.json()
+        if isinstance(res_data, list):
+            rerank_results = res_data
+        elif isinstance(res_data, dict):
+            rerank_results = res_data.get("results", res_data.get("data", []))
+        else:
+            rerank_results = []
         
         for hit in rerank_results:
             score = hit.get("score", hit.get("relevance_score", 0.0))
-            if score > threshold and hit.get("index") is not None:
-                winning_columns.append(mapping[hit["index"]])
+            idx = hit.get("index")
+            if score > threshold and idx is not None:
+                winning_columns.append(mapping[idx])
     except Exception as e:
-        print(f"⚠️ Reranker unavailable: {e}. Returning normalized full tables.")
+        print(f"⚠️ Reranker error: {e}. Returning normalized full tables.")
 
     # STAGE 3: RECONSTRUCT CLEAN SCHEMA
     pruned_tables = []
@@ -142,7 +151,7 @@ def get_smart_schema_context(
                 ]
                 pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
     else:
-        # Fallback: Normalize key order for full tables
+        # Fallback: Normalize key order for full tables if reranker fails
         for table in retrieved_tables:
             pruned_tables.append(_normalize_table_dict(table))
 
