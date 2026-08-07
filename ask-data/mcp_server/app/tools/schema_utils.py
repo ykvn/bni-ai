@@ -5,12 +5,10 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def _normalize_table_dict(table: dict, columns: list = None) -> dict:
+def _normalize_table_dict(table: dict, columns: list) -> dict:
     """Helper to enforce strict key order for tables (name -> description -> columns) and columns (name -> type -> primary_key -> references -> description)."""
-    raw_cols = columns if columns is not None else table.get("columns", [])
-    
     clean_cols = []
-    for col in raw_cols:
+    for col in columns:
         clean_col = {}
         if "name" in col:
             clean_col["name"] = col["name"]
@@ -34,7 +32,7 @@ def get_smart_schema_context(
     user_query: str, 
     top_tables: int = 3, 
     top_columns: int = 1, 
-    threshold: float = 0.1
+    threshold: float = 0.0
 ) -> str:
     cml_token = (os.getenv("CML_TOKEN") or os.getenv("CDSW_API_KEY") or "").strip()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
@@ -46,7 +44,9 @@ def get_smart_schema_context(
         "Authorization": f"Bearer {cml_token}"
     }
 
-    # STAGE 1: VECTOR SEARCH
+    # ==========================================
+    # STAGE 1: VECTOR SEARCH (Find Tables)
+    # ==========================================
     try:
         embed_res = requests.post(
             f"{embed_url}/v1/embeddings", 
@@ -60,7 +60,9 @@ def get_smart_schema_context(
         if query_vector and isinstance(query_vector[0], list): 
             query_vector = query_vector[0]
     except Exception as e:
-        return yaml.dump({"database_type": "Cloudera Impala", "error": f"Embedding API failed: {e}"}, sort_keys=False)
+        error_msg = f"CRITICAL ERROR: Embedding API failed at {embed_url}: {e}"
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
     qdrant_headers = {
         "api-key": cml_token, 
@@ -85,7 +87,9 @@ def get_smart_schema_context(
         qdrant_res.raise_for_status()
         retrieved_points = qdrant_res.json().get("result", [])
     except Exception as e:
-        return yaml.dump({"database_type": "Cloudera Impala", "error": f"Qdrant search failed: {e}"}, sort_keys=False)
+        error_msg = f"CRITICAL ERROR: Qdrant search failed at {vectordb_url}: {e}"
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
     retrieved_tables = []
     for point in retrieved_points:
@@ -95,9 +99,13 @@ def get_smart_schema_context(
             retrieved_tables.append(yaml.safe_load(raw_yaml_str))
 
     if not retrieved_tables:
-        return yaml.dump({"database_type": "Cloudera Impala", "error": "No matching tables found in Qdrant."}, sort_keys=False)
+        error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
-    # STAGE 2: RERANKING
+    # ==========================================
+    # STAGE 2: RERANKING (Find Columns)
+    # ==========================================
     documents = []
     mapping = []
     for table in retrieved_tables:
@@ -108,7 +116,6 @@ def get_smart_schema_context(
             documents.append(doc_string)
             mapping.append({"table": t_name, "column": c_name})
 
-    winning_columns = []
     try:
         rerank_payload = {"query": user_query, "documents": documents, "top_n": top_columns}
         rerank_res = requests.post(
@@ -120,7 +127,6 @@ def get_smart_schema_context(
         )
         rerank_res.raise_for_status()
         
-        # Safe response parsing supporting both List and Dict return types
         res_data = rerank_res.json()
         if isinstance(res_data, list):
             rerank_results = res_data
@@ -128,32 +134,41 @@ def get_smart_schema_context(
             rerank_results = res_data.get("results", res_data.get("data", []))
         else:
             rerank_results = []
-        
-        for hit in rerank_results:
-            score = hit.get("score", hit.get("relevance_score", 0.0))
-            idx = hit.get("index")
-            if score > threshold and idx is not None:
-                winning_columns.append(mapping[idx])
+            
     except Exception as e:
-        print(f"⚠️ Reranker error: {e}. Returning normalized full tables.")
+        # NO FALLBACK: Return explicit error immediately
+        error_msg = f"CRITICAL ERROR: Reranker API call failed at {embed_url}/v1/rerank: {e}"
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
-    # STAGE 3: RECONSTRUCT CLEAN SCHEMA
+    winning_columns = []
+    for hit in rerank_results:
+        score = hit.get("score", hit.get("relevance_score", 0.0))
+        idx = hit.get("index")
+        if idx is not None and score >= threshold:
+            winning_columns.append(mapping[idx])
+
+    if not winning_columns:
+        # NO FALLBACK: Return explicit error if no columns match
+        error_msg = f"CRITICAL ERROR: Reranker returned 0 valid matching columns for top_n={top_columns}."
+        print(f"🚨 {error_msg}")
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
+
+    # ==========================================
+    # STAGE 3: RECONSTRUCT STRICT PRUNED SCHEMA
+    # ==========================================
+    relevant_table_names = {item['table'] for item in winning_columns}
     pruned_tables = []
-    if winning_columns:
-        relevant_table_names = {item['table'] for item in winning_columns}
-        for table in retrieved_tables:
-            table_name = table.get("name")
-            if table_name in relevant_table_names:
-                selected_col_names = {item['column'] for item in winning_columns if item['table'] == table_name}
-                mandatory_columns = [
-                    col for col in table.get("columns", [])
-                    if col.get("name") in selected_col_names or col.get("primary_key") or "references" in col
-                ]
-                pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
-    else:
-        # Fallback: Normalize key order for full tables if reranker fails
-        for table in retrieved_tables:
-            pruned_tables.append(_normalize_table_dict(table))
+
+    for table in retrieved_tables:
+        table_name = table.get("name")
+        if table_name in relevant_table_names:
+            selected_col_names = {item['column'] for item in winning_columns if item['table'] == table_name}
+            mandatory_columns = [
+                col for col in table.get("columns", [])
+                if col.get("name") in selected_col_names or col.get("primary_key") or "references" in col
+            ]
+            pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
 
     final_schema = {
         "database_type": "Cloudera Impala",
