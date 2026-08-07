@@ -86,8 +86,10 @@ def get_smart_schema_context(
             retrieved_tables.append(yaml.safe_load(raw_yaml_str))
 
     if not retrieved_tables:
-        print("⚠️ No matching tables found in Qdrant. Using schema file fallback.")
-        return _fallback_read_schema_file()
+        #print("⚠️ No matching tables found in Qdrant. Using schema file fallback.")
+        #return _fallback_read_schema_file()
+        return f"ROOT CAUSE DEBUG - Qdrant returned 200 OK, but retrieved_tables is empty. Raw points: {retrieved_points}"
+
 
     # ==========================================
     # STAGE 2: RERANKING (Find Relevant Columns)
