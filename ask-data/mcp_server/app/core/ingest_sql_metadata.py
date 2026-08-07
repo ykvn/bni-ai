@@ -82,25 +82,45 @@ def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_na
     metadatas = []
     
     # Chunk by table to keep context windows small and precise
-    for table in tables: #[cite: 15]
-        table_name = table.get("name", "unknown") #[cite: 15]
-        desc = table.get("description", "") #[cite: 15]
+    for table in tables:
+        table_name = table.get("name", "unknown")
+        desc = table.get("description", "")
         
-        # Include column names AND descriptions for richer semantic matching
+        # Build search-optimized string containing column names and descriptions
         col_details = []
-        for c in table.get("columns", []): #[cite: 15]
+        clean_columns = []
+        for c in table.get("columns", []):
             c_name = c.get("name", "")
             c_desc = c.get("description", "")
             col_details.append(f"{c_name} ({c_desc})" if c_desc else c_name)
             
+            # Enforce clean column key ordering: name -> type -> primary_key -> references -> description
+            clean_col = {"name": c_name}
+            if "type" in c:
+                clean_col["type"] = c.get("type")
+            if c.get("primary_key"):
+                clean_col["primary_key"] = True
+            if "references" in c:
+                clean_col["references"] = c.get("references")
+            if "description" in c:
+                clean_col["description"] = c.get("description")
+            clean_columns.append(clean_col)
+            
         cols_formatted = ", ".join(col_details)
-        
         searchable_text = f"Table: {table_name}\nDescription: {desc}\nColumns: {cols_formatted}"
-        table_texts.append(searchable_text) #[cite: 15]
+        table_texts.append(searchable_text)
+        
+        # Enforce clean table key ordering: name -> description -> columns
+        clean_table = {
+            "name": table_name,
+            "description": desc,
+            "columns": clean_columns
+        }
         
         metadatas.append({
             "table_name": table_name,
-            "raw_yaml": yaml.dump(table), # Store the raw YAML structure to feed to the LLM
+            # Guaranteed clean key hierarchy in Qdrant metadata payload
+            "raw_yaml": yaml.dump(clean_table, sort_keys=False, default_flow_style=False), 
             "data_type": "schema_table"
         })
 
