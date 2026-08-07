@@ -34,6 +34,9 @@ class SQLGeneratedSuccess(BaseException):
         self.records = records
         super().__init__("SQL successfully executed.")
 
+class SQLSecurityViolation(BaseException):
+    """Custom exception used to forcefully terminate the CrewAI task upon a security violation."""
+    pass
 
 class SQLTranslationService:
     def __init__(self):
@@ -186,9 +189,8 @@ class SQLTranslationService:
             # 🛡️ HARD GUARDRAIL: Intercept destructive commands BEFORE they reach the database
             forbidden_keywords = r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|MERGE|OVERWRITE|GRANT|REVOKE)\b"
             if re.search(forbidden_keywords, clean_query, re.IGNORECASE):
-                # We return a string that tricks the agent into failing safely, 
-                # or you can intentionally return "CRITICAL_SECURITY_ALERT" to trigger your worker.py logic!
-                return "CRITICAL_SECURITY_ALERT: Destructive SQL commands are strictly prohibited."
+                # Hard Guardrail: Immediately raise a security violation to terminate the CrewAI task.
+                raise SQLSecurityViolation("CRITICAL_SECURITY_ALERT: Destructive SQL commands are strictly prohibited.")
 
             raw_result = await self._call_mcp_tool("execute_banking_query", {"sql_query": clean_query})
             
@@ -224,13 +226,18 @@ class SQLTranslationService:
         )
 
         print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...", flush=True)
-        ai_result = await orchestration_crew.kickoff_async(inputs={
-            "user_question": user_question,
-            "golden_context": golden_context,
-            "schema_context": agent_schema_context
-        })
         
-        return self._extract_sql_from_response(str(ai_result))
+        try:
+            ai_result = await orchestration_crew.kickoff_async(inputs={
+                "user_question": user_question,
+                "golden_context": golden_context,
+                "schema_context": agent_schema_context  
+            })
+            return self._extract_sql_from_response(str(ai_result))
+            
+        except SQLSecurityViolation as e:
+            # Safely catch the forced abort and pass the alert string back to worker.py
+            return str(e)
 
     @staticmethod
     def _extract_sql_from_response(ai_result: str) -> str:
