@@ -5,6 +5,8 @@ import httpx
 import yaml
 import re
 from pathlib import Path
+from rich.console import Console
+from rich.panel import Panel
 
 from crewai import Agent, Task, Crew, LLM
 from crewai.tools import tool
@@ -21,6 +23,9 @@ def _make_insecure_httpx_client(**kwargs) -> httpx.AsyncClient:
     kwargs["follow_redirects"] = True
     return httpx.AsyncClient(**kwargs)
 
+# Create a dedicated console that writes directly to the true OS stdout,
+# making it completely immune to CrewAI's log hijacking.
+secure_console = Console(file=sys.__stdout__)
 
 class SQLGeneratedSuccess(BaseException):
     """Custom exception used to forcefully terminate the CrewAI task upon first successful query execution."""
@@ -98,36 +103,38 @@ class SQLTranslationService:
     # =========================================================================
     async def generate_sql(self, user_question: str) -> str:
         """Deterministic execution pipeline that forces schema adherence."""
-        sys.__stdout__.write("\n🔍 [MCP Retrieval] Fetching schema and golden context...\n")
-        sys.__stdout__.flush()
+        
+        secure_console.print("\n🔍 [bold cyan][MCP Retrieval][/bold cyan] Fetching schema and golden context...")
         
         golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
         # =====================================================================
-        # 📋 EXPLICIT VERIFICATION LOGS (QUESTION, SCHEMA & GOLDEN QUERIES)
+        # 📋 RICH UI VERIFICATION LOGS (Bulletproof)
         # =====================================================================
-        log_header = (
-            "\n" + "=" * 80 + "\n"
-            f"❓ [USER QUESTION]: '{user_question}'\n"
-            + "=" * 80 + "\n"
-            "📊 [RETRIEVED DATABASE SCHEMA]\n"
-            + "=" * 80 + "\n"
-            + (schema_context if schema_context else "⚠️ Warning: Schema context is empty!") + "\n"
-            + "=" * 80 + "\n"
-        )
-        sys.__stdout__.write(log_header)
-        sys.__stdout__.flush()
+        
+        # 1. User Question Box
+        secure_console.print(Panel(
+            f"[bold white]{user_question}[/bold white]", 
+            title="❓ User Question", 
+            border_style="blue"
+        ))
 
+        # 2. Database Schema Box
+        schema_text = schema_context if schema_context else "⚠️ Warning: Schema context is empty!"
+        secure_console.print(Panel(
+            schema_text, 
+            title="📊 Retrieved Database Schema", 
+            border_style="green"
+        ))
+
+        # 3. Golden Queries Box
         if golden_context:
-            golden_log = (
-                "⭐ [RETRIEVED GOLDEN QUERIES]\n"
-                + "=" * 80 + "\n"
-                + golden_context + "\n"
-                + "=" * 80 + "\n\n"
-            )
-            sys.__stdout__.write(golden_log)
-            sys.__stdout__.flush()
+            secure_console.print(Panel(
+                golden_context, 
+                title="⭐ Retrieved Golden Queries", 
+                border_style="yellow"
+            ))
 
         @tool("execute_banking_query")
         async def mcp_execute_banking_query(query: str) -> str:
