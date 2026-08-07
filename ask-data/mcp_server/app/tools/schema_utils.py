@@ -12,6 +12,8 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
         clean_col = {}
         if "name" in col:
             clean_col["name"] = col["name"]
+        if "score" in col:  # 🚀 NEW: Preserve column score
+            clean_col["score"] = col["score"]
         if "type" in col:
             clean_col["type"] = col["type"]
         if col.get("primary_key") is True:
@@ -22,11 +24,17 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
             clean_col["description"] = col["description"]
         clean_cols.append(clean_col)
 
-    return {
-        "name": table.get("name"),
-        "description": table.get("description"),
-        "columns": clean_cols
+    clean_table = {
+        "name": table.get("name")
     }
+    if "score" in table:  # 🚀 NEW: Preserve table score
+        clean_table["score"] = table["score"]
+        
+    clean_table["description"] = table.get("description")
+    clean_table["columns"] = clean_cols
+    
+    return clean_table
+
 
 def get_smart_schema_context(
     user_query: str, 
@@ -94,9 +102,14 @@ def get_smart_schema_context(
     retrieved_tables = []
     for point in retrieved_points:
         payload = point.get("payload", {})
+        point_score = point.get("score")  # 🚀 NEW: Extract Qdrant Similarity Score
         raw_yaml_str = payload.get("raw_yaml")
+        
         if raw_yaml_str:
-            retrieved_tables.append(yaml.safe_load(raw_yaml_str))
+            parsed_table = yaml.safe_load(raw_yaml_str)
+            if point_score is not None:
+                parsed_table["score"] = round(point_score, 4) # 🚀 NEW: Inject Table Score
+            retrieved_tables.append(parsed_table)
 
     if not retrieved_tables:
         error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
@@ -136,7 +149,6 @@ def get_smart_schema_context(
             rerank_results = []
             
     except Exception as e:
-        # NO FALLBACK: Return explicit error immediately
         error_msg = f"CRITICAL ERROR: Reranker API call failed at {embed_url}/v1/rerank: {e}"
         print(f"🚨 {error_msg}")
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
@@ -146,10 +158,11 @@ def get_smart_schema_context(
         score = hit.get("score", hit.get("relevance_score", 0.0))
         idx = hit.get("index")
         if idx is not None and score >= threshold:
-            winning_columns.append(mapping[idx])
+            col_data = mapping[idx].copy()
+            col_data["score"] = round(score, 4)  # 🚀 NEW: Inject Column Rerank Score
+            winning_columns.append(col_data)
 
     if not winning_columns:
-        # NO FALLBACK: Return explicit error if no columns match
         error_msg = f"CRITICAL ERROR: Reranker returned 0 valid matching columns for top_n={top_columns}."
         print(f"🚨 {error_msg}")
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
@@ -163,11 +176,19 @@ def get_smart_schema_context(
     for table in retrieved_tables:
         table_name = table.get("name")
         if table_name in relevant_table_names:
-            selected_col_names = {item['column'] for item in winning_columns if item['table'] == table_name}
-            mandatory_columns = [
-                col for col in table.get("columns", [])
-                if col.get("name") in selected_col_names or col.get("primary_key") or "references" in col
-            ]
+            # 🚀 NEW: Create a quick lookup dictionary for the winning column scores
+            col_scores = {item['column']: item['score'] for item in winning_columns if item['table'] == table_name}
+            
+            mandatory_columns = []
+            for col in table.get("columns", []):
+                c_name = col.get("name")
+                if c_name in col_scores:
+                    col["score"] = col_scores[c_name] # 🚀 NEW: Map score back to column
+                    mandatory_columns.append(col)
+                elif col.get("primary_key") or "references" in col:
+                    # Keep PK/FK even if they didn't win the rerank, but no score is attached
+                    mandatory_columns.append(col)
+                    
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
 
     final_schema = {
