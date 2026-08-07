@@ -1,4 +1,3 @@
-raise RuntimeError("🔥 I AM THE CORRECT FILE 🔥")
 import os
 import yaml
 import requests
