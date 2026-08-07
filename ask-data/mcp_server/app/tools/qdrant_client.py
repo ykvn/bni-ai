@@ -1,33 +1,9 @@
 from __future__ import annotations
 
-import os
-import requests
-import urllib3
 from app.tools.config import settings
-
-# Bypass internal CML SSL certificate warnings
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-
-def _get_remote_embedding(query: str, engine_url: str, cml_token: str) -> list[float]:
-    """
-    Fetches vector embedding for a query string remotely from the embed-rerank microservice.
-    Passes CML_TOKEN for platform ingress authentication.
-    """
-    headers = {}
-    if cml_token:
-        headers["Authorization"] = f"Bearer {cml_token}"
-        headers["X-CDSW-API-Key"] = cml_token
-
-    res = requests.post(
-        f"{engine_url}/v1/embeddings",
-        json={"input": query},
-        headers=headers,
-        verify=False,
-        timeout=30.0
-    )
-    res.raise_for_status()
-    return res.json()["embeddings"]
+from shared.embed_client import get_embedding_vector, rerank_documents as shared_rerank
+from shared.qdrant_client import QdrantClient
+from shared.cml_auth import get_cml_token
 
 
 def search_documents(query: str, collection_name: str, top_k: int = 5) -> list[dict]:
@@ -36,63 +12,29 @@ def search_documents(query: str, collection_name: str, top_k: int = 5) -> list[d
     Normalizes response array into standard dictionary formats.
     """
     qdrant_url = settings.qdrant_server_url.rstrip("/")
-    embed_rerank_url = (
-        getattr(settings, "embed_rerank_url", None) 
-        or os.getenv("EMBED_RERANK_URL") 
-        or os.getenv("SEMANTIC_ENGINE_URL")
-        or "http://127.0.0.1:8090"
-    ).rstrip("/")
+    cml_token = get_cml_token()
 
-    cml_token = (
-        os.getenv("CML_TOKEN") 
-        or os.getenv("CDSW_API_KEY") 
-        or os.getenv("QDRANT_SERVER_TOKEN") 
-        or ""
-    ).strip()
-    
     try:
         # 1. Fetch query vector remotely from embed-rerank microservice
-        query_vector = _get_remote_embedding(query, embed_rerank_url, cml_token)
+        query_vector = get_embedding_vector(query, cml_token=cml_token)
 
-        # 2. Prepare the Qdrant REST API Request
-        search_url = f"{qdrant_url}/collections/{collection_name}/points/search"
-        
-        # Pass authentication headers required by Qdrant / CML Ingress Proxy[cite: 14]
-        headers = {}
-        if cml_token:
-            headers["Authorization"] = f"Bearer {cml_token}"
-            headers["api-key"] = cml_token  # Native Qdrant auth header[cite: 14]
+        # 2. Search Qdrant using the shared client
+        client = QdrantClient(base_url=qdrant_url, token=cml_token)
+        results = client.search(collection_name, query_vector, top_k=top_k, token=cml_token)
 
-        payload = {
-            "vector": query_vector,
-            "limit": top_k,
-            "with_payload": True
-        }
+        if results and "error" in results[0]:
+            return results
 
-        # 3. Execute request to Qdrant[cite: 14]
-        res = requests.post(
-            search_url, 
-            json=payload, 
-            headers=headers, 
-            verify=False, 
-            timeout=60.0
-        )
-        
-        if res.status_code != 200:
-            return [{"error": f"Qdrant HTTP Error {res.status_code}: {res.text}"}]
-
-        # 4. Parse REST response payload[cite: 14]
-        results = res.json().get("result", [])
+        # 3. Parse response payload
         output = []
-        
         for item in results:
             payload_data = item.get("payload", {})
             score = round(float(item.get("score", 0.0)), 4) if item.get("score") is not None else None
-            
+
             source_file = payload_data.get("source_file", payload_data.get("title", "Unknown_Document"))
             page_num = payload_data.get("page", "?")
             doc_text = payload_data.get("page_content", payload_data.get("excerpt", ""))
-            
+
             output.append({
                 "document_id": str(item.get("id", "unknown")),
                 "title": f"{source_file} (halaman {page_num})" if page_num != "?" else source_file,
@@ -101,9 +43,9 @@ def search_documents(query: str, collection_name: str, top_k: int = 5) -> list[d
                 "score": score,
                 "raw_payload": payload_data
             })
-            
+
         return output
-        
+
     except Exception as e:
         print(f"⚠️ Vector search operational failure: {str(e)}")
         return [{"error": f"Vector Store Failure: {str(e)}"}]
@@ -116,37 +58,18 @@ def rerank_documents(query: str, raw_documents: list[dict], top_n: int = 5) -> l
     if not raw_documents:
         return []
 
-    embed_rerank_url = (
-        getattr(settings, "embed_rerank_url", None) 
-        or os.getenv("EMBED_RERANK_URL") 
-        or os.getenv("SEMANTIC_ENGINE_URL")
-        or "http://127.0.0.1:8090"
-    ).rstrip("/")
+    cml_token = get_cml_token()
 
-    cml_token = (
-        os.getenv("CML_TOKEN") 
-        or os.getenv("CDSW_API_KEY") 
-        or ""
-    ).strip()
-
-    headers = {}
-    if cml_token:
-        headers["Authorization"] = f"Bearer {cml_token}"
-        headers["X-CDSW-API-Key"] = cml_token
-
-    #doc_texts = [d.get("excerpt", "") for d in raw_documents]
+    # doc_texts = [d.get("excerpt", "") for d in raw_documents]
     doc_texts = [d.get("page_content", d.get("excerpt", "")) for d in raw_documents]
 
     try:
-        res = requests.post(
-            f"{embed_rerank_url}/v1/rerank",
-            json={"query": query, "documents": doc_texts, "top_n": top_n},
-            headers=headers,
-            verify=False,
-            timeout=30.0
+        reranked_scores = shared_rerank(
+            query=query,
+            documents=doc_texts,
+            cml_token=cml_token,
+            top_n=top_n,
         )
-        res.raise_for_status()
-        reranked_scores = res.json().get("results", [])
 
         sorted_docs = []
         for item in reranked_scores:

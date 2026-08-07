@@ -12,8 +12,10 @@ if str(_ASK_DATA_ROOT) not in sys.path:
 import shared.config_loader as config_loader
 config_loader.bootstrap(hint=_ASK_DATA_ROOT)
 
-# Import the existing standardized Qdrant client and remote embedding functions
-from app.core.ingest_knowledge import CMLQdrantClient, _get_remote_embeddings
+# Import the shared Qdrant client and remote embedding functions
+from shared.qdrant_client import QdrantClient
+from shared.embed_client import get_embeddings
+
 
 def ingest_golden_queries(json_path: str, qdrant_url: str, embed_url: str, collection_name: str, cml_token: str):
     """Embeds user intents and stores the verified SQL templates in Qdrant."""
@@ -28,13 +30,13 @@ def ingest_golden_queries(json_path: str, qdrant_url: str, embed_url: str, colle
     if not queries:
         return
 
-    qdrant_client = CMLQdrantClient(base_url=qdrant_url, token=cml_token)
-    
+    qdrant_client = QdrantClient(base_url=qdrant_url, token=cml_token)
+
     # We embed the natural language intent so it matches the user's question semantically
     intents = [q.get("user_intent", "") for q in queries]
     print(f"🧠 Generating embeddings for {len(intents)} golden queries via {embed_url}...")
-    
-    embeddings, vector_dim = _get_remote_embeddings(intents, embed_url, cml_token)
+
+    embeddings, vector_dim = get_embeddings(intents, embed_url, cml_token, timeout=120.0)
 
     # Reset and recreate collection
     qdrant_client.delete_collection(name=collection_name)
@@ -76,16 +78,16 @@ def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_na
     if not tables:
         return
 
-    qdrant_client = CMLQdrantClient(base_url=qdrant_url, token=cml_token)
-    
+    qdrant_client = QdrantClient(base_url=qdrant_url, token=cml_token)
+
     table_texts = []
     metadatas = []
-    
+
     # Chunk by table to keep context windows small and precise
     for table in tables:
         table_name = table.get("name", "unknown")
         desc = table.get("description", "")
-        
+
         # Build search-optimized string containing column names and descriptions
         col_details = []
         clean_columns = []
@@ -93,7 +95,7 @@ def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_na
             c_name = c.get("name", "")
             c_desc = c.get("description", "")
             col_details.append(f"{c_name} ({c_desc})" if c_desc else c_name)
-            
+
             # Enforce clean column key ordering: name -> type -> primary_key -> references -> description
             clean_col = {"name": c_name}
             if "type" in c:
@@ -105,27 +107,27 @@ def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_na
             if "description" in c:
                 clean_col["description"] = c.get("description")
             clean_columns.append(clean_col)
-            
+
         cols_formatted = ", ".join(col_details)
         searchable_text = f"Table: {table_name}\nDescription: {desc}\nColumns: {cols_formatted}"
         table_texts.append(searchable_text)
-        
+
         # Enforce clean table key ordering: name -> description -> columns
         clean_table = {
             "name": table_name,
             "description": desc,
             "columns": clean_columns
         }
-        
+
         metadatas.append({
             "table_name": table_name,
             # Guaranteed clean key hierarchy in Qdrant metadata payload
-            "raw_yaml": yaml.dump(clean_table, sort_keys=False, default_flow_style=False), 
+            "raw_yaml": yaml.dump(clean_table, sort_keys=False, default_flow_style=False),
             "data_type": "schema_table"
         })
 
     print(f"🧠 Generating embeddings for {len(table_texts)} tables via {embed_url}...")
-    embeddings, vector_dim = _get_remote_embeddings(table_texts, embed_url, cml_token)
+    embeddings, vector_dim = get_embeddings(table_texts, embed_url, cml_token, timeout=120.0)
 
     # Reset and recreate collection
     qdrant_client.delete_collection(name=collection_name)

@@ -1,9 +1,10 @@
 import os
 import yaml
-import requests
-import urllib3
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+from shared.embed_client import get_embedding_vector, rerank_documents
+from shared.qdrant_client import QdrantClient
+from shared.cml_auth import get_cml_token
+
 
 def _normalize_table_dict(table: dict, columns: list) -> dict:
     """Helper to enforce strict key order for tables (name -> description -> columns) and columns (name -> type -> primary_key -> references -> description)."""
@@ -29,71 +30,44 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
     }
     if "score" in table:  # 🚀 NEW: Preserve table score
         clean_table["score"] = table["score"]
-        
+
     clean_table["description"] = table.get("description")
     clean_table["columns"] = clean_cols
-    
+
     return clean_table
 
 
 def get_smart_schema_context(
-    user_query: str, 
-    top_tables: int = 3, 
-    top_columns: int = 10, 
+    user_query: str,
+    top_tables: int = 3,
+    top_columns: int = 10,
     threshold: float = 0.0
 ) -> str:
-    cml_token = (os.getenv("CML_TOKEN") or os.getenv("CDSW_API_KEY") or "").strip()
+    cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     schema_collection = os.getenv("SCHEMA_COLLECTION", "bni_schema_definitions")
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {cml_token}"
-    }
 
     # ==========================================
     # STAGE 1: VECTOR SEARCH (Find Tables)
     # ==========================================
     try:
-        embed_res = requests.post(
-            f"{embed_url}/v1/embeddings", 
-            json={"input": user_query}, 
-            headers=headers, 
-            verify=False,
-            timeout=15
-        )
-        embed_res.raise_for_status()
-        query_vector = embed_res.json().get("embeddings")
-        if query_vector and isinstance(query_vector[0], list): 
-            query_vector = query_vector[0]
+        query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
     except Exception as e:
         error_msg = f"CRITICAL ERROR: Embedding API failed at {embed_url}: {e}"
         print(f"🚨 {error_msg}")
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
-    qdrant_headers = {
-        "api-key": cml_token, 
-        "Authorization": f"Bearer {cml_token}",
-        "Content-Type": "application/json"
-    }
-
-    qdrant_payload = {
-        "vector": query_vector,
-        "limit": top_tables,
-        "with_payload": True
-    }
-    
     try:
-        qdrant_res = requests.post(
-            f"{vectordb_url}/collections/{schema_collection}/points/search",
-            json=qdrant_payload,
-            headers=qdrant_headers,
-            verify=False,
-            timeout=15
+        qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
+        retrieved_points = qdrant_client.search(
+            schema_collection,
+            query_vector,
+            top_k=top_tables,
+            token=cml_token,
         )
-        qdrant_res.raise_for_status()
-        retrieved_points = qdrant_res.json().get("result", [])
+        if retrieved_points and "error" in retrieved_points[0]:
+            raise RuntimeError(retrieved_points[0]["error"])
     except Exception as e:
         error_msg = f"CRITICAL ERROR: Qdrant search failed at {vectordb_url}: {e}"
         print(f"🚨 {error_msg}")
@@ -104,11 +78,11 @@ def get_smart_schema_context(
         payload = point.get("payload", {})
         point_score = point.get("score")  # 🚀 NEW: Extract Qdrant Similarity Score
         raw_yaml_str = payload.get("raw_yaml")
-        
+
         if raw_yaml_str:
             parsed_table = yaml.safe_load(raw_yaml_str)
             if point_score is not None:
-                parsed_table["score"] = round(point_score, 4) # 🚀 NEW: Inject Table Score
+                parsed_table["score"] = round(point_score, 4)  # 🚀 NEW: Inject Table Score
             retrieved_tables.append(parsed_table)
 
     if not retrieved_tables:
@@ -130,24 +104,14 @@ def get_smart_schema_context(
             mapping.append({"table": t_name, "column": c_name})
 
     try:
-        rerank_payload = {"query": user_query, "documents": documents, "top_n": top_columns}
-        rerank_res = requests.post(
-            f"{embed_url}/v1/rerank", 
-            json=rerank_payload, 
-            headers=headers, 
-            verify=False,
-            timeout=15
+        rerank_results = rerank_documents(
+            query=user_query,
+            documents=documents,
+            engine_url=embed_url,
+            cml_token=cml_token,
+            top_n=top_columns,
+            timeout=15,
         )
-        rerank_res.raise_for_status()
-        
-        res_data = rerank_res.json()
-        if isinstance(res_data, list):
-            rerank_results = res_data
-        elif isinstance(res_data, dict):
-            rerank_results = res_data.get("results", res_data.get("data", []))
-        else:
-            rerank_results = []
-            
     except Exception as e:
         error_msg = f"CRITICAL ERROR: Reranker API call failed at {embed_url}/v1/rerank: {e}"
         print(f"🚨 {error_msg}")
@@ -178,22 +142,22 @@ def get_smart_schema_context(
         if table_name in relevant_table_names:
             # 🚀 NEW: Create a quick lookup dictionary for the winning column scores
             col_scores = {item['column']: item['score'] for item in winning_columns if item['table'] == table_name}
-            
+
             mandatory_columns = []
             for col in table.get("columns", []):
                 c_name = col.get("name")
                 if c_name in col_scores:
-                    col["score"] = col_scores[c_name] # 🚀 NEW: Map score back to column
+                    col["score"] = col_scores[c_name]  # 🚀 NEW: Map score back to column
                     mandatory_columns.append(col)
                 elif col.get("primary_key") or "references" in col:
                     # Keep PK/FK even if they didn't win the rerank, but no score is attached
                     mandatory_columns.append(col)
-                    
+
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
 
     final_schema = {
         "database_type": "Cloudera Impala",
         "tables": pruned_tables
     }
-    
+
     return yaml.dump(final_schema, sort_keys=False, default_flow_style=False)
