@@ -2,6 +2,7 @@ import os
 import yaml
 import requests
 import urllib3
+from pathlib import Path
 
 # Suppress SSL certificate verification warnings in enterprise CML environments
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -50,14 +51,13 @@ def get_smart_schema_context(
         if query_vector and isinstance(query_vector[0], list): 
             query_vector = query_vector[0]
     except Exception as e:
-        #print(f"⚠️ Embedding API failed: {e}. Returning raw schema file fallback.")
-        #return _fallback_read_schema_file()
-        return f"ROOT CAUSE DEBUG - Embedding API Failed: {str(e)} | URL: {embed_url}"
+        print(f"⚠️ Embedding API failed: {e}. Returning raw schema file fallback.")
+        return _fallback_read_schema_file()
 
     # Search Qdrant Collection via REST API using VECTORDB_SERVER_URL
     qdrant_headers = {
         "api-key": cml_token, 
-        "Authorization": f"Bearer {cml_token}", # <--- THIS WAS MISSING!
+        "Authorization": f"Bearer {cml_token}", # Required for CML Ingress Proxy
         "Content-Type": "application/json"
     }
 
@@ -78,9 +78,8 @@ def get_smart_schema_context(
         qdrant_res.raise_for_status()
         retrieved_points = qdrant_res.json().get("result", [])
     except Exception as e:
-        #print(f"⚠️ Qdrant search failed at {vectordb_url}: {e}. Returning fallback.")
-        #return _fallback_read_schema_file()
-        return f"ROOT CAUSE DEBUG - Qdrant Search Failed: {str(e)} | URL: {vectordb_url}"
+        print(f"⚠️ Qdrant search failed at {vectordb_url}: {e}. Returning fallback.")
+        return _fallback_read_schema_file()
 
     # Extract `raw_yaml` metadata stored during ingestion
     retrieved_tables = []
@@ -91,10 +90,8 @@ def get_smart_schema_context(
             retrieved_tables.append(yaml.safe_load(raw_yaml_str))
 
     if not retrieved_tables:
-        #print("⚠️ No matching tables found in Qdrant. Using schema file fallback.")
-        #return _fallback_read_schema_file()
-        return f"ROOT CAUSE DEBUG - Qdrant returned 200 OK, but retrieved_tables is empty. Raw points: {retrieved_points}"
-
+        print("⚠️ No matching tables found in Qdrant. Using schema file fallback.")
+        return _fallback_read_schema_file()
 
     # ==========================================
     # STAGE 2: RERANKING (Find Relevant Columns)
@@ -178,9 +175,21 @@ def get_smart_schema_context(
     return yaml.dump(final_schema, sort_keys=False, default_flow_style=False)
 
 
-def _fallback_read_schema_file(schema_path: str = "schema_definitions.yaml") -> str:
+def _fallback_read_schema_file(schema_path: str = None) -> str:
     """Fallback reader if Qdrant or Embedder microservices are temporarily unavailable."""
+    if not schema_path:
+        # Dynamically resolve the absolute path to the root 'ask-data' folder
+        try:
+            ask_data_root = Path(__file__).resolve().parents[3]
+            resolved_path = ask_data_root / "data" / "schema_definitions.yaml" 
+            schema_path = str(resolved_path)
+        except Exception:
+            schema_path = "schema_definitions.yaml"
+
     if os.path.exists(schema_path):
+        print(f"📖 Loaded schema fallback directly from file: {schema_path}")
         with open(schema_path, "r", encoding="utf-8") as f:
             return f.read()
-    return "Schema unavailable."
+            
+    print(f"❌ CRITICAL ERROR: Could not find schema fallback at {schema_path}")
+    return "Schema unavailable. Please check the file path."
