@@ -58,7 +58,7 @@ def build_ui() -> object:
         base_api_url = backend_url
 
     def format_job_info(job_id: str, status: str, start_time: float, is_final: bool = False):
-        """Helper to render standardized Markdown Status Box."""
+        """Helper to render standardized Markdown Status Box vertically."""
         elapsed = int(time.time() - start_time)
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
@@ -72,8 +72,12 @@ def build_ui() -> object:
 
         time_label = "Completed Time" if is_final else "Current Time"
 
+        # Formatted vertically using Markdown bullets
         return (
-            f"**Job ID:** `{job_id}` | **Status:** {badge} | **{time_label}:** `{now_str}` (Duration: `{elapsed}s`)"
+            f"### 🆔 Job Execution Information\n"
+            f"- **Job ID:** `{job_id}`\n"
+            f"- **Status:** {badge}\n"
+            f"- **{time_label}:** `{now_str}` (Duration: `{elapsed}s`)\n"
         )
 
     def ask_backend(question: str):
@@ -81,17 +85,26 @@ def build_ui() -> object:
             yield (
                 gr.update(visible=False, value=""),
                 "Please enter a valid question.",
-                gr.update(visible=False)
+                gr.update(visible=False),
+                gr.update(interactive=True)  # Re-enable button
             )
             return
 
         start_time = time.time()
         
-        # Initial yield before network dispatch
+        # Initial yield before network dispatch (Disable button immediately)
         initial_job_box = (
-            f"**Job ID:** `Submitting...` | **Status:** ⏳ ENQUEUEING | **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`"
+            f"### 🆔 Job Execution Information\n"
+            f"- **Job ID:** `Submitting...`\n"
+            f"- **Status:** ⏳ ENQUEUEING\n"
+            f"- **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
         )
-        yield gr.update(visible=True, value=initial_job_box), "Submitting question to CrewAI Engine...", gr.update(visible=False)
+        yield (
+            gr.update(visible=True, value=initial_job_box), 
+            "Submitting question to CrewAI Engine...", 
+            gr.update(visible=False),
+            gr.update(interactive=False) # Disable button while processing
+        )
 
         try:
             cml_token = os.environ.get("CML_TOKEN", "").strip()
@@ -145,29 +158,53 @@ def build_ui() -> object:
                         text_out, df_out = parse_payload_to_ui(final_payload)
                         
                         job_box_completed = format_job_info(job_id, "SUCCESS", start_time, is_final=True)
-                        yield gr.update(visible=True, value=job_box_completed), text_out, df_out
+                        yield (
+                            gr.update(visible=True, value=job_box_completed), 
+                            text_out, 
+                            df_out,
+                            gr.update(interactive=True) # Re-enable button on success
+                        )
                         break
                         
                     elif status == "failed":
                         error_msg = job_data.get("error", "Unknown error encountered.")
                         job_box_failed = format_job_info(job_id, "FAILED", start_time, is_final=True)
-                        yield gr.update(visible=True, value=job_box_failed), f"❌ Task Failed:\n{error_msg}", gr.update(visible=False)
+                        yield (
+                            gr.update(visible=True, value=job_box_failed), 
+                            f"❌ Task Failed:\n{error_msg}", 
+                            gr.update(visible=False),
+                            gr.update(interactive=True) # Re-enable button on failure
+                        )
                         break
                         
                     else:
                         job_box_running = format_job_info(job_id, status, start_time, is_final=False)
-                        yield gr.update(visible=True, value=job_box_running), "⏳ CrewAI is currently executing your request...", gr.update(visible=False)
+                        yield (
+                            gr.update(visible=True, value=job_box_running), 
+                            "⏳ CrewAI is currently executing your request...", 
+                            gr.update(visible=False),
+                            gr.update(interactive=False) # Keep button disabled while polling
+                        )
             else:
                 text_out, df_out = parse_payload_to_ui(payload)
                 job_box_direct = format_job_info("N/A (Direct)", "SUCCESS", start_time, is_final=True)
-                yield gr.update(visible=True, value=job_box_direct), text_out, df_out
+                yield (
+                    gr.update(visible=True, value=job_box_direct), 
+                    text_out, 
+                    df_out,
+                    gr.update(interactive=True) # Re-enable button on direct return
+                )
                 
         except Exception as exc:
             error_details = str(exc) if str(exc) and str(exc) != "0" else repr(exc)
             job_box_err = format_job_info("ERROR", "FAILED", start_time, is_final=True)
-            yield gr.update(visible=True, value=job_box_err), f"❌ Exception Error:\n{error_details}", gr.update(visible=False)
+            yield (
+                gr.update(visible=True, value=job_box_err), 
+                f"❌ Exception Error:\n{error_details}", 
+                gr.update(visible=False),
+                gr.update(interactive=True) # Re-enable button on exception
+            )
 
-    # Added gr.themes.Soft() to fix text color contrast issues
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
         gr.Markdown("# Bank Negara Indonesia Zero Query Assistant")
         
@@ -183,7 +220,8 @@ def build_ui() -> object:
         submit_btn.click(
             fn=ask_backend, 
             inputs=question_box, 
-            outputs=[job_info_box, output_text, output_table],
+            # Added submit_btn to outputs to control its interactive state
+            outputs=[job_info_box, output_text, output_table, submit_btn],
             concurrency_limit=None,  # 🚀 Fixes the queuing issue (Allows parallel tab execution)
             show_progress="hidden"   # 🚀 Fixes the UI layout (Hides Gradio's floating orange boxes)
         )
