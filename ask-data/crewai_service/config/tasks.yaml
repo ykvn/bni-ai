@@ -25,7 +25,7 @@ draft_sql_task:
       ```
     - FINAL RESPONSE REQUIREMENT: STOP CONDITION. Once you have successfully retrieved the data using the tool, DO NOT call the tool again. You must immediately terminate your reasoning and output ONLY your final response using this exact format:
       Final Answer:
-      ```sql
+      ```
       <your verified SQL query here>
       ```
 
