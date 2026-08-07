@@ -50,8 +50,9 @@ def get_smart_schema_context(
         if query_vector and isinstance(query_vector[0], list): 
             query_vector = query_vector[0]
     except Exception as e:
-        print(f"⚠️ Embedding API failed: {e}. Returning raw schema file fallback.")
-        return _fallback_read_schema_file()
+        #print(f"⚠️ Embedding API failed: {e}. Returning raw schema file fallback.")
+        #return _fallback_read_schema_file()
+        return f"ROOT CAUSE DEBUG - Embedding API Failed: {str(e)} | URL: {embed_url}"
 
     # Search Qdrant Collection via REST API using VECTORDB_SERVER_URL
     qdrant_headers = {"api-key": cml_token, "Content-Type": "application/json"}
@@ -72,8 +73,9 @@ def get_smart_schema_context(
         qdrant_res.raise_for_status()
         retrieved_points = qdrant_res.json().get("result", [])
     except Exception as e:
-        print(f"⚠️ Qdrant search failed at {vectordb_url}: {e}. Returning fallback.")
-        return _fallback_read_schema_file()
+        #print(f"⚠️ Qdrant search failed at {vectordb_url}: {e}. Returning fallback.")
+        #return _fallback_read_schema_file()
+        return f"ROOT CAUSE DEBUG - Qdrant Search Failed: {str(e)} | URL: {vectordb_url}"
 
     # Extract `raw_yaml` metadata stored during ingestion
     retrieved_tables = []
