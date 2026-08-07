@@ -92,7 +92,7 @@ def build_ui() -> object:
         
         # Initial yield before network dispatch
         initial_job_box = (
-            f"### 🆔 Job Execution Information\n"
+            f"### Job Execution Information\n"
             f"* **JOB ID:** `Submitting...`\n"
             f"* **Status:** `🟡 ENQUEUEING`\n"
             f"* **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
