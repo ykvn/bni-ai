@@ -168,11 +168,11 @@ def build_ui() -> object:
             yield gr.update(visible=True, value=job_box_err), f"❌ Exception Error:\n{error_details}", gr.update(visible=False)
 
     # Added gr.themes.Soft() to fix text color contrast issues
-    with gr.Blocks(title="Bank Negara Indonesia Q&A", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
         gr.Markdown("# Bank Negara Indonesia Zero Query Assistant")
         
-        question_box = gr.Textbox(label="Question", lines=3, placeholder="Ask a question about the database...")
-        submit_btn = gr.Button("Ask", variant="primary")
+        question_box = gr.Textbox(label="Question", lines=3)
+        submit_btn = gr.Button("Ask")
 
         # Separate Information Box for JOB ID & Running Status
         job_info_box = gr.Markdown(visible=False)
