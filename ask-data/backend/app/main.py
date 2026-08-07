@@ -2,24 +2,19 @@ import os
 import httpx
 from fastapi import FastAPI, HTTPException
 from app.schemas.query import QueryRequest
+from shared.cml_auth import build_cml_headers
 
 app = FastAPI(title="Bank ABC NL-to-SQL Core API Gateway")
 
 CREWAI_SERVICE_URL = os.getenv("CREWAI_SERVICE_URL", "").rstrip("/")
-CML_TOKEN = os.getenv("CML_TOKEN", "").strip()
 
 
 def _get_httpx_client() -> httpx.Client:
     """
     HTTPX client pre-configured with CML authorization headers for cross-application HTTP requests.
     """
-    headers = {}
-    if CML_TOKEN:
-        headers["Authorization"] = f"Bearer {CML_TOKEN}"
-        headers["X-CDSW-API-Key"] = CML_TOKEN
-
     return httpx.Client(
-        headers=headers,
+        headers=build_cml_headers(),
         verify=False,
         follow_redirects=True,
         timeout=10.0
