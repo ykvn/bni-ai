@@ -59,3 +59,19 @@ def get_job_status(job_id: str):
             return resp.json()
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"CrewAI Microservice unreachable: {str(e)}")
+
+
+@app.delete("/job/{job_id}/cancel")
+def cancel_job(job_id: str):
+    """
+    Proxies job cancellation request to Standalone CrewAI Microservice over HTTP
+    with CML Authentication.
+    """
+    try:
+        with _get_httpx_client() as client:
+            resp = client.delete(f"{CREWAI_SERVICE_URL}/cancel/{job_id}")
+            if resp.status_code != 200:
+                raise HTTPException(status_code=resp.status_code, detail=f"Cancel request error: {resp.text}")
+            return resp.json()
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"CrewAI Microservice unreachable: {str(e)}")

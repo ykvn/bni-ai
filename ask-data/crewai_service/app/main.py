@@ -4,7 +4,7 @@ import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from crewai_service.app.core import job_db
-from crewai_service.app.worker import run_worker_loop
+from crewai_service.app.worker import run_worker_loop, cancel_job
 
 app = FastAPI(title="CrewAI Agent Microservice Engine")
 
@@ -56,3 +56,21 @@ def get_task_status(job_id: str):
         "data": result_data,
         "error": job["error"]
     }
+
+@app.delete("/cancel/{job_id}")
+def cancel_task(job_id: str):
+    """
+    Cancels a running or pending job. If the job is currently being processed
+    by the worker, the underlying asyncio task is cancelled. If the job is
+    still pending, it is marked as 'cancelled' so the worker loop skips it.
+    """
+    cancelled = cancel_job(job_id)
+    if not cancelled:
+        job = job_db.get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job ID not found.")
+        raise HTTPException(
+            status_code=409,
+            detail=f"Job cannot be cancelled. Current status: '{job['status']}'."
+        )
+    return {"job_id": job_id, "status": "cancelled", "message": "Job cancellation requested."}

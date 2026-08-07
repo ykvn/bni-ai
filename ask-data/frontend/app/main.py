@@ -8,6 +8,10 @@ import gradio as gr
 
 from shared.cml_auth import build_cml_headers
 
+# Module-level state for cancellation support
+_current_job_id = None
+_cancel_requested = False
+
 
 def parse_payload_to_ui(payload: dict):
     """Parses payload into text components and a Pandas DataFrame for UI rendering."""
@@ -69,6 +73,8 @@ def build_ui() -> object:
             badge = "✅ SUCCESS"
         elif status_upper == "FAILED":
             badge = "❌ FAILED"
+        elif status_upper == "CANCELLED":
+            badge = "🚫 CANCELLED"
         else:
             badge = f"⏳ {status_upper}"
 
@@ -83,18 +89,22 @@ def build_ui() -> object:
         )
 
     def ask_backend(question: str):
+        global _current_job_id, _cancel_requested
+        _cancel_requested = False
+
         if not question.strip():
             yield (
                 gr.update(visible=False, value=""),
                 "Please enter a valid question.",
                 gr.update(visible=False),
-                gr.update(interactive=True)  # Re-enable button
+                gr.update(interactive=True),  # Re-enable Ask button
+                gr.update(visible=False, interactive=False)  # Hide Cancel button
             )
             return
 
         start_time = time.time()
         
-        # Initial yield before network dispatch (Disable button immediately)
+        # Initial yield before network dispatch (Disable Ask button immediately, show Cancel)
         initial_job_box = (
             f"### Job Execution Information\n"
             f"- **Job ID:** `Submitting...`\n"
@@ -105,7 +115,8 @@ def build_ui() -> object:
             gr.update(visible=True, value=initial_job_box), 
             "Submitting question to CrewAI Engine...", 
             gr.update(visible=False),
-            gr.update(interactive=False) # Disable button while processing
+            gr.update(interactive=False),  # Disable Ask button while processing
+            gr.update(visible=True, interactive=True)  # Show & enable Cancel button
         )
 
         try:
@@ -123,10 +134,24 @@ def build_ui() -> object:
 
             if "job_id" in payload:
                 job_id = payload["job_id"]
+                _current_job_id = job_id
                 job_status_url = f"{base_api_url}/job/{job_id}"
                 
                 while True:
                     time.sleep(1.0)
+                    
+                    # Check if cancellation was requested via the Cancel button
+                    if _cancel_requested:
+                        job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
+                        yield (
+                            gr.update(visible=True, value=job_box_cancelled), 
+                            "❌ Request was cancelled by user.", 
+                            gr.update(visible=False),
+                            gr.update(interactive=True),  # Re-enable Ask button
+                            gr.update(visible=False, interactive=False)  # Hide Cancel button
+                        )
+                        _cancel_requested = False
+                        break
                     
                     status_response = requests.get(
                         job_status_url, 
@@ -161,7 +186,8 @@ def build_ui() -> object:
                             gr.update(visible=True, value=job_box_completed), 
                             text_out, 
                             df_out,
-                            gr.update(interactive=True) # Re-enable button on success
+                            gr.update(interactive=True),  # Re-enable Ask button on success
+                            gr.update(visible=False, interactive=False)  # Hide Cancel button
                         )
                         break
                         
@@ -172,7 +198,19 @@ def build_ui() -> object:
                             gr.update(visible=True, value=job_box_failed), 
                             f"❌ Task Failed:\n{error_msg}", 
                             gr.update(visible=False),
-                            gr.update(interactive=True) # Re-enable button on failure
+                            gr.update(interactive=True),  # Re-enable Ask button on failure
+                            gr.update(visible=False, interactive=False)  # Hide Cancel button
+                        )
+                        break
+                        
+                    elif status == "cancelled":
+                        job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
+                        yield (
+                            gr.update(visible=True, value=job_box_cancelled), 
+                            "❌ Request was cancelled.", 
+                            gr.update(visible=False),
+                            gr.update(interactive=True),  # Re-enable Ask button
+                            gr.update(visible=False, interactive=False)  # Hide Cancel button
                         )
                         break
                         
@@ -182,7 +220,8 @@ def build_ui() -> object:
                             gr.update(visible=True, value=job_box_running), 
                             "⏳ CrewAI is currently executing your request...", 
                             gr.update(visible=False),
-                            gr.update(interactive=False) # Keep button disabled while polling
+                            gr.update(interactive=False),  # Keep Ask button disabled while polling
+                            gr.update(visible=True, interactive=True)  # Keep Cancel button visible
                         )
             else:
                 text_out, df_out = parse_payload_to_ui(payload)
@@ -191,7 +230,8 @@ def build_ui() -> object:
                     gr.update(visible=True, value=job_box_direct), 
                     text_out, 
                     df_out,
-                    gr.update(interactive=True) # Re-enable button on direct return
+                    gr.update(interactive=True),  # Re-enable Ask button on direct return
+                    gr.update(visible=False, interactive=False)  # Hide Cancel button
                 )
                 
         except Exception as exc:
@@ -201,14 +241,43 @@ def build_ui() -> object:
                 gr.update(visible=True, value=job_box_err), 
                 f"❌ Exception Error:\n{error_details}", 
                 gr.update(visible=False),
-                gr.update(interactive=True) # Re-enable button on exception
+                gr.update(interactive=True),  # Re-enable Ask button on exception
+                gr.update(visible=False, interactive=False)  # Hide Cancel button
             )
+
+    def cancel_backend():
+        """
+        Called when the user clicks the Cancel button. Sets a module-level flag
+        so the running ask_backend generator can detect it on its next poll,
+        and also sends a DELETE request to the backend to cancel the job
+        server-side.
+        """
+        global _cancel_requested
+        _cancel_requested = True
+        job_id = _current_job_id
+        if job_id:
+            try:
+                headers = build_cml_headers(extra={"Content-Type": "application/json", "accept": "application/json"})
+                cancel_url = f"{base_api_url}/job/{job_id}/cancel"
+                requests.delete(cancel_url, headers=headers, timeout=10, verify=False)
+            except Exception as e:
+                print(f"Cancel request error: {e}", flush=True)
+        # These UI updates will be overwritten by the generator's final yield
+        # once it detects _cancel_requested, but provide immediate feedback.
+        return (
+            gr.update(visible=True, value="### ⏳ Cancellation requested..."),
+            "Cancelling request...",
+            gr.update(visible=False),
+            gr.update(interactive=True),  # Re-enable Ask button
+            gr.update(visible=False, interactive=False)  # Hide Cancel button
+        )
 
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
         gr.Markdown("# Bank Negara Indonesia Zero Query Assistant")
         
         question_box = gr.Textbox(label="Question", lines=3)
         submit_btn = gr.Button("Ask")
+        cancel_btn = gr.Button("Cancel", visible=False)
 
         # Separate Information Box for JOB ID & Running Status
         job_info_box = gr.Markdown(visible=False)
@@ -219,10 +288,18 @@ def build_ui() -> object:
         submit_btn.click(
             fn=ask_backend, 
             inputs=question_box, 
-            # Added submit_btn to outputs to control its interactive state
-            outputs=[job_info_box, output_text, output_table, submit_btn],
+            # Added submit_btn and cancel_btn to outputs to control their interactive state
+            outputs=[job_info_box, output_text, output_table, submit_btn, cancel_btn],
             concurrency_limit=None,  # 🚀 Fixes the queuing issue (Allows parallel tab execution)
             show_progress="hidden"   # 🚀 Fixes the UI layout (Hides Gradio's floating orange boxes)
+        )
+
+        cancel_btn.click(
+            fn=cancel_backend,
+            inputs=None,
+            outputs=[job_info_box, output_text, output_table, submit_btn, cancel_btn],
+            concurrency_limit=None,
+            show_progress="hidden"
         )
 
     return demo
