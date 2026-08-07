@@ -40,7 +40,7 @@ def main() -> None:
     ensure_dependencies(service_dir, env)
 
     process = launch_uvicorn(service_dir, "app.main:app", app_port, env)
-    print(f"🌐 [CML APP 1] Gateway REST API running on http://127.0.0.1:{app_port}")
+    print(f"🌐 Backend REST API running on http://127.0.0.1:{app_port}")
 
     wait_for_process(process, _SERVICE_NAME)
 
