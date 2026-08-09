@@ -27,11 +27,14 @@ from shared.qdrant_client import QdrantClient
 # Root / environment bootstrap
 # ---------------------------------------------------------------------------
 
-# Location of this module: ask-data/mcp_server/app/core/ingest_common.py
-# Walking three parents up from "core" lands on the ask-data/ root.
-_CORE_DIR = Path(__file__).resolve().parent
-_MCP_SERVER_DIR = _CORE_DIR.parent
-ASK_DATA_ROOT = _MCP_SERVER_DIR.parent
+# Location of this module file: ask-data/mcp_server/app/core/ingest_common.py
+#   CORE_DIR          = _CORE_FILE.parent        = .../mcp_server/app/core
+#   parents[1]        = .../mcp_server/app
+#   parents[2]        = .../mcp_server
+#   ASK_DATA_ROOT     = parents[3]               = .../ask-data
+_CORE_FILE = Path(__file__).resolve()
+CORE_DIR = _CORE_FILE.parent
+ASK_DATA_ROOT = _CORE_FILE.parents[3]
 
 
 def bootstrap_env() -> Path:
