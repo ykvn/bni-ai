@@ -51,7 +51,7 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
 
         print("🔄 Running Schema and Golden Queries Ingestion...")
         ingest_schema(
-            yaml_path=str(data_dir / "schema_definitions.yaml"),
+            yaml_path=str(data_dir / "bni_schema_definitions.yaml"),
             qdrant_url=config["qdrant_server_url"],
             embed_url=config["embed_rerank_url"],
             collection_name=schema_collection,
@@ -59,7 +59,7 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
         )
 
         ingest_golden_queries(
-            json_path=str(data_dir / "golden_queries.json"),
+            json_path=str(data_dir / "bni_golden_queries.json"),
             qdrant_url=config["qdrant_server_url"],
             embed_url=config["embed_rerank_url"],
             collection_name=golden_collection,

@@ -19,8 +19,8 @@ from app.core.ingest_sql_metadata import ingest_golden_queries, ingest_schema
 ask_data_root = _ASK_DATA_ROOT.parent
 
 # --- PATH CONFIGURATION ---
-SCHEMA_YAML_PATH = os.path.join(ask_data_root, "data", "schema_definitions.yaml")
-GOLDEN_QUERIES_JSON_PATH = os.path.join(ask_data_root, "data", "golden_queries.json")
+SCHEMA_YAML_PATH = os.path.join(ask_data_root, "data", "bni_schema_definitions.yaml")
+GOLDEN_QUERIES_JSON_PATH = os.path.join(ask_data_root, "data", "bni_golden_queries.json")
 
 
 def main() -> None:

@@ -4,8 +4,8 @@ import os
 
 # --- PATH CONFIGURATION BASED ON YOUR FOLDER STRUCTURE ---
 # Since this script runs from ask-data/scripts/, we go up one level (../)
-EXCEL_INPUT_PATH = "/home/cdsw/ask-data/data/bni_schema_definitions.xlsx"
-CUBE_YAML_OUTPUT = "/home/cdsw/ask-data/cube_service/model/cubes/bni_schema_definitions.yaml"
+EXCEL_INPUT_PATH = "/home/cdsw/ask-data/data/bni_cube_definitions.xlsx"
+CUBE_YAML_OUTPUT = "/home/cdsw/ask-data/cube_service/model/cubes/bni_cube_definitions.yaml"
 MAPPINGS_JSON_OUTPUT = "/home/cdsw/ask-data/data/value_mappings.json"
 
 def dict_to_yaml(data, indent=0):
