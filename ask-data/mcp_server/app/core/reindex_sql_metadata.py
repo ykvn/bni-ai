@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 # 1. Locate ask-data root and bootstrap .env into os.environ BEFORE importing app modules[cite: 17, 18]
-_ASK_DATA_ROOT = Path(__file__).resolve().parents[3] if "__file__" in globals() else Path("/home/cdsw/ask-data")
+_ASK_DATA_ROOT = Path(__file__).resolve().parents[2] if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
 
