@@ -63,7 +63,7 @@ def main() -> None:
     ingest_cube_catalog(
         yaml_path=CUBE_YAML_PATH,
         vectordb_server_url=vectordb_server_url,
-        embed_url=embed_rerank_url,
+        embed_rerank_url=embed_rerank_url,
         collection_name=cube_catalog_collection,
         cml_token=cml_token
     )
@@ -73,7 +73,7 @@ def main() -> None:
     ingest_value_mappings(
         json_path=CUBE_VALUE_MAPPINGS_JSON_PATH,
         vectordb_server_url=vectordb_server_url,
-        embed_url=embed_rerank_url,
+        embed_rerank_url=embed_rerank_url,
         collection_name=cube_value_mappings_collection,
         cml_token=cml_token
     )
