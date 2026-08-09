@@ -34,6 +34,7 @@ from shared.qdrant_client import QdrantClient
 #   ASK_DATA_ROOT     = parents[3]               = .../ask-data
 _CORE_FILE = Path(__file__).resolve()
 CORE_DIR = _CORE_FILE.parent
+_MCP_SERVER_DIR = _CORE_FILE.parents[2]
 ASK_DATA_ROOT = _CORE_FILE.parents[3]
 
 
@@ -48,6 +49,11 @@ def bootstrap_env() -> Path:
     ask_data_root = ASK_DATA_ROOT
     if str(ask_data_root) not in sys.path:
         sys.path.insert(0, str(ask_data_root))
+
+    # mcp_server/ must be importable so `app.core.*` resolves from any entry
+    # point (reindex scripts, mcp_entry.py, etc.).
+    if str(_MCP_SERVER_DIR) not in sys.path:
+        sys.path.insert(0, str(_MCP_SERVER_DIR))
 
     try:
         config_loader.bootstrap(hint=ask_data_root)
