@@ -1,84 +1,81 @@
-import os
-import sys
+"""
+SQL metadata ingestion: golden queries (JSON) + DB schema (YAML).
+
+Uses the shared ``ingest_common`` bootstrap and ``reset_and_index`` routine
+so this pipeline behaves identically to the Cube and knowledge pipelines.
+"""
 import json
+import os
 import yaml
-from pathlib import Path
 
-# Bootstrap configuration
-_ASK_DATA_ROOT = Path(__file__).resolve().parents[3] if "__file__" in globals() else Path("/home/cdsw/ask-data")
-if str(_ASK_DATA_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ASK_DATA_ROOT))
+from app.core.ingest_common import bootstrap_env, reset_and_index, resolve_data_path
 
-import shared.config_loader as config_loader
-config_loader.bootstrap(hint=_ASK_DATA_ROOT)
-
-# Import the shared Qdrant client and remote embedding functions
-from shared.qdrant_client import QdrantClient
-from shared.embed_client import get_embeddings
+# Standardized project-root bootstrap (idempotent, shared across all pipelines)
+bootstrap_env()
 
 
-def ingest_golden_queries(json_path: str, qdrant_url: str, embed_url: str, collection_name: str, cml_token: str):
+def ingest_golden_queries(
+    json_path: str,
+    vectordb_server_url: str,
+    embed_rerank_url: str,
+    collection_name: str,
+    cml_token: str,
+):
     """Embeds user intents and stores the verified SQL templates in Qdrant."""
     if not os.path.exists(json_path):
         print(f"⚠️ Golden queries file not found at {json_path}")
         return
 
     print(f"📖 Reading Golden Queries from {json_path}...")
-    with open(json_path, 'r', encoding="utf-8") as f:
+    with open(json_path, "r", encoding="utf-8") as f:
         queries = json.load(f)
 
     if not queries:
         return
 
-    qdrant_client = QdrantClient(base_url=qdrant_url, token=cml_token)
-
     # We embed the natural language intent so it matches the user's question semantically
     intents = [q.get("user_intent", "") for q in queries]
-    print(f"🧠 Generating embeddings for {len(intents)} golden queries via {embed_url}...")
 
-    embeddings, vector_dim = get_embeddings(intents, embed_url, cml_token, timeout=120.0)
-
-    # Reset and recreate collection
-    qdrant_client.delete_collection(name=collection_name)
-    qdrant_client.create_collection(name=collection_name, vector_size=vector_dim)
-
-    # Prepare payloads
     metadatas = [
         {
             "user_intent": q.get("user_intent", ""),
             "sql_template": q.get("sql_template", ""),
             "complexity": q.get("complexity", "unknown"),
-            "data_type": "golden_query"
+            "data_type": "golden_query",
         }
         for q in queries
     ]
-    ids = list(range(1, len(queries) + 1))
 
-    qdrant_client.add_documents(
+    reset_and_index(
         collection_name=collection_name,
         documents=intents,
-        embeddings=embeddings,
         metadatas=metadatas,
-        ids=ids
+        vectordb_server_url=vectordb_server_url,
+        embed_rerank_url=embed_rerank_url,
+        cml_token=cml_token,
+        dataset_name="Golden Queries",
     )
-    print(f"✅ Successfully indexed {len(queries)} Golden Queries into '{collection_name}'!")
 
 
-def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_name: str, cml_token: str):
+def ingest_schema(
+    yaml_path: str,
+    vectordb_server_url: str,
+    embed_rerank_url: str,
+    collection_name: str,
+    cml_token: str,
+):
     """Parses database schema YAML and chunks it by table for vector search."""
     if not os.path.exists(yaml_path):
         print(f"⚠️ Schema file not found at {yaml_path}")
         return
 
     print(f"📖 Reading Schema from {yaml_path}...")
-    with open(yaml_path, 'r', encoding="utf-8") as f:
+    with open(yaml_path, "r", encoding="utf-8") as f:
         schema = yaml.safe_load(f)
 
     tables = schema.get("tables", [])
     if not tables:
         return
-
-    qdrant_client = QdrantClient(base_url=qdrant_url, token=cml_token)
 
     table_texts = []
     metadatas = []
@@ -116,29 +113,22 @@ def ingest_schema(yaml_path: str, qdrant_url: str, embed_url: str, collection_na
         clean_table = {
             "name": table_name,
             "description": desc,
-            "columns": clean_columns
+            "columns": clean_columns,
         }
 
         metadatas.append({
             "table_name": table_name,
             # Guaranteed clean key hierarchy in Qdrant metadata payload
             "raw_yaml": yaml.dump(clean_table, sort_keys=False, default_flow_style=False),
-            "data_type": "schema_table"
+            "data_type": "schema_table",
         })
 
-    print(f"🧠 Generating embeddings for {len(table_texts)} tables via {embed_url}...")
-    embeddings, vector_dim = get_embeddings(table_texts, embed_url, cml_token, timeout=120.0)
-
-    # Reset and recreate collection
-    qdrant_client.delete_collection(name=collection_name)
-    qdrant_client.create_collection(name=collection_name, vector_size=vector_dim)
-
-    ids = list(range(1, len(table_texts) + 1))
-    qdrant_client.add_documents(
+    reset_and_index(
         collection_name=collection_name,
         documents=table_texts,
-        embeddings=embeddings,
         metadatas=metadatas,
-        ids=ids
+        vectordb_server_url=vectordb_server_url,
+        embed_rerank_url=embed_rerank_url,
+        cml_token=cml_token,
+        dataset_name="Schema Tables",
     )
-    print(f"✅ Successfully indexed {len(table_texts)} Schema Tables into '{collection_name}'!")

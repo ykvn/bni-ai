@@ -27,6 +27,12 @@ _CALLER_FILE = __file__ if "__file__" in globals() else None
 def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
     """Triggers the knowledge ingestion pipeline using the remote embed-rerank microservice."""
     try:
+        from app.core.ingest_cube_metadata import (
+            CUBE_VALUE_MAPPINGS_JSON_PATH,
+            CUBE_YAML_PATH,
+            ingest_cube_catalog,
+            ingest_value_mappings,
+        )
         from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
         from app.core.ingest_sql_metadata import ingest_golden_queries, ingest_schema
 
@@ -37,7 +43,6 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
             docs_dir=config["docs_dir"],
             qdrant_server_url=config["qdrant_server_url"],
             embed_rerank_url=config["embed_rerank_url"],
-            qdrant_ssl=config["qdrant_ssl"],
             collection_name=config.get("collection_name", "bni_document_knowledge"),
             cml_token=config.get("cml_token"),
         )
@@ -52,17 +57,38 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
         print("🔄 Running Schema and Golden Queries Ingestion...")
         ingest_schema(
             yaml_path=str(data_dir / "bni_schema_definitions.yaml"),
-            qdrant_url=config["qdrant_server_url"],
-            embed_url=config["embed_rerank_url"],
+            vectordb_server_url=config["qdrant_server_url"],
+            embed_rerank_url=config["embed_rerank_url"],
             collection_name=schema_collection,
             cml_token=config.get("cml_token")
         )
 
         ingest_golden_queries(
             json_path=str(data_dir / "bni_golden_queries.json"),
-            qdrant_url=config["qdrant_server_url"],
-            embed_url=config["embed_rerank_url"],
+            vectordb_server_url=config["qdrant_server_url"],
+            embed_rerank_url=config["embed_rerank_url"],
             collection_name=golden_collection,
+            cml_token=config.get("cml_token")
+        )
+
+        # --- 3. INGEST CUBE CATALOG & VALUE MAPPINGS ---
+        cube_catalog_collection = env.get("CUBE_CATALOG_COLLECTION", "bni_cube_catalog")
+        cube_value_mappings_collection = env.get("CUBE_VALUE_MAPPINGS_COLLECTION", "bni_cube_value_mappings")
+
+        print("🔄 Running Cube Catalog and Value Mappings Ingestion...")
+        ingest_cube_catalog(
+            yaml_path=CUBE_YAML_PATH,
+            vectordb_server_url=config["qdrant_server_url"],
+            embed_rerank_url=config["embed_rerank_url"],
+            collection_name=cube_catalog_collection,
+            cml_token=config.get("cml_token")
+        )
+
+        ingest_value_mappings(
+            json_path=CUBE_VALUE_MAPPINGS_JSON_PATH,
+            vectordb_server_url=config["qdrant_server_url"],
+            embed_rerank_url=config["embed_rerank_url"],
+            collection_name=cube_value_mappings_collection,
             cml_token=config.get("cml_token")
         )
 
