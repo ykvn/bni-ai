@@ -1,0 +1,57 @@
+[
+  {
+    "Table Name": "cai_savings",
+    "Column Name": "status",
+    "Database Value": "ACTIVE",
+    "Synonyms / User Phrasing": "aktif, live, berjalan, active, lancar",
+    "Description / Context": "Account operating normally."
+  },
+  {
+    "Table Name": "cai_savings",
+    "Column Name": "status",
+    "Database Value": "DORMANT",
+    "Synonyms / User Phrasing": "pasif, mati, dormant, non-aktif, 180 hari",
+    "Description / Context": "Inactive account."
+  },
+  {
+    "Table Name": "cai_transactions",
+    "Column Name": "transaction_type",
+    "Database Value": "DEBIT",
+    "Synonyms / User Phrasing": "debit, penarikan, tarik tunai, transfer keluar, potongan",
+    "Description / Context": "Outflow ledger posting."
+  },
+  {
+    "Table Name": "cai_transactions",
+    "Column Name": "transaction_type",
+    "Database Value": "CREDIT",
+    "Synonyms / User Phrasing": "kredit, setoran, masuk, payroll, gaji, topup",
+    "Description / Context": "Inflow ledger posting."
+  },
+  {
+    "Table Name": "cai_customers",
+    "Column Name": "bank_name",
+    "Database Value": "BNI",
+    "Synonyms / User Phrasing": "Bank Negara Indonesia, BNI, Bank BNI, PT Bank Negara Indonesia",
+    "Description / Context": "Core bank entity designation."
+  },
+  {
+    "Table Name": "cai_loans",
+    "Column Name": "loan_type",
+    "Database Value": "Home",
+    "Synonyms / User Phrasing": "KPR, rumah, kredit pemilikan rumah, property, home loan",
+    "Description / Context": "Mortgage/Home financing facility."
+  },
+  {
+    "Table Name": "cai_loans",
+    "Column Name": "loan_type",
+    "Database Value": "Auto",
+    "Synonyms / User Phrasing": "KMT, mobil, kendaraan, motor, auto loan",
+    "Description / Context": "Vehicle loan facility."
+  },
+  {
+    "Table Name": "cai_loans",
+    "Column Name": "loan_type",
+    "Database Value": "Personal",
+    "Synonyms / User Phrasing": "KTA, tanpa agunan, personal loan, perorangan",
+    "Description / Context": "Unsecured personal loan facility."
+  }
