@@ -18,11 +18,8 @@ from shared.qdrant_client import QdrantClient
 from shared.embed_client import get_embeddings
 
 # --- PATH CONFIGURATION ---
-
-ask_data_root = _ASK_DATA_ROOT.parent
-
-CUBE_YAML_PATH = os.path.join(ask_data_root, "cube_service", "model", "cubes", "bni_schema_definitions.yaml")
-CUBE_VALUE_MAPPINGS_JSON_PATH = os.path.join(ask_data_root, "data", "value_mappings.json")
+CUBE_YAML_PATH = os.path.join(_ASK_DATA_ROOT, "cube_service", "model", "cubes", "bni_schema_definitions.yaml")
+CUBE_VALUE_MAPPINGS_JSON_PATH = os.path.join(_ASK_DATA_ROOT, "data", "value_mappings.json")
 
 
 def ingest_documents(
