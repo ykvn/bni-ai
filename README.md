@@ -1,78 +1,116 @@
 ```
-ask-data/
-├── backend/
-│   ├── app/
-│   │   ├── core/
-│   │   │   ├── ingest_knowledge.py       # Core chunking & embedding pipeline
-│   │   │   └── reindex_knowledge.py      # Automated ChromaDB re-indexing trigger
-│   │   ├── schemas/                      # Pydantic request/response models
-│   │   ├── services/
-│   │   │   ├── .gitkeep
-│   │   │   └── translator.py             # Translator orchestrator (CrewAI & MCP caller)
-│   │   ├── __init__.py
-│   │   └── main.py                       # FastAPI application backend entry point
-│   ├── tests/                            # Backend unit and integration tests
-│   ├── backend_entry.py                  # CML container startup runner for backend
-│   ├── domain_config.yaml                # Master database schema blueprint & rules
-│   └── requirements.txt
-│
-├── chroma_server/                        # Dedicated Standalone ChromaDB Service
-│   ├── chroma_db/                        # Persistent vector store directory
-│   └── chroma_entry.py                   # CML entry point for Chroma HTTP service
-│
-├── data/
-│   └── documents/                        # Knowledge base source PDF documents
-│
-├── frontend/                             # Gradio UI Application layer
-│   ├── app/
-│   │   └── .gitkeep
-│   ├── frontend_entry.py                 # CML container entry point for Gradio UI
-│   ├── package.json
-│   └── requirements.txt
-│
-├── litellm_proxy/                        # API Gateway & OpenAI Translation Layer
-│   ├── litellm_config.yaml               # LiteLLM routing rules (Points to Qwen)
-│   ├── proxy_entry.py                    # CML container runner for proxy
-│   └── requirements.txt
-│
-├── mcp_server/                           # Model Context Protocol Microservice
-│   ├── app/
-│   │   ├── tools/                        # Decoupled MCP Tool Modules
-│   │   │   ├── __init__.py
-│   │   │   ├── chroma_client.py          # Direct REST vector query client
-│   │   │   ├── config.py                 # Pydantic settings for MCP server
-│   │   │   ├── execute_banking_query.py  # Dedicated Impala query executor
-│   │   │   ├── impala_client.py          # PyImpala DB connection manager
-│   │   │   └── rag_search.py             # Tool for semantic PDF context retrieval
-│   │   └── main.py                       # FastMCP server registration & SSE routes
-│   ├── mcp_entry.py                      # CML container startup runner for MCP
-│   ├── test_impala.py                    # Standalone Impala connectivity tester
-│   └── requirements.txt
-│
-├── qwen_inference/                       # CPU Inference Engine
-│   ├── app/
-│   │   └── main.py                       # FastAPI server for CPU model endpoint
-│   ├── download_cpu_model.py
-│   ├── download_model.py
-│   ├── qwen_cpu_entry.py
-│   ├── qwen_entry.py
-│   └── requirements.txt
-│
-├── shared/                               # Shared Utilities Across Microservices
-│   ├── __init__.py
-│   └── config_loader.py                  # Global .env bootstrap loader
-│
-├── sql/                                  # Database DDLs and initialization scripts
-│   ├── impala_schema.sql
-│
-├── scripts/
-│   └── cml_bootstrap.sh                  # CML workspace bootstrapping setup script
-│
-├── .env                                  # Global environment file for all services
-├── .env.example                          # Template for environment configuration
-├── download_requirements.py              # Offline dependency loader
-├── .gitignore
-└── README.md
-
-Example of RAG Search: Berdasarkan dokumen kebijakan komunikasi, apa saja prosedur dan kegiatan rutin manajerial yang harus dilakukan oleh Investor Relations terkait dengan pemaparan kinerja kepada analis dan investor?
+├── ask-data
+│   ├── backend
+│   │   ├── app
+│   │   │   ├── __init__.py
+│   │   │   ├── core
+│   │   │   ├── main.py
+│   │   │   ├── schemas
+│   │   │   │   └── query.py
+│   │   │   └── services
+│   │   ├── backend_entry.py
+│   │   ├── requirements.txt
+│   │   └── test_connection.py
+│   ├── chroma_server
+│   │   ├── chroma_db
+│   │   ├── chroma_entry.py
+│   │   └── requirements.txt
+│   ├── crewai_service
+│   │   ├── app
+│   │   │   ├── core
+│   │   │   │   └── job_db.py
+│   │   │   ├── main.py
+│   │   │   ├── services
+│   │   │   │   └── translator.py
+│   │   │   └── worker.py
+│   │   ├── config
+│   │   │   ├── agents.yaml
+│   │   │   └── tasks.yaml
+│   │   └── crewai_entry.py
+│   ├── cube_service
+│   │   ├── docker-compose.yaml
+│   │   └── model
+│   │       └── cubes
+│   │           └── bni_cube_definitions.yaml
+│   ├── data
+│   │   ├── bni_cube_definitions.xlsx
+│   │   ├── bni_cube_value_mappings.json
+│   │   ├── bni_golden_queries.json
+│   │   ├── bni_schema_definitions.yaml
+│   │   └── documents
+│   │       └── Kebijakan-Manajemen-Risiko-Bank-BNI.pdf
+│   ├── data_generation
+│   │   └── generate_synthetic.py
+│   ├── download_requirements.py
+│   ├── embed_rerank
+│   │   ├── app
+│   │   │   └── main.py
+│   │   └── embed_rerank_entry.py
+│   ├── frontend
+│   │   ├── app
+│   │   │   └── main.py
+│   │   ├── frontend_entry.py
+│   │   ├── package.json
+│   │   ├── README.md
+│   │   └── requirements.txt
+│   ├── litellm_proxy
+│   │   ├── generate_token.py
+│   │   ├── litellm_config.yaml
+│   │   ├── proxy_entry.py
+│   │   └── requirements.txt
+│   ├── mcp_server
+│   │   ├── app
+│   │   │   ├── core
+│   │   │   │   ├── ingest_common.py
+│   │   │   │   ├── ingest_cube_metadata.py
+│   │   │   │   ├── ingest_knowledge.py
+│   │   │   │   ├── ingest_sql_metadata.py
+│   │   │   │   ├── reindex_cube_metadata.py
+│   │   │   │   ├── reindex_knowledge.py
+│   │   │   │   └── reindex_sql_metadata.py
+│   │   │   ├── main.py
+│   │   │   └── tools
+│   │   │       ├── __init__.py
+│   │   │       ├── chroma_client.py
+│   │   │       ├── config.py
+│   │   │       ├── execute_banking_query.py
+│   │   │       ├── get_database_schema.py
+│   │   │       ├── impala_client.py
+│   │   │       ├── qdrant_client.py
+│   │   │       ├── rag_search.py
+│   │   │       ├── schema_utils.py
+│   │   │       └── search_golden_queries.py
+│   │   ├── mcp_entry.py
+│   │   ├── requirements.txt
+│   │   └── test_impala.py
+│   ├── qdrant_server
+│   │   ├── qdrant_db
+│   │   └── qdrant_entry.py
+│   ├── qwen_inference
+│   │   ├── app
+│   │   │   └── main.py
+│   │   ├── download_cpu_model.py
+│   │   ├── download_model.py
+│   │   ├── qwen_cpu_entry.py
+│   │   ├── qwen_entry.py
+│   │   └── requirements.txt
+│   ├── requirements.txt
+│   ├── scripts
+│   │   ├── convert_to_excel.py
+│   │   └── generate_cube_and_mappings.py
+│   ├── shared
+│   │   ├── __init__.py
+│   │   ├── __init__.pyc
+│   │   ├── cml_auth.py
+│   │   ├── config_loader.py
+│   │   ├── embed_client.py
+│   │   ├── entry_utils.py
+│   │   ├── model_resolver.py
+│   │   ├── qdrant_client.py
+│   │   └── sql_guard.py
+│   └── sql
+│       ├── impala_schema.sql
+│       └── schema.sql
+├── README.md
+└── system_architecture.mmd
 ```
