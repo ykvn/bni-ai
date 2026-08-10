@@ -30,7 +30,7 @@ def main():
     
     try:
         # Use subprocess to run the npx command, replacing the Python process
-        subprocess.run(["node", "index.js"], check=True)
+        subprocess.run(["npx", "cubejs-server"], check=True)
     except Exception as e:
         print(f"❌ Failed to start Cube: {e}", flush=True)
         sys.exit(1)
