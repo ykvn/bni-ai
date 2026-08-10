@@ -9,7 +9,7 @@ def main():
     current_path = os.environ.get('PATH', '')
     os.environ["PATH"] = f"/home/cdsw/.local/node/bin:{current_path}"
     
-    print("🚀 Starting Cube Semantic Layer in Airgapped Mode...", flush=True)
+    print("🚀 Starting Cube Semantic Layer...", flush=True)
     
     # 2. Navigate to the Cube directory
     cube_dir = "/home/cdsw/ask-data/cube_service"
