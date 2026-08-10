@@ -2,6 +2,10 @@ import os
 import subprocess
 import sys
 
+sys.path.insert(0, "/home/cdsw/ask-data")
+from shared import config_loader
+config_loader.bootstrap(hint="/home/cdsw/ask-data")
+
 def main():
     print("🚀 Booting Node.js Environment...", flush=True)
     
