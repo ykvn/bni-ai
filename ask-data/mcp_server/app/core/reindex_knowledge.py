@@ -1,51 +1,58 @@
-import os
+"""
+Re-index entry point for the knowledge base (PDF documents).
+
+Uses the shared ``ingest_common`` bootstrap, env resolution, and header
+printer so behavior is identical to the SQL and Cube reindexers.
+"""
 import sys
 from pathlib import Path
 
-# 1. Locate ask-data root and bootstrap .env into os.environ BEFORE importing app modules[cite: 14]
-_ASK_DATA_ROOT = Path(__file__).resolve().parents[2] if "__file__" in globals() else Path("/home/cdsw/ask-data")
-if str(_ASK_DATA_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ASK_DATA_ROOT))
+# --- sys.path bootstrap (must run BEFORE app.core.* imports) ---
+# This file lives at ask-data/mcp_server/app/core/reindex_*.py, so:
+#   parents[3] = ask-data/   (for shared.* imports)
+#   parents[2] = mcp_server/ (for app.* imports)
+_ASK_DATA_ROOT = Path(__file__).resolve().parents[3] if "__file__" in globals() else Path("/home/cdsw/ask-data")
+_MCP_SERVER_DIR = _ASK_DATA_ROOT / "mcp_server"
+for _p in (str(_ASK_DATA_ROOT), str(_MCP_SERVER_DIR)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-try:
-    import shared.config_loader as config_loader
-    config_loader.bootstrap(hint=_ASK_DATA_ROOT)
-except Exception as e:
-    print(f"⚠️ Warning: Failed to run config_loader bootstrap: {e}", flush=True)
-
+from app.core.ingest_common import (
+    bootstrap_env,
+    print_reindex_header,
+    resolve_reindex_config,
+)
 from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
+
+# Standardized project-root bootstrap (idempotent, shared across all pipelines)
+bootstrap_env()
 
 
 def main() -> None:
-    backend_dir = Path(__file__).resolve().parents[2] if "__file__" in globals() else Path.cwd()
-    if str(backend_dir) not in sys.path:
-        sys.path.insert(0, str(backend_dir))
+    # Validated shared env resolution (exits with a clear error if missing)
+    config = resolve_reindex_config(
+        collection_env_key="DOCUMENT_COLLECTION",
+        collection_default="documents",
+    )
 
-    env = os.environ.copy()
-    config = build_ingest_config(backend_dir=backend_dir, env=env)
+    # Resolve the docs directory (falls back to ask-data/data/documents)
+    # Pass the mcp_server/ directory so the relative fallback lands on
+    # ask-data/data/documents.
+    backend_dir = Path(__file__).resolve().parents[2]
+    ingest_config = build_ingest_config(backend_dir=backend_dir, env=None)
+    docs_dir = ingest_config["docs_dir"]
 
-    # 2. Add validation guards to catch missing .env values early[cite: 14]
-    if not config.get("qdrant_server_url"):
-        print("❌ CRITICAL ERROR: 'VECTORDB_SERVER_URL' is missing or empty in .env!", flush=True)
-        sys.exit(1)
-
-    if not config.get("collection_name"):
-        print("❌ CRITICAL ERROR: 'DOCUMENT_COLLECTION' is missing or empty in .env!", flush=True)
-        sys.exit(1)
-
-    print("🔄 Re-indexing knowledge base...", flush=True)
-    print(f"- docs dir: {config['docs_dir']}", flush=True)
-    print(f"- Qdrant server URL: {config['qdrant_server_url']} (SSL: {config['qdrant_ssl']})", flush=True)
-    print(f"- embed-rerank URL: {config['embed_rerank_url']}", flush=True)
-    print(f"- collection: {config['collection_name']}", flush=True)
-    if config.get("cml_token"):
-        print("- CML Authentication: Token loaded successfully", flush=True)
+    print_reindex_header(
+        title="Re-indexing knowledge base",
+        config=config,
+        collection_label="Collection",
+        extra_lines=[("docs dir", docs_dir)],
+    )
 
     run_auto_ingest(
-        docs_dir=config["docs_dir"],
-        qdrant_server_url=config["qdrant_server_url"],
+        docs_dir=docs_dir,
+        qdrant_server_url=config["vectordb_server_url"],
         embed_rerank_url=config["embed_rerank_url"],
-        qdrant_ssl=config["qdrant_ssl"],
         collection_name=config["collection_name"],
         cml_token=config["cml_token"],
     )

@@ -1,17 +1,22 @@
 import os
+import sys
 import json
 import httpx
 import yaml
-import re  # Added for strict SQL extraction
+import re
 from pathlib import Path
+from rich.console import Console
+from rich.panel import Panel
 
-# CrewAI Framework Engine Integration Modules
 from crewai import Agent, Task, Crew, LLM
-from crewai.tools import tool  # wrap MCP endpoints into CrewAI tools
+from crewai.tools import tool
+from pydantic import BaseModel, Field
 
-# Official Model Context Protocol Client Packages
 from mcp import ClientSession
 from mcp.client.sse import sse_client
+
+from shared.sql_guard import sanitize_sql, has_forbidden_keyword
+from shared.cml_auth import build_cml_headers
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
@@ -21,6 +26,20 @@ def _make_insecure_httpx_client(**kwargs) -> httpx.AsyncClient:
     kwargs["follow_redirects"] = True
     return httpx.AsyncClient(**kwargs)
 
+# Create a dedicated console that writes directly to the true OS stdout,
+# making it completely immune to CrewAI's log hijacking.
+secure_console = Console(file=sys.__stdout__)
+
+class SQLGeneratedSuccess(BaseException):
+    """Custom exception used to forcefully terminate the CrewAI task upon first successful query execution."""
+    def __init__(self, sql: str, records: list):
+        self.sql = sql
+        self.records = records
+        super().__init__("SQL successfully executed.")
+
+class SQLSecurityViolation(BaseException):
+    """Custom exception used to forcefully terminate the CrewAI task upon a security violation."""
+    pass
 
 class SQLTranslationService:
     def __init__(self):
@@ -32,7 +51,6 @@ class SQLTranslationService:
             or ""
         ).rstrip("/")
         
-        # Strictly uses CML_TOKEN for internal platform authentication
         self.api_token = (
             os.getenv("CML_TOKEN") 
             or os.getenv("LITELLM_API_KEY") 
@@ -64,10 +82,7 @@ class SQLTranslationService:
     async def _call_mcp_tool(self, tool_name: str, arguments: dict = None) -> str:
         sse_endpoint = f"{self.mcp_server_url}/sse"
         
-        headers = {}
-        if self.api_token:
-            headers["Authorization"] = f"Bearer {self.api_token}"
-            headers["X-CDSW-API-Key"] = self.api_token
+        headers = build_cml_headers(self.api_token)
         
         try:
             async with sse_client(
@@ -87,21 +102,108 @@ class SQLTranslationService:
             return json.dumps([{"error": f"MCP Gateway Disruption: {str(e)}"}])
 
     # =========================================================================
-    # 📑 PATH A: OPTIMIZED TEXT-TO-SQL ENGINE (DYNAMIC RAG INJECTION)
+    # 📑 PATH A: OPTIMIZED TEXT-TO-SQL ENGINE
     # =========================================================================
     async def generate_sql(self, user_question: str) -> str:
         """Deterministic execution pipeline that forces schema adherence."""
-        print("Forcing semantic retrieval via MCP embed & rerank modules...")
         
-        # 1. GUARANTEE execution by running the tools in Python first
+        secure_console.print("\n🔍 [bold cyan][MCP Retrieval][/bold cyan] Fetching schema and golden context...")
+        
         golden_context = await self._call_mcp_tool("search_golden_queries", {"user_question": user_question})
         schema_context = await self._call_mcp_tool("get_database_schema", {"user_question": user_question})
 
-        # 2. Only give the agent the execution tool
+        # ---------------------------------------------------------------------
+        # Parse schema to display Reranking Scores in logs, 
+        # and STRIP them out before passing to the Agent.
+        # ---------------------------------------------------------------------
+        display_schema_text = schema_context if schema_context else "⚠️ Warning: Schema context is empty!"
+        agent_schema_context = schema_context  # Fallback if parsing fails
+        
+        try:
+            parsed_schema = yaml.safe_load(schema_context)
+            if isinstance(parsed_schema, dict) and "tables" in parsed_schema:
+                formatted_lines = [f"database_type: {parsed_schema.get('database_type', 'Unknown')}", "tables:"]
+                
+                for table in parsed_schema["tables"]:
+                    # 1. Read score for the logs
+                    t_score = f" (Reranking Score: {table['score']})" if "score" in table else ""
+                    formatted_lines.append(f"- name: {table.get('name', 'unknown')}{t_score}")
+                    
+                    if "description" in table:
+                        formatted_lines.append(f"  description: {table['description']}")
+                    
+                    formatted_lines.append("  columns:")
+                    for col in table.get("columns", []):
+                        # 2. Read score for the logs
+                        c_score = f" (Score: {col['score']})" if "score" in col else ""
+                        formatted_lines.append(f"  - name: {col.get('name', 'unknown')}{c_score}")
+                        if "type" in col:
+                            formatted_lines.append(f"    type: {col['type']}")
+                            
+                        # 🚀 3. Remove score from column dictionary
+                        col.pop("score", None)
+                    
+                    # 🚀 4. Remove score from table dictionary
+                    table.pop("score", None)
+                            
+                display_schema_text = "\n".join(formatted_lines)
+                
+                # 🚀 5. Convert the cleaned dictionary back to YAML for the Agent
+                agent_schema_context = yaml.dump(parsed_schema, sort_keys=False, default_flow_style=False)
+                
+        except Exception:
+            pass 
+
+        # =====================================================================
+        # 📋 RICH UI VERIFICATION LOGS (Bulletproof)
+        # =====================================================================
+        
+        # 1. User Question Box
+        secure_console.print(Panel(
+            f"[bold white]{user_question}[/bold white]", 
+            title="❓ User Question", 
+            border_style="blue"
+        ))
+
+        # 2. Database Schema Box (Shows display_schema_text which HAS scores)
+        secure_console.print(Panel(
+            display_schema_text, 
+            title="📊 Retrieved Database Schema (with Reranking Scores)", 
+            border_style="green"
+        ))
+
+        # 3. Golden Queries Box
+        if golden_context:
+            secure_console.print(Panel(
+                golden_context, 
+                title="⭐ Retrieved Golden Queries", 
+                border_style="yellow"
+            ))
+
         @tool("execute_banking_query")
         async def mcp_execute_banking_query(query: str) -> str:
-            """Executes a SQL query against the database."""
-            return await self._call_mcp_tool("execute_banking_query", {"sql_query": query})
+            """Executes a SQL query against the database and stops the agent upon success."""
+            clean_query = sanitize_sql(query)
+
+            # 🛡️ HARD GUARDRAIL: Intercept destructive commands BEFORE they reach the database
+            if has_forbidden_keyword(clean_query):
+                # Hard Guardrail: Immediately raise a security violation to terminate the CrewAI task.
+                raise SQLSecurityViolation("CRITICAL_SECURITY_ALERT: Destructive SQL commands are strictly prohibited.")
+
+            raw_result = await self._call_mcp_tool("execute_banking_query", {"sql_query": clean_query})
+            
+            try:
+                records = json.loads(raw_result)
+                if isinstance(records, list):
+                    raise SQLGeneratedSuccess(sql=clean_query, records=records)
+                return raw_result
+            except json.JSONDecodeError:
+                return (
+                    f"SQL EXECUTION FAILED!\n"
+                    f"Impala Error Details: {raw_result}\n\n"
+                    f"INSTRUCTION: The query you just wrote has a syntax error. "
+                    f"Analyze the error message above, fix the SQL, and call this tool again with the corrected query."
+                )
 
         sql_developer = Agent(
             config=self.agents_config["sql_developer"],
@@ -121,31 +223,37 @@ class SQLTranslationService:
             verbose=True
         )
 
-        print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...")
-        # 3. Inject the retrieved context directly into the prompt
-        ai_result = await orchestration_crew.kickoff_async(inputs={
-            "user_question": user_question,
-            "golden_context": golden_context,
-            "schema_context": schema_context
-        })
+        print("⏳ Initiating autonomous CrewAI execution pipeline via LiteLLM application layer...", flush=True)
         
-        return self._extract_sql_from_response(str(ai_result))
+        try:
+            ai_result = await orchestration_crew.kickoff_async(inputs={
+                "user_question": user_question,
+                "golden_context": golden_context,
+                "schema_context": agent_schema_context  
+            })
+            return self._extract_sql_from_response(str(ai_result))
+            
+        except SQLSecurityViolation as e:
+            # Safely catch the forced abort and pass the alert string back to worker.py
+            return str(e)
 
     @staticmethod
     def _extract_sql_from_response(ai_result: str) -> str:
-        """Strictly extracts SQL from markdown blocks. Returns a fallback SELECT if missing."""
+        """Extracts SQL from markdown blocks or falls back gracefully to raw query text."""
         ai_result = str(ai_result).strip()
         
-        # Look for text inside ```sql ... ``` or ``` ... ```
+        # 1. Search for markdown code blocks ```sql ... ```
         match = re.search(r'```(?:sql)?\s*(.*?)\s*```', ai_result, re.DOTALL | re.IGNORECASE)
-        
         if match:
             return match.group(1).strip()
         
-        # If the LLM outputs conversational text without a SQL block, 
-        # return a safe, valid dummy query so the security tool doesn't crash.
-        print("⚠️ Warning: No SQL block found in Agent output. Defaulting to empty query.")
-        return "SELECT 'No valid SQL generated by Agent' AS execution_status;"
+        # 2. Forgiving fallback: If SELECT/WITH exists without markdown wrapper, return query directly
+        if "SELECT" in ai_result.upper() or "WITH" in ai_result.upper():
+            return ai_result.replace("```", "").strip()
+        
+        # 3. Last resort fallback
+        print("⚠️ Warning: No SQL detected in Agent output.")
+        return ai_result
 
     async def run_mcp_query(self, sql_query: str) -> list:
         raw_json = await self._call_mcp_tool("execute_banking_query", {"sql_query": sql_query})
@@ -155,7 +263,7 @@ class SQLTranslationService:
             return [{"execution_message": raw_json}]
 
     # =========================================================================
-    # 📑 PATH B: KNOWLEDGE BASE VECTOR RETRIEVAL (STANDARDIZED VIA MCP RAG)
+    # 📑 PATH B: KNOWLEDGE BASE VECTOR RETRIEVAL (RAG)
     # =========================================================================
     async def generate_rag_answer(self, user_question: str) -> str:
         print("📡 Fetching semantic document context blocks natively over MCP protocol streams...")

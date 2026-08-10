@@ -20,6 +20,7 @@ if str(_PROXY_DIR) not in sys.path:
 import litellm
 from litellm.integrations.custom_logger import CustomLogger
 from generate_token import get_cdp_token
+from shared.cml_auth import build_cml_headers
 
 
 class DynamicCDPAuthHandler(CustomLogger):
@@ -40,8 +41,7 @@ class DynamicCDPAuthHandler(CustomLogger):
 
         if fresh_token:
             extra_headers = data.get("extra_headers") or {}
-            extra_headers["Authorization"] = f"Bearer {fresh_token}"
-            extra_headers["X-CDSW-API-Key"] = fresh_token
+            extra_headers.update(build_cml_headers(fresh_token))
             data["extra_headers"] = extra_headers
 
         return data

@@ -14,7 +14,6 @@ from app.tools.execute_banking_query import execute_banking_query
 from app.tools.get_database_schema import get_database_schema
 from app.tools.search_golden_queries import search_golden_queries  # ⚡ NEW RAG TOOL
 from app.tools.rag_search import search_policy_documents as perform_rag_search
-from app.tools.dormant_risk import calculate_dormant_account_risk
 
 # 1. Initialize the central FastMCP application state
 mcp = FastMCP("Bank-ABC-Modular-Orchestrator")
@@ -28,8 +27,8 @@ async def mcp_get_database_schema(user_question: str) -> str:
     Dynamically retrieves the structural enterprise schema configuration, table layouts, 
     and available columns relevant to the user's question. Use this to understand the data structure.
     """
-    # ⚡ Offload the heavy search to a background thread to prevent the SSE stream from disconnecting
-    return await anyio.to_thread.run_sync(get_database_schema, user_question, 10, 4)
+    # ⚡ Offload the heavy search to a background thread without argument overrides
+    return await anyio.to_thread.run_sync(get_database_schema, user_question)
 
 @mcp.tool(name="search_golden_queries")
 async def mcp_search_golden_queries(user_question: str) -> str:
@@ -54,15 +53,6 @@ async def mcp_search_policy_documents(query: str) -> str:
     compliance guidelines, and SOP documentation (Qdrant) to return matching structural context fragments.
     """
     return await anyio.to_thread.run_sync(perform_rag_search, query, 3)
-
-@mcp.tool(name="evaluate_dormant_account_risk")
-def mcp_evaluate_dormant_account_risk(days_inactive: int, account_balance: float, sudden_withdrawal_amount: float = 0.0) -> str:
-    """
-    Calculates a risk priority score, classification tier, and security intervention flags 
-    for an inactive bank account using internal compliance risk matrix rules.
-    """
-    return calculate_dormant_account_risk(days_inactive, account_balance, sudden_withdrawal_amount)
-
 
 # 3. Create the FastAPI container to manage incoming enterprise cluster traffic
 app = FastAPI(title="Bank ABC Production MCP Gateway")

@@ -1,13 +1,14 @@
 import os
 import sys
 from contextlib import asynccontextmanager
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union
 
-import cmlapi
 from fastapi import FastAPI, Header, HTTPException, Depends, status
-from huggingface_hub import snapshot_download
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, CrossEncoder
+
+from shared.model_resolver import resolve_model_path
+from shared.cml_auth import get_cml_token
 
 # ---------------------------------------------------------------------
 # Global Model State
@@ -30,48 +31,8 @@ model_metadata = {
 }
 
 # ---------------------------------------------------------------------
-# Registry Auto-Download Resolver
+# Model resolution uses shared.model_resolver.resolve_model_path
 # ---------------------------------------------------------------------
-def resolve_model_path(model_name: str) -> Tuple[str, str]:
-    """
-    Verifies the model in CML Registry and dynamically pulls the HuggingFace source[cite: 11].
-    Falls back to direct HuggingFace download if not found in the registry.
-    """
-    print(f"📡 [MODEL RESOLVER] Connecting to CML API to verify registry for '{model_name}'...")
-    
-    try:
-        client = cmlapi.default_client()
-        search_res = client.list_registered_models()
-        models_list = getattr(search_res, 'models', getattr(search_res, 'registered_models', []))
-        
-        target_model = next((m for m in models_list if getattr(m, 'name', getattr(m, 'model_name', '')) == model_name), None)
-        
-        if target_model:
-            model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
-            print(f"✅ [MODEL RESOLVER] Verified '{model_name}' (ID: {model_id}) exists in Cloudera AI Registry[cite: 11].")
-            
-            cache_dir = os.path.join(os.getcwd(), "hf_registry_cache", model_name.replace("/", "_"))
-            os.makedirs(cache_dir, exist_ok=True)
-            
-            print(f"⏳ [MODEL RESOLVER] Downloading weights directly from HuggingFace Hub to mirror registry import...[cite: 11]")
-            downloaded_path = snapshot_download(
-                repo_id=model_name,
-                local_dir=cache_dir,
-                local_dir_use_symlinks=False
-            )
-            
-            print(f"🎉 [MODEL RESOLVER] Successfully pulled model artifacts: {downloaded_path}[cite: 11]")
-            return downloaded_path, "CLOUDERA_REGISTRY_HF_IMPORT"
-            
-        else:
-            print(f"⚠️ Could not find '{model_name}' in the registry. Falling back to direct HuggingFace load.")
-            
-    except Exception as err:
-        print(f"⚠️ [MODEL RESOLVER] Verification error: {type(err).__name__} - {err}. Falling back to direct HuggingFace load.")
-
-    # SentenceTransformers natively handles direct HF Hub downloads if passed a standard repo ID.
-    return model_name, "HUGGINGFACE_HUB_DIRECT"
-
 
 # ---------------------------------------------------------------------
 # Lifespan Context Manager (Startup / Shutdown)
@@ -130,7 +91,7 @@ def verify_cml_token(
     Validates CML_TOKEN passed via Authorization Bearer or X-CDSW-API-Key header.
     If ENFORCE_CML_AUTH is 'true', rejects unauthorized requests.
     """
-    expected_token = os.getenv("CML_TOKEN") or os.getenv("CDSW_API_KEY")
+    expected_token = get_cml_token()
     enforce_auth = os.getenv("ENFORCE_CML_AUTH", "false").lower() == "true"
 
     if not enforce_auth or not expected_token:

@@ -3,12 +3,12 @@ import sys
 from contextlib import asynccontextmanager
 from typing import List, Tuple
 
-import cmlapi
 from fastapi import FastAPI
-from huggingface_hub import snapshot_download
 from pydantic import BaseModel
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from shared.model_resolver import resolve_model_path
 
 # ⚡ CPU INFERENCE OPTIMIZATION LAYER
 torch.set_num_threads(4)
@@ -26,56 +26,13 @@ model_metadata = {
 }
 
 
-def resolve_model_path() -> Tuple[str, str]:
+def _resolve_model_path() -> Tuple[str, str]:
     """
     Verifies the model in CML Registry and dynamically pulls the HuggingFace source.
+    Falls back to local NFS / disk storage.
     """
-    print("📡 [MODEL RESOLVER] Connecting to CML API to verify registry configuration...")
-    
-    # Matching the exact name from your latest screenshot
     model_name = os.environ.get("CML_MODEL_NAME", "")
-    
-    try:
-        client = cmlapi.default_client()
-        search_res = client.list_registered_models()
-        models_list = getattr(search_res, 'models', getattr(search_res, 'registered_models', []))
-        
-        target_model = next((m for m in models_list if getattr(m, 'name', getattr(m, 'model_name', '')) == model_name), None)
-        
-        if target_model:
-            model_id = getattr(target_model, 'id', getattr(target_model, 'model_id', None))
-            print(f"✅ [MODEL RESOLVER] Verified '{model_name}' (ID: {model_id}) exists in Cloudera AI Registry.")
-            print(f"✅ [MODEL RESOLVER] Registry indicates SOURCE is HuggingFace.")
-            
-            # Since the registry uses a HuggingFace pointer, we download from HF directly.
-            # We map the UI name back to the actual HF repository name.
-            hf_repo = model_name
-            
-            # Define a secure local cache path inside the container
-            cache_dir = os.path.join(os.getcwd(), "hf_registry_cache")
-            os.makedirs(cache_dir, exist_ok=True)
-            
-            print(f"⏳ [MODEL RESOLVER] Downloading weights directly from HuggingFace Hub to mirror registry import...")
-            downloaded_path = snapshot_download(
-                repo_id=hf_repo,
-                local_dir=cache_dir,
-                local_dir_use_symlinks=False # Forces actual file download instead of symlinks
-            )
-            
-            print(f"🎉 [MODEL RESOLVER] Successfully pulled model artifacts: {downloaded_path}")
-            return downloaded_path, "CLOUDERA_REGISTRY_HF_IMPORT"
-            
-        else:
-            print(f"⚠️ Could not find '{model_name}' in the registry.")
-            
-    except Exception as err:
-        print(f"⚠️ [MODEL RESOLVER] Verification error: {type(err).__name__} - {err}")
 
-    print("🔍 [MODEL RESOLVER] Falling back to local NFS / disk storage...")
-
-    # ==========================================
-    # ATTEMPT 2: NFS FALLBACK STORAGE
-    # ==========================================
     base_cwd = os.getcwd()
     script_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else base_cwd
     parent_dir = os.path.dirname(script_dir)
@@ -87,13 +44,7 @@ def resolve_model_path() -> Tuple[str, str]:
         os.path.join(parent_dir, "model_weights_cpu")
     ]
 
-    local_path = next((p for p in candidate_paths if os.path.isdir(p) and "config.json" in os.listdir(p)), None)
-    
-    if not local_path:
-        print(f"❌ [CRITICAL ERROR] Could not locate model weights in Registry OR Local NFS paths.")
-        sys.exit(1)
-
-    return local_path, "LOCAL_NFS_STORAGE"
+    return resolve_model_path(model_name, nfs_candidate_paths=candidate_paths)
 
 
 global_model = None
@@ -105,7 +56,7 @@ async def lifespan(app: FastAPI):
     global global_model, global_tokenizer, model_metadata
     
     # Resolve physical weight location
-    path, source = resolve_model_path()
+    path, source = _resolve_model_path()
     model_metadata["source"] = source
     model_metadata["path"] = path
 

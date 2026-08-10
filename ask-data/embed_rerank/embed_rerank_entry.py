@@ -1,57 +1,48 @@
+"""
+CAI / CML Application entry point for the Embed-Rerank Semantic Engine.
+"""
 import os
 import sys
-import subprocess
 from pathlib import Path
 
-# 1. Resolve Root Directory & Load Global .env Config
-_ASK_DATA_ROOT = Path(__file__).resolve().parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
+# Ensure ask-data/ root is importable before importing shared.*
+_ASK_DATA_ROOT = Path(__file__).resolve().parent.parent if "__file__" in globals() else Path("/home/cdsw/ask-data")
 if str(_ASK_DATA_ROOT) not in sys.path:
     sys.path.insert(0, str(_ASK_DATA_ROOT))
 
-import shared.config_loader as config_loader
-config_loader.bootstrap(hint=_ASK_DATA_ROOT)
+from shared.entry_utils import (
+    bootstrap_service,
+    resolve_service_dir,
+    ensure_dependencies,
+    build_pythonpath,
+    launch_uvicorn,
+    wait_for_process,
+    resolve_port,
+)
 
-
-# 2. Resolve Service Directory
-def _resolve_embed_rerank_dir() -> Path:
-    if "__file__" in globals():
-        return Path(__file__).resolve().parent / "embed_rerank"
-    return _ASK_DATA_ROOT / "embed_rerank"
-
-
-SERVICE_DIR = _resolve_embed_rerank_dir()
-if str(SERVICE_DIR) not in sys.path:
-    sys.path.insert(0, str(SERVICE_DIR))
+_SERVICE_NAME = "embed_rerank"
+_CALLER_FILE = __file__ if "__file__" in globals() else None
 
 
 def main() -> None:
-    app_port = int(os.environ.get("CDSW_APP_PORT", 8090))
-    
-    # Ensure PYTHONPATH includes root and service directories
-    env = os.environ.copy()
-    pythonpath = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = f"{SERVICE_DIR}:{_ASK_DATA_ROOT}:{pythonpath}" if pythonpath else f"{SERVICE_DIR}:{_ASK_DATA_ROOT}"
+    ask_data_root = bootstrap_service(_SERVICE_NAME)
+    service_dir = resolve_service_dir(_SERVICE_NAME, ask_data_root, caller_file=_CALLER_FILE)
 
+    # Ensure the service directory is importable in this process (CML runs from here)
+    if str(service_dir) not in sys.path:
+        sys.path.insert(0, str(service_dir))
+
+    app_port = resolve_port(default=8090)
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = build_pythonpath(service_dir, ask_data_root, env=env)
+
+    ensure_dependencies(service_dir, env)
+
+    process = launch_uvicorn(service_dir, "app.main:app", app_port, env)
     print(f"📡 [embed-rerank Launcher] Starting FastAPI REST Engine on http://127.0.0.1:{app_port}", flush=True)
 
-    # Launch Uvicorn server pointing to embed_rerank.app.main:app
-    api_cmd = [
-        sys.executable, "-m", "uvicorn", "embed_rerank.app.main:app",
-        "--host", "127.0.0.1",
-        "--port", str(app_port),
-        "--log-level", "warning"
-    ]
-
-    process = subprocess.Popen(api_cmd, cwd=str(_ASK_DATA_ROOT), env=env)
-
-    try:
-        process.wait()
-    except (KeyboardInterrupt, SystemExit):
-        print("\n🛑 Shutting down embed-rerank Service...")
-    finally:
-        if process.poll() is None:
-            print("🧹 Terminating Uvicorn process...")
-            process.terminate()
+    wait_for_process(process, _SERVICE_NAME)
 
 
 if __name__ == "__main__":

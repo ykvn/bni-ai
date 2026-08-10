@@ -66,3 +66,20 @@ def update_job_status(job_id: str, status: str, result: Optional[str] = None, er
             (status, result, error, job_id)
         )
         conn.commit()
+
+
+def cancel_job(job_id: str) -> bool:
+    """
+    Marks a job as 'cancelled' if it is currently 'pending' or 'processing'.
+    Returns True if the job was found and updated, False otherwise.
+    """
+    with sqlite3.connect(_DB_PATH, timeout=60) as conn:
+        cursor = conn.execute(
+            "UPDATE jobs SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP "
+            "WHERE job_id = ? AND status IN ('pending', 'processing')",
+            (job_id,)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
