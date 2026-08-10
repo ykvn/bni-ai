@@ -12,7 +12,7 @@ from mcp.server.sse import SseServerTransport
 from app.tools.config import settings  
 from app.tools.execute_banking_query import execute_banking_query
 from app.tools.get_database_schema import get_database_schema
-from app.tools.search_golden_queries import search_golden_queries  # ⚡ NEW RAG TOOL
+from app.tools.search_golden_queries import search_golden_queries
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 
 # 1. Initialize the central FastMCP application state
