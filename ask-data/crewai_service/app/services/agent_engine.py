@@ -196,7 +196,8 @@ class SQLGenerationFlow(Flow[SQLState]):
         crew_instance = SQLAgentCrew()
         crew = Crew(
             agents=[crew_instance.schema_analyst()],
-            tasks=[crew_instance.fetch_schema_task()]
+            tasks=[crew_instance.fetch_schema_task()],
+            verbose=True
         )
         result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
         self.state.db_schema = result.raw
@@ -209,7 +210,8 @@ class SQLGenerationFlow(Flow[SQLState]):
         crew_instance = SQLAgentCrew()
         crew = Crew(
             agents=[crew_instance.sql_developer()],
-            tasks=[crew_instance.draft_sql_task()]
+            tasks=[crew_instance.draft_sql_task()],
+            verbose=True
         )
         result = await crew.kickoff_async(inputs={
             "user_question": self.state.user_question,
@@ -225,7 +227,8 @@ class SQLGenerationFlow(Flow[SQLState]):
         crew_instance = SQLAgentCrew()
         crew = Crew(
             agents=[crew_instance.sql_executor()],
-            tasks=[crew_instance.execute_sql_task()]
+            tasks=[crew_instance.execute_sql_task()],
+            verbose=True
         )
         result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
         raw_output = result.raw
