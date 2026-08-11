@@ -2,6 +2,7 @@ import os
 import time
 import json
 import requests
+import sqlparse
 from datetime import datetime
 import pandas as pd
 import gradio as gr
@@ -11,6 +12,22 @@ from shared.cml_auth import build_cml_headers
 # Module-level state for cancellation support
 _current_job_id = None
 _cancel_requested = False
+
+
+def format_sql(raw_sql: str) -> str:
+    """Formats a raw single-line SQL string into clean multi-line SQL."""
+    if not raw_sql or not raw_sql.strip():
+        return ""
+    try:
+        return sqlparse.format(
+            raw_sql.strip(),
+            reindent=True,
+            keyword_case="upper",
+            comma_first=False,
+            indent_width=2
+        )
+    except Exception:
+        return raw_sql.strip()
 
 
 def parse_payload_to_ui(payload: dict):
@@ -25,9 +42,10 @@ def parse_payload_to_ui(payload: dict):
     if payload.get("response"):
         text_parts.append(payload["response"])
         
-    # 2. SQL Code Block
+    # 2. Formatted SQL Code Block (Replaces single-line SQL with multi-line formatted SQL)
     if payload.get("predicted_sql"):
-        text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{payload['predicted_sql'].strip()}\n```")
+        formatted_sql = format_sql(payload["predicted_sql"])
+        text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
         
     # 3. True Tabular DataFrame Parsing
     if "data" in payload and payload["data"] is not None:
@@ -104,7 +122,7 @@ def build_ui() -> object:
 
         start_time = time.time()
         
-        # Initial yield before network dispatch (Disable Ask button immediately, show Cancel)
+        # Initial yield before network dispatch
         initial_job_box = (
             f"### Job Execution Information\n"
             f"- **Job ID:** `Submitting...`\n"
@@ -140,15 +158,14 @@ def build_ui() -> object:
                 while True:
                     time.sleep(1.0)
                     
-                    # Check if cancellation was requested via the Cancel button
                     if _cancel_requested:
                         job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
                         yield (
                             gr.update(visible=True, value=job_box_cancelled), 
                             "❌ Request was cancelled by user.", 
                             gr.update(visible=False),
-                            gr.update(interactive=True),  # Re-enable Ask button
-                            gr.update(visible=False, interactive=False)  # Hide Cancel button
+                            gr.update(interactive=True),  
+                            gr.update(visible=False, interactive=False)  
                         )
                         _cancel_requested = False
                         break
@@ -186,8 +203,8 @@ def build_ui() -> object:
                             gr.update(visible=True, value=job_box_completed), 
                             text_out, 
                             df_out,
-                            gr.update(interactive=True),  # Re-enable Ask button on success
-                            gr.update(visible=False, interactive=False)  # Hide Cancel button
+                            gr.update(interactive=True),  
+                            gr.update(visible=False, interactive=False)  
                         )
                         break
                         
@@ -198,8 +215,8 @@ def build_ui() -> object:
                             gr.update(visible=True, value=job_box_failed), 
                             f"❌ Task Failed:\n{error_msg}", 
                             gr.update(visible=False),
-                            gr.update(interactive=True),  # Re-enable Ask button on failure
-                            gr.update(visible=False, interactive=False)  # Hide Cancel button
+                            gr.update(interactive=True),  
+                            gr.update(visible=False, interactive=False)  
                         )
                         break
                         
@@ -209,8 +226,8 @@ def build_ui() -> object:
                             gr.update(visible=True, value=job_box_cancelled), 
                             "❌ Request was cancelled.", 
                             gr.update(visible=False),
-                            gr.update(interactive=True),  # Re-enable Ask button
-                            gr.update(visible=False, interactive=False)  # Hide Cancel button
+                            gr.update(interactive=True),  
+                            gr.update(visible=False, interactive=False)  
                         )
                         break
                         
@@ -220,8 +237,8 @@ def build_ui() -> object:
                             gr.update(visible=True, value=job_box_running), 
                             "⏳ CrewAI is currently executing your request...", 
                             gr.update(visible=False),
-                            gr.update(interactive=False),  # Keep Ask button disabled while polling
-                            gr.update(visible=True, interactive=True)  # Keep Cancel button visible
+                            gr.update(interactive=False),  
+                            gr.update(visible=True, interactive=True)  
                         )
             else:
                 text_out, df_out = parse_payload_to_ui(payload)
@@ -230,8 +247,8 @@ def build_ui() -> object:
                     gr.update(visible=True, value=job_box_direct), 
                     text_out, 
                     df_out,
-                    gr.update(interactive=True),  # Re-enable Ask button on direct return
-                    gr.update(visible=False, interactive=False)  # Hide Cancel button
+                    gr.update(interactive=True),  
+                    gr.update(visible=False, interactive=False)  
                 )
                 
         except Exception as exc:
@@ -241,17 +258,11 @@ def build_ui() -> object:
                 gr.update(visible=True, value=job_box_err), 
                 f"❌ Exception Error:\n{error_details}", 
                 gr.update(visible=False),
-                gr.update(interactive=True),  # Re-enable Ask button on exception
-                gr.update(visible=False, interactive=False)  # Hide Cancel button
+                gr.update(interactive=True),  
+                gr.update(visible=False, interactive=False)  
             )
 
     def cancel_backend():
-        """
-        Called when the user clicks the Cancel button. Sets a module-level flag
-        so the running ask_backend generator can detect it on its next poll,
-        and also sends a DELETE request to the backend to cancel the job
-        server-side.
-        """
         global _cancel_requested
         _cancel_requested = True
         job_id = _current_job_id
@@ -262,14 +273,12 @@ def build_ui() -> object:
                 requests.delete(cancel_url, headers=headers, timeout=10, verify=False)
             except Exception as e:
                 print(f"Cancel request error: {e}", flush=True)
-        # These UI updates will be overwritten by the generator's final yield
-        # once it detects _cancel_requested, but provide immediate feedback.
         return (
             gr.update(visible=True, value="### ⏳ Cancellation requested..."),
             "Cancelling request...",
             gr.update(visible=False),
-            gr.update(interactive=True),  # Re-enable Ask button
-            gr.update(visible=False, interactive=False)  # Hide Cancel button
+            gr.update(interactive=True),  
+            gr.update(visible=False, interactive=False)  
         )
 
     with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
@@ -279,7 +288,6 @@ def build_ui() -> object:
         submit_btn = gr.Button("Ask")
         cancel_btn = gr.Button("Cancel", visible=False)
 
-        # Separate Information Box for JOB ID & Running Status
         job_info_box = gr.Markdown(visible=False)
 
         output_text = gr.Markdown(label="Answer & SQL")
@@ -288,10 +296,9 @@ def build_ui() -> object:
         submit_btn.click(
             fn=ask_backend, 
             inputs=question_box, 
-            # Added submit_btn and cancel_btn to outputs to control their interactive state
             outputs=[job_info_box, output_text, output_table, submit_btn, cancel_btn],
-            concurrency_limit=None,  # 🚀 Fixes the queuing issue (Allows parallel tab execution)
-            show_progress="hidden"   # 🚀 Fixes the UI layout (Hides Gradio's floating orange boxes)
+            concurrency_limit=None,  
+            show_progress="hidden"   
         )
 
         cancel_btn.click(
