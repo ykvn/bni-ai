@@ -14,9 +14,9 @@ def main():
     current_path = os.environ.get('PATH', '')
     os.environ["PATH"] = f"/home/cdsw/.local/node/bin:{current_path}"
     
-    # 2. Terminate lingering Node processes to free port 8100
+    # 2. Aggressively clear port 8100 (Kills anything holding it, not just Node)
     try:
-        subprocess.run(["pkill", "-9", "-f", "node"], stderr=subprocess.DEVNULL)
+        subprocess.run(["fuser", "-k", "8100/tcp"], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
     except Exception:
         pass
         
