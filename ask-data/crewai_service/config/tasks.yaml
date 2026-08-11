@@ -2,21 +2,19 @@ draft_sql_task:
   description: >
     Process the following user query: '{user_question}'
 
-    INSTRUCTIONS:
-    1. FIRST, use `get_database_schema` to find the correct table names and columns.
+    INSTRUCTIONS - YOU MUST FOLLOW THESE IN EXACT ORDER:
+    1. FIRST, use the `get_database_schema` tool. YOU MUST NOT guess table names.
     2. (Optional) Use `search_golden_queries` to reference complex SQL templates.
-    3. Draft your Cloudera Impala SELECT statement.
-    4. Use `execute_banking_query` to run it. If it fails due to a syntax error, fix the SQL and execute it again.
-
-    OPERATIONAL BOUNDARIES & GUARDRAILS:
-    - TABLE MATCHING: CRITICAL. You MUST strictly use the actual table and column names returned by your schema tool.
-    - READ ONLY: You are a read-only analyst. You must only ever write SELECT statements.
+    3. Draft your Cloudera Impala SELECT statement based ONLY on the schema tool output.
+    4. Use the `execute_banking_query` tool to run the query against the database. 
+    
+    CRITICAL RULE: DO NOT MAKE UP OR HALLUCINATE DATA. You MUST use the `execute_banking_query` tool and use the EXACT raw JSON output it returns. If you do not use the execute tool, you will fail the task.
 
   expected_output: >
-    Output ONLY a raw JSON object matching this exact structure. Do not include markdown or commentary:
+    Output ONLY a raw JSON object matching this exact structure. DO NOT invent data. Use the exact data returned by the execute_banking_query tool.
     {
-      "predicted_sql": "SELECT ...",
-      "data": [{"column1": "value1"}, {"column1": "value2"}]
+      "predicted_sql": "The SQL query you executed",
+      "data": [The exact raw JSON array of records returned by the execute tool]
     }
 
 evaluate_policy_task:
