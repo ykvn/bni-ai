@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import yaml
 import anyio
 
 from fastapi import FastAPI, Request
@@ -15,55 +16,81 @@ from app.tools.get_database_schema import get_database_schema
 from app.tools.search_golden_queries import search_golden_queries
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 
-# 1. Initialize the central FastMCP application state
-mcp = FastMCP("Bank-ABC-Modular-Orchestrator")
+# 1. Initialize central FastMCP application state
+mcp = FastMCP("Bank Negara Indonesia Modular MCP Server")
 
-# 2. Configure the standardized SSE message pipeline transport
+# 2. Configure SSE message transport
 sse = SseServerTransport("/messages")
+
+
+# --- CLEAN SCHEMA FOR AGENTIC FLOW ---
+def clean_schema_yaml(raw_yaml_str: str) -> str:
+    """Strips internal reranking score fields so the LLM receives clean YAML schema without confusion."""
+    try:
+        data = yaml.safe_load(raw_yaml_str)
+        if isinstance(data, dict) and "tables" in data:
+            for table in data["tables"]:
+                table.pop("score", None)
+                for col in table.get("columns", []):
+                    col.pop("score", None)
+        return yaml.dump(data, sort_keys=False, default_flow_style=False)
+    except Exception:
+        return raw_yaml_str
+
+
+# =====================================================================
+# 🛠️ AGENTIC MCP TOOLS
+# =====================================================================
 
 @mcp.tool(name="get_database_schema")
 async def mcp_get_database_schema(user_question: str) -> str:
     """
-    Dynamically retrieves the structural enterprise schema configuration, table layouts, 
-    and available columns relevant to the user's question. Use this to understand the data structure.
+    CRITICAL FIRST STEP FOR SQL: Dynamically retrieves table names, column layouts, 
+    data types, and descriptions relevant to the user's question. Always call this tool 
+    BEFORE writing any SQL query to ensure exact table and column matches.
     """
-    # ⚡ Offload the heavy search to a background thread without argument overrides
-    return await anyio.to_thread.run_sync(get_database_schema, user_question)
+    raw_schema = await anyio.to_thread.run_sync(get_database_schema, user_question)
+    return clean_schema_yaml(raw_schema)
+
 
 @mcp.tool(name="search_golden_queries")
 async def mcp_search_golden_queries(user_question: str) -> str:
     """
-    Searches the Golden Queries database for verified, highly accurate SQL templates 
-    matching the user's intent. Use this to learn complex SQL syntax (like window functions or joins).
+    Searches the Golden Queries database for verified SQL templates matching the user's intent. 
+    Use this to learn complex Impala SQL syntax, joins, and window functions.
     """
     return await anyio.to_thread.run_sync(search_golden_queries, user_question, 5, 2)
+
 
 @mcp.tool(name="execute_banking_query")
 def mcp_execute_banking_query(sql_query: str) -> str:
     """
-    Executes a read-only Cloudera Impala SELECT statement against the live big data 
-    analytics warehouse cluster and returns rows structured as a JSON string.
+    Executes a read-only Cloudera Impala SELECT statement against the analytics warehouse.
+    If the query fails due to a syntax error, this tool returns the error message. 
+    Use the error details to fix your query and call this tool again.
     """
     return execute_banking_query(sql_query)
+
 
 @mcp.tool(name="search_policy_documents")
 async def mcp_search_policy_documents(query: str) -> str:
     """
-    Performs a semantic vector distance search against local persistent enterprise banking manuals,
-    compliance guidelines, and SOP documentation (Qdrant) to return matching structural context fragments.
+    Searches enterprise banking manuals, SOPs, and compliance policy guidelines (Qdrant).
+    Use this when answering non-SQL questions regarding business rules, limits, or procedures.
     """
     return await anyio.to_thread.run_sync(perform_rag_search, query, 3)
 
-# 3. Create the FastAPI container to manage incoming enterprise cluster traffic
-app = FastAPI(title="Bank ABC Production MCP Gateway")
 
-# Route incoming protocol control packets cleanly into the SSE transport layer
+# =====================================================================
+# FASTAPI SERVER CONTAINER
+# =====================================================================
+
+app = FastAPI(title="Bank Negara Indonesia MCP Gateway")
 app.router.routes.append(Mount("/messages", app=sse.handle_post_message))
 
 @app.get("/")
 @app.get("/health")
 def platform_health_check():
-    """Basic endpoint used by Cloudera AI to verify the container layer is active"""
     return {
         "status": "healthy", 
         "protocol": "Model Context Protocol v1", 
@@ -72,7 +99,6 @@ def platform_health_check():
 
 @app.get("/sse")
 async def handle_sse_handshake(request: Request):
-    """Establishes the long-lived protocol connection stream for incoming AI clients"""
     async with sse.connect_sse(
         request.scope, request.receive, request._send
     ) as streams:
@@ -80,23 +106,21 @@ async def handle_sse_handshake(request: Request):
             streams[0], streams[1], mcp._mcp_server.create_initialization_options()
         )
 
+
 # =====================================================================
 # 🧪 SWAGGER DOCS INTERACTIVE TESTING ENDPOINTS
 # =====================================================================
 
 @app.get("/api/test/schema")
 def test_schema_tool(user_question: str):
-    """Interactive playground to test your get_database_schema tool"""
     return {"matched_schema": get_database_schema(user_question)}
 
 @app.get("/api/test/golden_queries")
 def test_golden_queries_tool(user_question: str):
-    """Interactive playground to test your search_golden_queries tool"""
     return {"matched_queries": search_golden_queries(user_question)}
 
 @app.post("/api/test/sql")
 def test_sql_tool(sql_query: str):
-    """Interactive playground to test your execute_banking_query tool"""
     raw_result = execute_banking_query(sql_query)
     try:
         return {"status": "success", "data": json.loads(raw_result)}
@@ -105,6 +129,5 @@ def test_sql_tool(sql_query: str):
 
 @app.post("/api/test/rag")
 def test_rag_tool(search_query: str):
-    """Interactive playground to test your search_policy_documents tool"""
     raw_results = perform_rag_search(query=search_query, n_results=3)
     return {"status": "success", "matched_context": raw_results}
