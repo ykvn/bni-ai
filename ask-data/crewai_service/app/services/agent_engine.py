@@ -199,10 +199,11 @@ class SQLGenerationFlow(Flow[SQLState]):
             tasks=[crew_instance.fetch_schema_task()]
         )
         result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
-        self.state.db_schema = result.raw  # 🚀 Updated
-        return "schema_fetched"
+        self.state.db_schema = result.raw
+        # No return string needed; CrewAI automatically moves to the next listener
 
-    @listen("schema_fetched")
+    @listen(fetch_schema)     # Listens for Step 1 to finish
+    @listen("retry_sql")      # Listens for the Router to send it back here
     async def draft_sql(self):
         log_ts(f"🌊 [Flow] Step 2: Drafting SQL (Retry: {self.state.retries})...")
         crew_instance = SQLAgentCrew()
@@ -212,14 +213,13 @@ class SQLGenerationFlow(Flow[SQLState]):
         )
         result = await crew.kickoff_async(inputs={
             "user_question": self.state.user_question,
-            "db_schema": self.state.db_schema,  # 🚀 Updated to match tasks.yaml
+            "db_schema": self.state.db_schema,
             "error_context": self.state.error_context
         })
         import re
         self.state.sql_query = re.sub(r"```sql|```", "", result.raw).strip()
-        return "sql_drafted"
 
-    @listen("sql_drafted")
+    @router(draft_sql)        # Runs immediately after Step 2
     async def execute_and_validate(self):
         log_ts("🌊 [Flow] Step 3: Executing SQL against Impala...")
         crew_instance = SQLAgentCrew()
@@ -236,10 +236,10 @@ class SQLGenerationFlow(Flow[SQLState]):
             log_ts(f"⚠️ [Flow] Impala Error Detected! Routing back to Agent 2. Error: {raw_output[:50]}...")
             self.state.error_context = raw_output
             self.state.retries += 1
-            return "schema_fetched"  # Triggers draft_sql step again
+            return "retry_sql"  # Sends execution BACK to Step 2
             
         self.state.final_data = raw_output
-        return "complete"
+        return "complete" 
 
 
 # --- 5. EXPOSED ASYNC WORKFLOWS ---
