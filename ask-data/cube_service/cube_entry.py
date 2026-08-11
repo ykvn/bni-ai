@@ -23,7 +23,6 @@ def main():
     # 3. Map Cube API to CML's exposed application port
     app_port = os.environ.get("CDSW_APP_PORT", "8100")
     os.environ["PORT"] = app_port
-    os.environ["CUBEJS_API_PORT"] = app_port
     
     # 4. Disable outbound telemetry and developer tools to prevent internet pings
     os.environ["CUBEJS_TELEMETRY"] = "false"
