@@ -182,7 +182,7 @@ class RAGAgentCrew:
 # --- 4. STATE AND FLOW ---
 class SQLState(BaseModel):
     user_question: str = ""
-    db_schema: str = ""  # 🚀 Renamed to avoid Pydantic conflict
+    db_schema: str = ""
     sql_query: str = ""
     error_context: str = ""
     final_data: str = ""
@@ -219,7 +219,7 @@ class SQLGenerationFlow(Flow[SQLState]):
         import re
         self.state.sql_query = re.sub(r"```sql|```", "", result.raw).strip()
 
-    @router(draft_sql)        # Runs immediately after Step 2
+    @router(draft_sql)        # Runs immediately after Step 2 and acts as a traffic cop
     async def execute_and_validate(self):
         log_ts("🌊 [Flow] Step 3: Executing SQL against Impala...")
         crew_instance = SQLAgentCrew()
@@ -236,10 +236,10 @@ class SQLGenerationFlow(Flow[SQLState]):
             log_ts(f"⚠️ [Flow] Impala Error Detected! Routing back to Agent 2. Error: {raw_output[:50]}...")
             self.state.error_context = raw_output
             self.state.retries += 1
-            return "retry_sql"  # Sends execution BACK to Step 2
+            return "retry_sql"  # 🔁 Sends execution BACK to Step 2
             
         self.state.final_data = raw_output
-        return "complete" 
+        return "complete"       # Finishes the flow
 
 
 # --- 5. EXPOSED ASYNC WORKFLOWS ---
