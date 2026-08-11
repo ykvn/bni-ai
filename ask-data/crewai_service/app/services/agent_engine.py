@@ -73,7 +73,10 @@ class SQLAgentCrew:
 
     @task
     def draft_sql_task(self) -> Task:
-        return Task(config=self.tasks_config['draft_sql_task'])
+        return Task(
+            config=self.tasks_config['draft_sql_task'],
+            agent=self.sql_developer()
+        )
 
     @crew
     def crew(self) -> Crew:
@@ -96,7 +99,10 @@ class RAGAgentCrew:
 
     @task
     def evaluate_policy_task(self) -> Task:
-        return Task(config=self.tasks_config['evaluate_policy_task'])
+        return Task(
+            config=self.tasks_config['evaluate_policy_task'],
+            agent=self.compliance_officer()
+        )
 
     @crew
     def crew(self) -> Crew:
