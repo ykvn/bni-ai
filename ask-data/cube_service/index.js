@@ -4,11 +4,8 @@ const CubejsServerCore = require('@cubejs-backend/server-core');
 
 const app = express();
 
-// Initialize Cube Core strictly as an HTTP API
-const core = CubejsServerCore.create({
-  devMode: false,
-  telemetry: false,
-});
+// Initialize Cube Core (configuration handled via process.env)
+const core = CubejsServerCore.create({});
 
 // Attach Cube API routes (/cubejs-api/v1/...) to Express
 core.initApp(app);
