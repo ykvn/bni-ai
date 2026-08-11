@@ -46,7 +46,7 @@ async def _process_single_job(job: dict):
                 "response": agent_response
             }
         else:
-            # --- 2. RUN AUTONOMOUS SQL AGENT WORKFLOW ---
+            # --- 2. RUN SQL AGENT WORKFLOW ---
             agent_response = await run_sql_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
