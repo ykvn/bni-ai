@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-# Load environment variables from shared config
+# Load environment variables
 sys.path.insert(0, "/home/cdsw/ask-data")
 from shared import config_loader
 config_loader.bootstrap(hint="/home/cdsw/ask-data")
@@ -14,21 +14,29 @@ def main():
     current_path = os.environ.get('PATH', '')
     os.environ["PATH"] = f"/home/cdsw/.local/node/bin:{current_path}"
     
-    # 2. Navigate to the Cube directory
+    # 2. Terminate lingering Node processes to free port 8100
+    try:
+        subprocess.run(["pkill", "-9", "-f", "node"], stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+        
+    print("🚀 Starting Cube Semantic Layer (Express HTTP API)...", flush=True)
+    
+    # 3. Navigate to the Cube directory
     cube_dir = "/home/cdsw/ask-data/cube_service"
     os.chdir(cube_dir)
     
-    # 3. Map HTTP API server to CML application port (8100)
+    # 4. Map HTTP API server to CML application port (8100)
     app_port = os.environ.get("CDSW_APP_PORT", "8100")
     os.environ["PORT"] = app_port
     
-    # 4. Production settings
+    # 5. Production env flags
     os.environ["NODE_ENV"] = "production"
     os.environ["CUBEJS_DEV_MODE"] = "false"
     os.environ["CUBEJS_TELEMETRY"] = "false"
     os.environ["CUBEJS_WEB_SOCKETS"] = "false"
     
-    # 6. Start the server using Express index.js
+    # 6. Start Express server
     print(f"🌐 Starting Cube API on port {app_port}...", flush=True)
     
     try:
