@@ -87,9 +87,9 @@ class SQLAgentCrew:
 
     # AGENT 3: Database Executor (Execution Tool Only)
     @agent
-    def database_executor(self) -> Agent:
+    def sql_executor(self) -> Agent:
         return Agent(
-            config=self.agents_config['database_executor'],
+            config=self.agents_config['sql_executor'],
             llm=GLOBAL_LLM,
             tools=[mcp_execute_banking_query]
         )
@@ -116,14 +116,14 @@ class SQLAgentCrew:
     def execute_sql_task(self) -> Task:
         return Task(
             config=self.tasks_config['execute_sql_task'],
-            agent=self.database_executor(),
+            agent=self.sql_executor(),
             context=[self.draft_sql_task()]
         )
 
     @crew
     def crew(self) -> Crew:
         return Crew(
-            agents=[self.schema_analyst(), self.sql_developer(), self.database_executor()],
+            agents=[self.schema_analyst(), self.sql_developer(), self.sql_executor()],
             tasks=[self.fetch_schema_task(), self.draft_sql_task(), self.execute_sql_task()],
             process=Process.sequential,
             verbose=True
