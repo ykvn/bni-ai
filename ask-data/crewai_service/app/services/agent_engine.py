@@ -26,7 +26,10 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
     headers = build_cml_headers(os.getenv("CML_TOKEN"))
     
     async with sse_client(
-        url=url, headers=headers, httpx_client_factory=lambda **kw: httpx.AsyncClient(verify=False, **kw)
+        url=url, 
+        headers=headers, 
+        # 🚀 FIX: Added follow_redirects=True so httpx handles the 307 trailing slash redirect automatically
+        httpx_client_factory=lambda **kw: httpx.AsyncClient(verify=False, follow_redirects=True, **kw)
     ) as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
