@@ -24,6 +24,7 @@ draft_sql_task:
     
     OPERATIONAL GUARDRAILS:
     - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context. DO NOT invent generic table names outside the retrieved schema context.
+    - NO FAKE ALIASING (CRITICAL): If the user asks for a specific metric, concept, or column that DOES NOT explicitly exist in the provided schema, DO NOT use 'AS' to alias an unrelated column to pretend it exists.
     - READ ONLY: Only write SELECT statements.
   expected_output: >
     Output ONLY the raw Cloudera Impala SELECT statement. Do not wrap it in markdown code blocks (```sql), do not use JSON, and do not include conversational commentary.
