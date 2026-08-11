@@ -38,21 +38,25 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
 @tool("get_database_schema")
 async def mcp_get_database_schema(user_question: str) -> str:
     """CRITICAL FIRST STEP: Retrieves table names and columns based on the user query."""
+    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'get_database_schema' with: {user_question}", flush=True)
     return await call_mcp("get_database_schema", {"user_question": user_question})
 
 @tool("search_golden_queries")
 async def mcp_search_golden_queries(user_question: str) -> str:
     """Searches verified SQL templates matching the user's intent."""
+    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'search_golden_queries' with: {user_question}", flush=True)
     return await call_mcp("search_golden_queries", {"user_question": user_question})
 
 @tool("execute_banking_query")
 async def mcp_execute_banking_query(sql_query: str) -> str:
     """Executes Impala SQL. Returns raw JSON rows or an error message if syntax is wrong."""
+    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'execute_banking_query' with SQL:\n{sql_query}", flush=True)
     return await call_mcp("execute_banking_query", {"sql_query": sql_query})
 
 @tool("search_policy_documents")
 async def mcp_search_policy_documents(query: str) -> str:
     """Searches enterprise banking manuals, SOPs, and compliance guidelines."""
+    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'search_policy_documents' with: {query}", flush=True)
     return await call_mcp("search_policy_documents", {"query": query})
 
 
