@@ -1,5 +1,6 @@
 import os
 import httpx
+from datetime import datetime
 from pathlib import Path
 
 from crewai import Agent, Crew, Task, LLM
@@ -12,6 +13,21 @@ from shared.cml_auth import build_cml_headers
 
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
+# --- TIMESTAMP HELPER ---
+def log_ts(msg: str):
+    """Prints log messages with precise millisecond timestamps."""
+    ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    print(f"⏱️ [{ts}] {msg}", flush=True)
+
+# --- CREWAI CALLBACKS ---
+def task_completion_callback(task_output):
+    log_ts(f"✅ TASK COMPLETED: {task_output.name or 'Task'}")
+
+def agent_step_callback(agent_action):
+    if hasattr(agent_action, 'tool'):
+        log_ts(f"🤖 AGENT ACTION: Triggering Tool '{agent_action.tool}'")
+
+
 # --- 1. GLOBAL SETUP ---
 GLOBAL_LLM = LLM(
     model=f"openai/{os.getenv('CML_MODEL_NAME')}",
@@ -21,6 +37,9 @@ GLOBAL_LLM = LLM(
 )
 
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:
+    start_time = datetime.now()
+    log_ts(f"🔌 MCP Call Started: '{tool_name}'")
+    
     url = f"{os.getenv('MCP_SERVER_URL', '').rstrip('/')}/sse"
     headers = build_cml_headers(os.getenv("CML_TOKEN"))
     
@@ -32,6 +51,8 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
             res = await session.call_tool(tool_name, arguments=arguments or {})
+            duration = (datetime.now() - start_time).total_seconds()
+            log_ts(f"🏁 MCP Call Completed: '{tool_name}' (Took {duration:.2f}s)")
             return res.content[0].text if res and res.content else ""
 
 
@@ -39,25 +60,25 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
 @tool("get_database_schema")
 async def mcp_get_database_schema(user_question: str) -> str:
     """CRITICAL FIRST STEP: Retrieves table names and columns based on the user query."""
-    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'get_database_schema' with: {user_question}", flush=True)
+    log_ts(f"🛠️ Tool Invoked: 'get_database_schema' | Input: {user_question[:60]}...")
     return await call_mcp("get_database_schema", {"user_question": user_question})
 
 @tool("search_golden_queries")
 async def mcp_search_golden_queries(user_question: str) -> str:
     """Searches verified SQL templates matching the user's intent."""
-    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'search_golden_queries' with: {user_question}", flush=True)
+    log_ts(f"🛠️ Tool Invoked: 'search_golden_queries'")
     return await call_mcp("search_golden_queries", {"user_question": user_question})
 
 @tool("execute_banking_query")
 async def mcp_execute_banking_query(sql_query: str) -> str:
     """Executes Impala SQL. Returns raw JSON rows or an error message if syntax is wrong."""
-    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'execute_banking_query' with SQL:\n{sql_query}", flush=True)
+    log_ts(f"🛠️ Tool Invoked: 'execute_banking_query'")
     return await call_mcp("execute_banking_query", {"sql_query": sql_query})
 
 @tool("search_policy_documents")
 async def mcp_search_policy_documents(query: str) -> str:
     """Searches enterprise banking manuals, SOPs, and compliance guidelines."""
-    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'search_policy_documents' with: {query}", flush=True)
+    log_ts(f"🛠️ Tool Invoked: 'search_policy_documents'")
     return await call_mcp("search_policy_documents", {"query": query})
 
 
@@ -67,63 +88,63 @@ class SQLAgentCrew:
     agents_config = str(_CONFIG_DIR / "agents.yaml")
     tasks_config = str(_CONFIG_DIR / "tasks.yaml")
 
-    # AGENT 1: Schema Analyst (Schema Tools Only)
     @agent
     def schema_analyst(self) -> Agent:
         return Agent(
             config=self.agents_config['schema_analyst'],
             llm=GLOBAL_LLM,
-            tools=[mcp_get_database_schema, mcp_search_golden_queries]
+            tools=[mcp_get_database_schema, mcp_search_golden_queries],
+            step_callback=agent_step_callback
         )
 
-    # AGENT 2: SQL Developer (NO TOOLS - Pure Reasoning)
     @agent
     def sql_developer(self) -> Agent:
         return Agent(
             config=self.agents_config['sql_developer'],
             llm=GLOBAL_LLM,
-            tools=[]
+            tools=[],
+            step_callback=agent_step_callback
         )
 
-    # AGENT 3: Database Executor (Execution Tool Only)
     @agent
-    def sql_executor(self) -> Agent:
+    def database_executor(self) -> Agent:
         return Agent(
-            config=self.agents_config['sql_executor'],
+            config=self.agents_config['database_executor'],
             llm=GLOBAL_LLM,
-            tools=[mcp_execute_banking_query]
+            tools=[mcp_execute_banking_query],
+            step_callback=agent_step_callback
         )
 
-    # TASK 1: Executed by Schema Analyst
     @task
     def fetch_schema_task(self) -> Task:
         return Task(
             config=self.tasks_config['fetch_schema_task'],
-            agent=self.schema_analyst()
+            agent=self.schema_analyst(),
+            callback=task_completion_callback
         )
 
-    # TASK 2: Executed by SQL Developer
     @task
     def draft_sql_task(self) -> Task:
         return Task(
             config=self.tasks_config['draft_sql_task'],
             agent=self.sql_developer(),
-            context=[self.fetch_schema_task()]
+            context=[self.fetch_schema_task()],
+            callback=task_completion_callback
         )
 
-    # TASK 3: Executed by Database Executor
     @task
     def execute_sql_task(self) -> Task:
         return Task(
             config=self.tasks_config['execute_sql_task'],
-            agent=self.sql_executor(),
-            context=[self.draft_sql_task()]
+            agent=self.database_executor(),
+            context=[self.draft_sql_task()],
+            callback=task_completion_callback
         )
 
     @crew
     def crew(self) -> Crew:
         return Crew(
-            agents=[self.schema_analyst(), self.sql_developer(), self.sql_executor()],
+            agents=[self.schema_analyst(), self.sql_developer(), self.database_executor()],
             tasks=[self.fetch_schema_task(), self.draft_sql_task(), self.execute_sql_task()],
             process=Process.sequential,
             verbose=True
@@ -157,9 +178,13 @@ class RAGAgentCrew:
 
 # --- 4. EXPOSED ASYNC WORKFLOWS ---
 async def run_sql_agent(user_question: str):
+    log_ts("🚀 SQLAgentCrew Execution Initiated")
     result = await SQLAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
+    log_ts("🎉 SQLAgentCrew Execution Finished")
     return result
 
 async def run_rag_agent(user_question: str) -> str:
+    log_ts("🚀 RAGAgentCrew Execution Initiated")
     result = await RAGAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
+    log_ts("🎉 RAGAgentCrew Execution Finished")
     return str(result)
