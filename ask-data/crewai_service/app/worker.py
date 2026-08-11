@@ -3,11 +3,17 @@ import json
 import asyncio
 import re
 from crewai_service.app.core import job_db
+
+# 🚀 IMPORT YOUR @CrewBase WORKFLOWS HERE
 from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent
 
+# Module-level registry of active tasks for cancellation support
 _active_tasks: dict[str, asyncio.Task] = {}
 
-POLICY_KEYWORDS = ("kebijakan", "sop", "prosedur", "manual", "panduan", "kriteria", "aturan", "regulasi", "dokumen", "syarat", "sk")
+POLICY_KEYWORDS = (
+    "kebijakan", "sop", "prosedur", "manual", "panduan", "kriteria",
+    "aturan", "regulasi", "dokumen", "syarat", "sk", "surat keputusan"
+)
 
 def is_policy_question(question: str) -> bool:
     return any(keyword in question.casefold() for keyword in POLICY_KEYWORDS)
@@ -17,36 +23,60 @@ def _is_cancelled(job_id: str) -> bool:
     return job is not None and job.get("status") == "cancelled"
 
 async def _process_single_job(job: dict):
-    job_id, user_question = job["job_id"], job["question"]
+    """Executes a single job independently in its own async task context."""
+    job_id = job["job_id"]
+    user_question = job["question"]
 
     try:
         print(f"\n⚡ [CrewAI Engine] Executing Job {job_id}: '{user_question}'", flush=True)
 
         if is_policy_question(user_question):
-            # 1. RAG Workflow
+            # --- 1. RUN RAG AGENT WORKFLOW ---
             agent_response = await run_rag_agent(user_question)
-            if _is_cancelled(job_id): raise asyncio.CancelledError()
-            
-            payload = {"status": "Success", "type": "RAG", "response": agent_response}
-        else:
-            # 2. SQL Workflow
-            agent_response = await run_sql_agent(user_question)
-            if _is_cancelled(job_id): raise asyncio.CancelledError()
+            if _is_cancelled(job_id):
+                raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
 
-            # Attempt to parse the LLM's output into the exact JSON your UI needs
+            payload = {
+                "question": user_question,
+                "status": "Success",
+                "type": "RAG",
+                "predicted_sql": None,
+                "row_count": 0,
+                "data": [],
+                "response": agent_response
+            }
+        else:
+            # --- 2. RUN AUTONOMOUS SQL AGENT WORKFLOW ---
+            agent_response = await run_sql_agent(user_question)
+            if _is_cancelled(job_id):
+                raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
+
+            # Attempt to parse the JSON output defined in tasks.yaml
             try:
-                # Strip potential markdown blocks (```json ... ```)
                 clean_json = re.sub(r"```json|```", "", agent_response).strip()
                 parsed_data = json.loads(clean_json)
+                records = parsed_data.get("data", [])
+
                 payload = {
+                    "question": user_question,
                     "status": "Success",
                     "type": "SQL",
                     "predicted_sql": parsed_data.get("predicted_sql"),
-                    "data": parsed_data.get("data", [])
+                    "row_count": len(records),
+                    "data": records,
+                    "response": None
                 }
             except json.JSONDecodeError:
-                # Fallback if the agent answers conversationally instead of with JSON
-                payload = {"status": "Success", "type": "Conversational", "response": agent_response}
+                # Fallback if agent responds conversationally
+                payload = {
+                    "question": user_question,
+                    "status": "Success",
+                    "type": "Conversational",
+                    "predicted_sql": None,
+                    "row_count": 0,
+                    "data": [],
+                    "response": agent_response
+                }
 
         job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
         print(f"✅ [CrewAI Engine] Finished Job {job_id}", flush=True)
@@ -59,16 +89,20 @@ async def _process_single_job(job: dict):
         print(f"❌ [CrewAI Engine Error] Task {job_id} failed: {e}", flush=True)
         job_db.update_job_status(job_id, status="failed", error=str(e))
 
+
 def cancel_job(job_id: str) -> bool:
+    """Cancels pending jobs in DB or actively running asyncio tasks."""
     db_cancelled = job_db.cancel_job(job_id)
     task = _active_tasks.get(job_id)
     if task is not None and not task.done():
-        task.cancel()
+        task.cancel()  # Aborts LLM execution immediately
         return True
     return db_cancelled
 
+
 async def run_worker_loop(max_concurrent_jobs: int = 5):
-    print(f"🤖 [CrewAI Service Engine] Starting parallel worker loop...", flush=True)
+    """Non-blocking worker loop processing pending jobs in parallel."""
+    print(f"🤖 [CrewAI Service Engine] Starting worker loop...", flush=True)
     job_db.init_db()
     semaphore = asyncio.Semaphore(max_concurrent_jobs)
 
@@ -85,7 +119,7 @@ async def run_worker_loop(max_concurrent_jobs: int = 5):
 
             job_id = job["job_id"]
             job_db.update_job_status(job_id, status="processing")
-            
+
             task = asyncio.create_task(worker_task(job))
             _active_tasks[job_id] = task
             task.add_done_callback(lambda fut, jid=job_id: _active_tasks.pop(jid, None))
