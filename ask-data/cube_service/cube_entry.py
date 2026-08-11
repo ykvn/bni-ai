@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 
 # Load environment variables
@@ -25,16 +26,14 @@ def main():
     os.environ["CUBEJS_TELEMETRY"] = "false"
     os.environ["CUBEJS_WEB_SOCKETS"] = "false"
     
-    print(f"🌐 Transforming Python process into Node.js on port {app_port}...", flush=True)
+    print(f"🌐 Starting Node.js on port {app_port}...", flush=True)
     
-    # 4. Flush standard output before process replacement
-    sys.stdout.flush()
-    sys.stderr.flush()
-    
-    # 5. PROCESS REPLACEMENT: 
-    # Python completely drops its PID and resources, instantly handing them to Node.
-    # This guarantees Python cannot block port 8100.
-    os.execvpe("node", ["node", "index.js"], os.environ)
+    # 4. Use subprocess so Python stays alive and CML can track the application
+    try:
+        subprocess.run(["node", "index.js"], check=True)
+    except Exception as e:
+        print(f"❌ Failed to start Cube: {e}", flush=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
