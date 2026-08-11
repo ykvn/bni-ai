@@ -1,11 +1,12 @@
 fetch_schema_task:
   description: >
-    Inspect the database schema layout required to answer the user query: '{user_question}'
+    /no_think
+    Retrieve the live database schema for the user query: '{user_question}'
     
-    INSTRUCTIONS:
-    Call the `get_database_schema` tool to retrieve table names, column names, and key relationships.
+    INSTRUCTION:
+    Execute the `get_database_schema` tool immediately with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
   expected_output: >
-    The exact database schema layout returned by `get_database_schema`.
+    The exact, raw tool response string returned by `get_database_schema`.
 
 draft_sql_task:
   description: >
@@ -15,17 +16,18 @@ draft_sql_task:
     Using strictly the database schema retrieved in `fetch_schema_task`, write a valid Cloudera Impala SELECT query.
 
     OPERATIONAL GUARDRAILS:
-    - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context. DO NOT invent generic table names like 'customers' or 'transactions'.
+    - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context (e.g., `cai_savings`, `cai_transactions`). DO NOT invent generic table names like 'customers' or 'accounts'.
     - READ ONLY: Only write SELECT statements.
   expected_output: >
     Output ONLY the raw Cloudera Impala SELECT statement. Do not wrap it in markdown code blocks (```sql), do not use JSON, and do not include conversational commentary.
 
 execute_sql_task:
   description: >
+    /no_think
     Execute the Cloudera Impala SELECT query drafted in `draft_sql_task`.
 
-    INSTRUCTIONS:
-    Call the `execute_banking_query` tool, passing the exact SQL query string generated in `draft_sql_task`.
+    INSTRUCTION:
+    Call the `execute_banking_query` tool immediately, passing the exact SQL query string generated in `draft_sql_task`. Do not think or explain.
   expected_output: >
     The exact raw JSON output returned by the `execute_banking_query` tool.
 
