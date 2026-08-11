@@ -26,8 +26,13 @@ def main():
     cube_dir = "/home/cdsw/ask-data/cube_service"
     os.chdir(cube_dir)
     
-    # 4. Map HTTP API server to CML application port (8100)
-    app_port = os.environ.get("CDSW_APP_PORT", "8100")
+    # 4. Map HTTP API server to CML application port (Use 8101 for local testing!)
+    app_port = os.environ.get("CDSW_APP_PORT", "8101")
+    
+    # Force it to 8101 if we are inside a Jupyter session to avoid colliding with the IDE
+    if "JPY_PARENT_PID" in os.environ or "DATAPANEL_SESSION_ID" in os.environ:
+        app_port = "8101"
+        
     os.environ["PORT"] = app_port
     
     # 5. Production env flags
