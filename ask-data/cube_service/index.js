@@ -14,10 +14,20 @@ delete process.env.CUBEJS_PORT;
 // 3. Initialize Cube Core strictly as a middleware generator
 const core = CubejsServerCore.create({});
 
-// 4. Attach Cube API routes (/cubejs-api/v1/...) to the Express app
-core.initApp(app);
+// 4. Force JavaScript to wait for Cube to initialize before starting the server
+async function startServer() {
+  try {
+    console.log("⏳ Initializing Cube Core middleware...");
+    await core.initApp(app);
+    
+    // 5. Express binds to the port ONLY after Cube is ready
+    app.listen(port, () => {
+      console.log(`✅ Cube Semantic Layer Express API successfully listening on port ${port}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to initialize Cube:', error);
+    process.exit(1);
+  }
+}
 
-// 5. Express binds to port 8100 exactly once
-app.listen(port, () => {
-  console.log(`✅ Cube Semantic Layer Express API successfully listening on port ${port}`);
-});
+startServer();
