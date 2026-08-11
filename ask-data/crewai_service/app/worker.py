@@ -47,16 +47,13 @@ async def _process_single_job(job: dict):
                 "response": agent_response
             }
         else:
-            crew_output = await run_sql_agent(user_question)
+            # 🚀 Extracts properties directly from the Flow State object
+            flow_state = await run_sql_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
 
-            tasks = getattr(crew_output, 'tasks_output', [])
-            
-            raw_sql = tasks[1].raw if len(tasks) > 1 else str(crew_output)
-            predicted_sql = re.sub(r"```sql|```", "", raw_sql).strip()
-
-            raw_data = tasks[2].raw if len(tasks) > 2 else "[]"
+            predicted_sql = flow_state.sql_query
+            raw_data = flow_state.final_data
 
             try:
                 clean_json = re.sub(r"```json|```", "", raw_data).strip()
@@ -74,6 +71,7 @@ async def _process_single_job(job: dict):
                     "response": None
                 }
             except json.JSONDecodeError:
+                # If Impala failed 3 times and gave up, it falls back here
                 payload = {
                     "question": user_question,
                     "status": "Success",

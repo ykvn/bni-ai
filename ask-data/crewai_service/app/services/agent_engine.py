@@ -1,12 +1,15 @@
 import os
 import httpx
+import re
 from datetime import datetime
 from pathlib import Path
 
+from pydantic import BaseModel
 from crewai import Agent, Crew, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
 from crewai.process import Process
 from crewai.tools import tool
+from crewai.flow.flow import Flow, listen, start, router
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from shared.cml_auth import build_cml_headers
@@ -129,7 +132,6 @@ class SQLAgentCrew:
         return Task(
             config=self.tasks_config['draft_sql_task'],
             agent=self.sql_developer(),
-            context=[self.fetch_schema_task()],
             callback=task_completion_callback
         )
 
@@ -138,12 +140,12 @@ class SQLAgentCrew:
         return Task(
             config=self.tasks_config['execute_sql_task'],
             agent=self.sql_executor(),
-            context=[self.draft_sql_task()],
             callback=task_completion_callback
         )
 
     @crew
     def crew(self) -> Crew:
+        # Not used natively by the Flow, but kept for structural integrity
         return Crew(
             agents=[self.schema_analyst(), self.sql_developer(), self.sql_executor()],
             tasks=[self.fetch_schema_task(), self.draft_sql_task(), self.execute_sql_task()],
@@ -177,12 +179,77 @@ class RAGAgentCrew:
         return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
 
 
-# --- 4. EXPOSED ASYNC WORKFLOWS ---
+# --- 4. STATE AND FLOW ---
+class SQLState(BaseModel):
+    user_question: str = ""
+    schema: str = ""
+    sql_query: str = ""
+    error_context: str = ""
+    final_data: str = ""
+    retries: int = 0
+
+class SQLGenerationFlow(Flow[SQLState]):
+    
+    @start()
+    async def fetch_schema(self):
+        log_ts("🌊 [Flow] Step 1: Fetching Schema...")
+        crew_instance = SQLAgentCrew()
+        crew = Crew(
+            agents=[crew_instance.schema_analyst()],
+            tasks=[crew_instance.fetch_schema_task()]
+        )
+        result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
+        self.state.schema = result.raw
+        return "schema_fetched"
+
+    @listen("schema_fetched")
+    async def draft_sql(self):
+        log_ts(f"🌊 [Flow] Step 2: Drafting SQL (Retry: {self.state.retries})...")
+        crew_instance = SQLAgentCrew()
+        crew = Crew(
+            agents=[crew_instance.sql_developer()],
+            tasks=[crew_instance.draft_sql_task()]
+        )
+        result = await crew.kickoff_async(inputs={
+            "user_question": self.state.user_question,
+            "schema": self.state.schema,
+            "error_context": self.state.error_context
+        })
+        self.state.sql_query = re.sub(r"```sql|```", "", result.raw).strip()
+        return "sql_drafted"
+
+    @listen("sql_drafted")
+    async def execute_and_validate(self):
+        log_ts("🌊 [Flow] Step 3: Executing SQL against Impala...")
+        crew_instance = SQLAgentCrew()
+        crew = Crew(
+            agents=[crew_instance.sql_executor()],
+            tasks=[crew_instance.execute_sql_task()]
+        )
+        result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
+        raw_output = result.raw
+        
+        # CONDITIONAL ROUTING: Route back if Impala throws a syntax error
+        error_keywords = ["Engine Error", "AnalysisException", "Syntax error", "ParseException"]
+        if any(err in raw_output for err in error_keywords) and self.state.retries < 3:
+            log_ts(f"⚠️ [Flow] Impala Error Detected! Routing back to Agent 2. Error: {raw_output[:50]}...")
+            self.state.error_context = raw_output
+            self.state.retries += 1
+            return "schema_fetched"  # Triggers draft_sql step again
+            
+        self.state.final_data = raw_output
+        return "complete"
+
+
+# --- 5. EXPOSED ASYNC WORKFLOWS ---
 async def run_sql_agent(user_question: str):
-    log_ts("🚀 SQLAgentCrew Execution Initiated")
-    result = await SQLAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
-    log_ts("🎉 SQLAgentCrew Execution Finished")
-    return result
+    log_ts("🚀 SQLGenerationFlow Execution Initiated")
+    flow = SQLGenerationFlow()
+    flow.state.user_question = user_question
+    
+    await flow.kickoff_async()
+    log_ts("🎉 SQLGenerationFlow Execution Finished")
+    return flow.state
 
 async def run_rag_agent(user_question: str) -> str:
     log_ts("🚀 RAGAgentCrew Execution Initiated")
