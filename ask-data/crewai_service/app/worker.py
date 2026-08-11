@@ -4,8 +4,7 @@ import asyncio
 import re
 from crewai_service.app.core import job_db
 
-# Import agents + call_mcp for execution
-from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent, call_mcp
+from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent
 
 _active_tasks: dict[str, asyncio.Task] = {}
 
@@ -44,20 +43,28 @@ async def _process_single_job(job: dict):
                 "response": agent_response
             }
         else:
-            # --- 2. RUN AGENT FOR SCHEMA INSPECTION & SQL DRAFTING ---
-            agent_response = await run_sql_agent(user_question)
+            # --- 2. RUN 3-STEP SEQUENTIAL SQL CREW ---
+            crew_output = await run_sql_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
 
-            # Clean raw SQL string returned by the Agent
-            predicted_sql = re.sub(r"```sql|```", "", agent_response).strip()
+            # Extract outputs from each sequential task
+            tasks = getattr(crew_output, 'tasks_output', [])
+            
+            # Task 2 Output: Predicted SQL
+            raw_sql = tasks[1].raw if len(tasks) > 1 else str(crew_output)
+            predicted_sql = re.sub(r"```sql|```", "", raw_sql).strip()
 
-            # --- 3. EXECUTE SQL AGAINST IMPALA VIA MCP ---
-            print(f"\n⚙️ [ENGINE EXECUTION] Running SQL against MCP: {predicted_sql}", flush=True)
-            raw_data_json = await call_mcp("execute_banking_query", {"sql_query": predicted_sql})
+            # Task 3 Output: Executed Impala Records
+            raw_data = tasks[2].raw if len(tasks) > 2 else "[]"
 
             try:
-                records = json.loads(raw_data_json)
+                # Clean up markdown in case the LLM wrapped the JSON
+                clean_json = re.sub(r"```json|```", "", raw_data).strip()
+                records = json.loads(clean_json)
+                if not isinstance(records, list):
+                    records = [records]
+
                 payload = {
                     "question": user_question,
                     "status": "Success",
@@ -68,7 +75,6 @@ async def _process_single_job(job: dict):
                     "response": None
                 }
             except json.JSONDecodeError:
-                # Catch SQL execution or syntax errors returned by Impala
                 payload = {
                     "question": user_question,
                     "status": "Success",
@@ -76,7 +82,7 @@ async def _process_single_job(job: dict):
                     "predicted_sql": predicted_sql,
                     "row_count": 0,
                     "data": [],
-                    "response": f"Cloudera Impala Error: {raw_data_json}"
+                    "response": raw_data
                 }
 
         job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))

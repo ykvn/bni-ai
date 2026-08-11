@@ -4,6 +4,7 @@ from pathlib import Path
 
 from crewai import Agent, Crew, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
+from crewai.process import Process
 from crewai.tools import tool
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -47,6 +48,12 @@ async def mcp_search_golden_queries(user_question: str) -> str:
     print(f"\n🛠️ [AGENT ACTION] LLM triggered 'search_golden_queries' with: {user_question}", flush=True)
     return await call_mcp("search_golden_queries", {"user_question": user_question})
 
+@tool("execute_banking_query")
+async def mcp_execute_banking_query(sql_query: str) -> str:
+    """Executes Impala SQL. Returns raw JSON rows or an error message if syntax is wrong."""
+    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'execute_banking_query' with SQL:\n{sql_query}", flush=True)
+    return await call_mcp("execute_banking_query", {"sql_query": sql_query})
+
 @tool("search_policy_documents")
 async def mcp_search_policy_documents(query: str) -> str:
     """Searches enterprise banking manuals, SOPs, and compliance guidelines."""
@@ -60,24 +67,67 @@ class SQLAgentCrew:
     agents_config = str(_CONFIG_DIR / "agents.yaml")
     tasks_config = str(_CONFIG_DIR / "tasks.yaml")
 
+    # AGENT 1: Schema Analyst (Schema Tools Only)
+    @agent
+    def schema_analyst(self) -> Agent:
+        return Agent(
+            config=self.agents_config['schema_analyst'],
+            llm=GLOBAL_LLM,
+            tools=[mcp_get_database_schema, mcp_search_golden_queries]
+        )
+
+    # AGENT 2: SQL Developer (NO TOOLS - Pure Reasoning)
     @agent
     def sql_developer(self) -> Agent:
         return Agent(
             config=self.agents_config['sql_developer'],
             llm=GLOBAL_LLM,
-            tools=[mcp_get_database_schema, mcp_search_golden_queries]  # Pure SQL translation tools
+            tools=[]
         )
 
+    # AGENT 3: Database Executor (Execution Tool Only)
+    @agent
+    def database_executor(self) -> Agent:
+        return Agent(
+            config=self.agents_config['database_executor'],
+            llm=GLOBAL_LLM,
+            tools=[mcp_execute_banking_query]
+        )
+
+    # TASK 1: Executed by Schema Analyst
+    @task
+    def fetch_schema_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['fetch_schema_task'],
+            agent=self.schema_analyst()
+        )
+
+    # TASK 2: Executed by SQL Developer
     @task
     def draft_sql_task(self) -> Task:
         return Task(
             config=self.tasks_config['draft_sql_task'],
-            agent=self.sql_developer()
+            agent=self.sql_developer(),
+            context=[self.fetch_schema_task()]
+        )
+
+    # TASK 3: Executed by Database Executor
+    @task
+    def execute_sql_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['execute_sql_task'],
+            agent=self.database_executor(),
+            context=[self.draft_sql_task()]
         )
 
     @crew
     def crew(self) -> Crew:
-        return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
+        return Crew(
+            agents=[self.schema_analyst(), self.sql_developer(), self.database_executor()],
+            tasks=[self.fetch_schema_task(), self.draft_sql_task(), self.execute_sql_task()],
+            process=Process.sequential,
+            verbose=True
+        )
 
 
 @CrewBase
@@ -106,9 +156,9 @@ class RAGAgentCrew:
 
 
 # --- 4. EXPOSED ASYNC WORKFLOWS ---
-async def run_sql_agent(user_question: str) -> str:
+async def run_sql_agent(user_question: str):
     result = await SQLAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
-    return str(result)
+    return result
 
 async def run_rag_agent(user_question: str) -> str:
     result = await RAGAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})

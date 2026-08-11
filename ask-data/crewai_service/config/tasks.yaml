@@ -1,18 +1,33 @@
+fetch_schema_task:
+  description: >
+    Inspect the database schema layout required to answer the user query: '{user_question}'
+    
+    INSTRUCTIONS:
+    Call the `get_database_schema` tool to retrieve table names, column names, and key relationships.
+  expected_output: >
+    The exact database schema layout returned by `get_database_schema`.
+
 draft_sql_task:
   description: >
-    Process the following user query: '{user_question}'
+    Process the user query: '{user_question}'
 
     INSTRUCTIONS:
-    1. FIRST, use the `get_database_schema` tool to discover the exact table names and column names.
-    2. (Optional) Use `search_golden_queries` if you need reference query templates.
-    3. Draft a valid Cloudera Impala SELECT query based strictly on the retrieved database schema.
+    Using strictly the database schema retrieved in `fetch_schema_task`, write a valid Cloudera Impala SELECT query.
 
     OPERATIONAL GUARDRAILS:
-    - TABLE MATCHING: You MUST strictly use the table and column names returned by `get_database_schema`.
-    - READ ONLY: Only SELECT statements are permitted.
-
+    - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context. DO NOT invent generic table names like 'customers' or 'transactions'.
+    - READ ONLY: Only write SELECT statements.
   expected_output: >
-    Output ONLY the raw SQL SELECT statement. Do not include markdown code blocks (```sql), JSON, or conversational commentary.
+    Output ONLY the raw Cloudera Impala SELECT statement. Do not wrap it in markdown code blocks (```sql), do not use JSON, and do not include conversational commentary.
+
+execute_sql_task:
+  description: >
+    Execute the Cloudera Impala SELECT query drafted in `draft_sql_task`.
+
+    INSTRUCTIONS:
+    Call the `execute_banking_query` tool, passing the exact SQL query string generated in `draft_sql_task`.
+  expected_output: >
+    The exact raw JSON output returned by the `execute_banking_query` tool.
 
 evaluate_policy_task:
   description: >
@@ -20,6 +35,6 @@ evaluate_policy_task:
 
     INSTRUCTIONS:
     1. Use the `search_policy_documents` tool to query the enterprise knowledge base.
-    2. Formulate a clear conversational text response based strictly on the retrieved manuals.
+    2. Formulate a conversational text response based ONLY on the retrieved manuals.
   expected_output: >
     A clear conversational text response ready for UI display.
