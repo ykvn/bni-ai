@@ -1,12 +1,12 @@
 draft_sql_task:
   description: >
     Process the following user query: '{user_question}'
-
+    {schema_context}
     INSTRUCTIONS - YOU MUST FOLLOW THESE IN EXACT ORDER:
     1. FIRST, use the `get_database_schema` tool. YOU MUST NOT guess table names.
     2. (Optional) Use `search_golden_queries` to reference complex SQL templates.
     3. Draft your Cloudera Impala SELECT statement based ONLY on the schema tool output.
-    4. Use the `execute_banking_query` tool to run the query against the database. 
+    4. YOU MUST USE the `execute_banking_query` tool to run the query against the database. 
     
     CRITICAL RULE: DO NOT MAKE UP OR HALLUCINATE DATA. You MUST use the `execute_banking_query` tool and use the EXACT raw JSON output it returns. If you do not use the execute tool, you will fail the task.
 
