@@ -3,7 +3,7 @@ draft_sql_task:
     Process the following user query: '{user_question}'
 
     INSTRUCTIONS - STRICTLY SEQUENTIAL WORKFLOW:
-    1. SCHEMA DISCOVERY: Use the `get_database_schema` tool to find the correct table names and columns.
+    1. SCHEMA DISCOVERY: You MUST Use the `get_database_schema` tool to find the correct table names and columns.
     2. QUERY DRAFTING: Draft your Cloudera Impala SELECT statement using the discovered tables.
     3. QUERY EXECUTION: You MUST use the `execute_banking_query` tool to run your drafted SQL statement.
     4. ERROR HANDLING: If the tool returns an error, fix the SQL and execute it again until successful.
