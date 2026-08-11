@@ -4,10 +4,9 @@ import asyncio
 import re
 from crewai_service.app.core import job_db
 
-# 🚀 IMPORT YOUR @CrewBase WORKFLOWS HERE
-from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent
+# Import agents + call_mcp for execution
+from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent, call_mcp
 
-# Module-level registry of active tasks for cancellation support
 _active_tasks: dict[str, asyncio.Task] = {}
 
 POLICY_KEYWORDS = (
@@ -23,7 +22,6 @@ def _is_cancelled(job_id: str) -> bool:
     return job is not None and job.get("status") == "cancelled"
 
 async def _process_single_job(job: dict):
-    """Executes a single job independently in its own async task context."""
     job_id = job["job_id"]
     user_question = job["question"]
 
@@ -46,22 +44,20 @@ async def _process_single_job(job: dict):
                 "response": agent_response
             }
         else:
-            # --- 2. RUN SQL AGENT WORKFLOW ---
-            # Returns a CrewOutput object now!
-            agent_result = await run_sql_agent(user_question)
+            # --- 2. RUN AGENT FOR SCHEMA INSPECTION & SQL DRAFTING ---
+            agent_response = await run_sql_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
 
-            # Attempt to parse the resulting Pydantic object
-            try:
-                if hasattr(agent_result, 'pydantic') and agent_result.pydantic:
-                    # CrewAI successfully mapped the LLM output to our SQLResultSchema
-                    sql_data = agent_result.pydantic.dict()
-                    predicted_sql = sql_data.get("predicted_sql", "")
-                    records = sql_data.get("data", [])
-                else:
-                    raise ValueError("Pydantic output is missing from CrewResult.")
+            # Clean raw SQL string returned by the Agent
+            predicted_sql = re.sub(r"```sql|```", "", agent_response).strip()
 
+            # --- 3. EXECUTE SQL AGAINST IMPALA VIA MCP ---
+            print(f"\n⚙️ [ENGINE EXECUTION] Running SQL against MCP: {predicted_sql}", flush=True)
+            raw_data_json = await call_mcp("execute_banking_query", {"sql_query": predicted_sql})
+
+            try:
+                records = json.loads(raw_data_json)
                 payload = {
                     "question": user_question,
                     "status": "Success",
@@ -71,16 +67,16 @@ async def _process_single_job(job: dict):
                     "data": records,
                     "response": None
                 }
-            except Exception as parse_err:
-                # Fallback if agent fails to adhere to Pydantic structure
+            except json.JSONDecodeError:
+                # Catch SQL execution or syntax errors returned by Impala
                 payload = {
                     "question": user_question,
                     "status": "Success",
                     "type": "Conversational",
-                    "predicted_sql": None,
+                    "predicted_sql": predicted_sql,
                     "row_count": 0,
                     "data": [],
-                    "response": str(agent_result)
+                    "response": f"Cloudera Impala Error: {raw_data_json}"
                 }
 
         job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
@@ -94,19 +90,15 @@ async def _process_single_job(job: dict):
         print(f"❌ [CrewAI Engine Error] Task {job_id} failed: {e}", flush=True)
         job_db.update_job_status(job_id, status="failed", error=str(e))
 
-
 def cancel_job(job_id: str) -> bool:
-    """Cancels pending jobs in DB or actively running asyncio tasks."""
     db_cancelled = job_db.cancel_job(job_id)
     task = _active_tasks.get(job_id)
     if task is not None and not task.done():
-        task.cancel()  # Aborts LLM execution immediately
+        task.cancel()
         return True
     return db_cancelled
 
-
 async def run_worker_loop(max_concurrent_jobs: int = 5):
-    """Non-blocking worker loop processing pending jobs in parallel."""
     print(f"🤖 [CrewAI Service Engine] Starting worker loop...", flush=True)
     job_db.init_db()
     semaphore = asyncio.Semaphore(max_concurrent_jobs)

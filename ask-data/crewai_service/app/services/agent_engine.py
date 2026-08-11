@@ -1,8 +1,6 @@
 import os
 import httpx
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any
 
 from crewai import Agent, Crew, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
@@ -49,12 +47,6 @@ async def mcp_search_golden_queries(user_question: str) -> str:
     print(f"\n🛠️ [AGENT ACTION] LLM triggered 'search_golden_queries' with: {user_question}", flush=True)
     return await call_mcp("search_golden_queries", {"user_question": user_question})
 
-@tool("execute_banking_query")
-async def mcp_execute_banking_query(sql_query: str) -> str:
-    """Executes Impala SQL. Returns raw JSON rows or an error message if syntax is wrong."""
-    print(f"\n🛠️ [AGENT ACTION] LLM triggered 'execute_banking_query' with SQL:\n{sql_query}", flush=True)
-    return await call_mcp("execute_banking_query", {"sql_query": sql_query})
-
 @tool("search_policy_documents")
 async def mcp_search_policy_documents(query: str) -> str:
     """Searches enterprise banking manuals, SOPs, and compliance guidelines."""
@@ -62,13 +54,7 @@ async def mcp_search_policy_documents(query: str) -> str:
     return await call_mcp("search_policy_documents", {"query": query})
 
 
-# --- 3. PYDANTIC SCHEMA ---
-class SQLResultSchema(BaseModel):
-    predicted_sql: str = Field(description="The exact SQL statement executed against the database.")
-    data: List[Dict[str, Any]] = Field(description="The raw array of records returned by execute_banking_query.")
-
-
-# --- 4. CREWBASE CLASSES ---
+# --- 3. CREWBASE CLASSES ---
 @CrewBase
 class SQLAgentCrew:
     agents_config = str(_CONFIG_DIR / "agents.yaml")
@@ -79,15 +65,14 @@ class SQLAgentCrew:
         return Agent(
             config=self.agents_config['sql_developer'],
             llm=GLOBAL_LLM,
-            tools=[mcp_get_database_schema, mcp_search_golden_queries, mcp_execute_banking_query]
+            tools=[mcp_get_database_schema, mcp_search_golden_queries]  # Pure SQL translation tools
         )
 
     @task
     def draft_sql_task(self) -> Task:
         return Task(
             config=self.tasks_config['draft_sql_task'],
-            agent=self.sql_developer(),
-            output_pydantic=SQLResultSchema  # Added Pydantic Schema enforcement
+            agent=self.sql_developer()
         )
 
     @crew
@@ -120,11 +105,10 @@ class RAGAgentCrew:
         return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
 
 
-# --- 5. EXPOSED ASYNC WORKFLOWS ---
-async def run_sql_agent(user_question: str):
-    # Removed str() here so we return the raw CrewOutput object!
+# --- 4. EXPOSED ASYNC WORKFLOWS ---
+async def run_sql_agent(user_question: str) -> str:
     result = await SQLAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
-    return result
+    return str(result)
 
 async def run_rag_agent(user_question: str) -> str:
     result = await RAGAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
