@@ -28,31 +28,15 @@ def agent_step_callback(agent_action):
         log_ts(f"🤖 AGENT ACTION: Triggering Tool '{agent_action.tool}'")
 
 
-# --- 1. OPTIMIZED LLM SETUP ---
-
-# FAST LLM: Used for Agent 1 (schema_analyst) and Agent 3 (sql_executor).
-# max_tokens=400 caps token generation, preventing the LLM from spending 10-20 seconds 
-# re-typing long conversational paragraphs or entire schema dumps after tool completion.
-FAST_LLM = LLM(
+# --- 1. GLOBAL SETUP ---
+GLOBAL_LLM = LLM(
     model=f"openai/{os.getenv('CML_MODEL_NAME')}",
     base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
     api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
     temperature=0.0,
-    max_tokens=400
+    max_tokens=4096
 )
 
-# REASONING LLM: Used for Agent 2 (sql_developer) and RAG tasks.
-# Retains high token capacity for drafting complex SQL joins and multi-table queries.
-REASONING_LLM = LLM(
-    model=f"openai/{os.getenv('CML_MODEL_NAME')}",
-    base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
-    api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
-    temperature=0.0,
-    max_tokens=1500
-)
-
-
-# --- 2. MCP ASYNC CLIENT ---
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:
     start_time = datetime.now()
     log_ts(f"🔌 MCP Call Started: '{tool_name}'")
@@ -73,7 +57,7 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
             return res.content[0].text if res and res.content else ""
 
 
-# --- 3. CREWAI MCP TOOLS ---
+# --- 2. CREWAI MCP TOOLS ---
 @tool("get_database_schema")
 async def mcp_get_database_schema(user_question: str) -> str:
     """CRITICAL FIRST STEP: Retrieves table names and columns based on the user query."""
@@ -99,38 +83,35 @@ async def mcp_search_policy_documents(query: str) -> str:
     return await call_mcp("search_policy_documents", {"query": query})
 
 
-# --- 4. CREWBASE CLASSES ---
+# --- 3. CREWBASE CLASSES ---
 @CrewBase
 class SQLAgentCrew:
     agents_config = str(_CONFIG_DIR / "agents.yaml")
     tasks_config = str(_CONFIG_DIR / "tasks.yaml")
 
-    # AGENT 1: Assigned FAST_LLM (Fast tool trigger, capped echo length)
     @agent
     def schema_analyst(self) -> Agent:
         return Agent(
             config=self.agents_config['schema_analyst'],
-            llm=FAST_LLM,
+            llm=GLOBAL_LLM,
             tools=[mcp_get_database_schema, mcp_search_golden_queries],
             step_callback=agent_step_callback
         )
 
-    # AGENT 2: Assigned REASONING_LLM (Full capacity for SQL logic & joins)
     @agent
     def sql_developer(self) -> Agent:
         return Agent(
             config=self.agents_config['sql_developer'],
-            llm=REASONING_LLM,
+            llm=GLOBAL_LLM,
             tools=[],
             step_callback=agent_step_callback
         )
 
-    # AGENT 3: Assigned FAST_LLM (Fast tool execution & data pass-through)
     @agent
     def sql_executor(self) -> Agent:
         return Agent(
             config=self.agents_config['sql_executor'],
-            llm=FAST_LLM,
+            llm=GLOBAL_LLM,
             tools=[mcp_execute_banking_query],
             step_callback=agent_step_callback
         )
@@ -180,7 +161,7 @@ class RAGAgentCrew:
     def compliance_officer(self) -> Agent:
         return Agent(
             config=self.agents_config['compliance_officer'],
-            llm=REASONING_LLM,
+            llm=GLOBAL_LLM,
             tools=[mcp_search_policy_documents]
         )
 
@@ -196,7 +177,7 @@ class RAGAgentCrew:
         return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
 
 
-# --- 5. EXPOSED ASYNC WORKFLOWS ---
+# --- 4. EXPOSED ASYNC WORKFLOWS ---
 async def run_sql_agent(user_question: str):
     log_ts("🚀 SQLAgentCrew Execution Initiated")
     result = await SQLAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
