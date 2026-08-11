@@ -25,6 +25,7 @@ def main():
     os.environ["CUBEJS_DEV_MODE"] = "false"
     os.environ["CUBEJS_TELEMETRY"] = "false"
     os.environ["CUBEJS_WEB_SOCKETS"] = "false"
+    os.environ["CUBEJS_API_SECRET"] = "Cloudera1!"
     
     print(f"🌐 Starting Node.js on port {app_port}...", flush=True)
     
