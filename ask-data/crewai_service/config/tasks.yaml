@@ -16,7 +16,7 @@ draft_sql_task:
     Using strictly the database schema retrieved in `fetch_schema_task`, write a valid Cloudera Impala SELECT query.
 
     OPERATIONAL GUARDRAILS:
-    - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context (e.g., `cai_savings`, `cai_transactions`). DO NOT invent generic table names like 'customers' or 'accounts'.
+    - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context. DO NOT invent generic table names outside the retrieved schema context.
     - READ ONLY: Only write SELECT statements.
   expected_output: >
     Output ONLY the raw Cloudera Impala SELECT statement. Do not wrap it in markdown code blocks (```sql), do not use JSON, and do not include conversational commentary.
