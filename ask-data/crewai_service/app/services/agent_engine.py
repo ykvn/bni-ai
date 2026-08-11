@@ -1,7 +1,8 @@
 import os
-import json
 import httpx
 from pathlib import Path
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any
 
 from crewai import Agent, Crew, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
@@ -21,7 +22,6 @@ GLOBAL_LLM = LLM(
 )
 
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:
-    """Lightweight transport layer for CrewAI to hit the MCP Gateway over SSE."""
     url = f"{os.getenv('MCP_SERVER_URL', '').rstrip('/')}/sse"
     headers = build_cml_headers(os.getenv("CML_TOKEN"))
     
@@ -62,10 +62,15 @@ async def mcp_search_policy_documents(query: str) -> str:
     return await call_mcp("search_policy_documents", {"query": query})
 
 
-# --- 3. CREWBASE CLASSES ---
+# --- 3. PYDANTIC SCHEMA ---
+class SQLResultSchema(BaseModel):
+    predicted_sql: str = Field(description="The exact SQL statement executed against the database.")
+    data: List[Dict[str, Any]] = Field(description="The raw array of records returned by execute_banking_query.")
+
+
+# --- 4. CREWBASE CLASSES ---
 @CrewBase
 class SQLAgentCrew:
-    """Crew for autonomous SQL generation and execution"""
     agents_config = str(_CONFIG_DIR / "agents.yaml")
     tasks_config = str(_CONFIG_DIR / "tasks.yaml")
 
@@ -81,7 +86,8 @@ class SQLAgentCrew:
     def draft_sql_task(self) -> Task:
         return Task(
             config=self.tasks_config['draft_sql_task'],
-            agent=self.sql_developer()
+            agent=self.sql_developer(),
+            output_pydantic=SQLResultSchema  # Added Pydantic Schema enforcement
         )
 
     @crew
@@ -91,7 +97,6 @@ class SQLAgentCrew:
 
 @CrewBase
 class RAGAgentCrew:
-    """Crew for autonomous knowledge base policy evaluation"""
     agents_config = str(_CONFIG_DIR / "agents.yaml")
     tasks_config = str(_CONFIG_DIR / "tasks.yaml")
 
@@ -115,10 +120,11 @@ class RAGAgentCrew:
         return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
 
 
-# --- 4. EXPOSED ASYNC WORKFLOWS ---
-async def run_sql_agent(user_question: str) -> str:
+# --- 5. EXPOSED ASYNC WORKFLOWS ---
+async def run_sql_agent(user_question: str):
+    # Removed str() here so we return the raw CrewOutput object!
     result = await SQLAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
-    return str(result)
+    return result
 
 async def run_rag_agent(user_question: str) -> str:
     result = await RAGAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})

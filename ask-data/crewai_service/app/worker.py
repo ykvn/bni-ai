@@ -47,27 +47,32 @@ async def _process_single_job(job: dict):
             }
         else:
             # --- 2. RUN SQL AGENT WORKFLOW ---
-            agent_response = await run_sql_agent(user_question)
+            # Returns a CrewOutput object now!
+            agent_result = await run_sql_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
 
-            # Attempt to parse the JSON output defined in tasks.yaml
+            # Attempt to parse the resulting Pydantic object
             try:
-                clean_json = re.sub(r"```json|```", "", agent_response).strip()
-                parsed_data = json.loads(clean_json)
-                records = parsed_data.get("data", [])
+                if hasattr(agent_result, 'pydantic') and agent_result.pydantic:
+                    # CrewAI successfully mapped the LLM output to our SQLResultSchema
+                    sql_data = agent_result.pydantic.dict()
+                    predicted_sql = sql_data.get("predicted_sql", "")
+                    records = sql_data.get("data", [])
+                else:
+                    raise ValueError("Pydantic output is missing from CrewResult.")
 
                 payload = {
                     "question": user_question,
                     "status": "Success",
                     "type": "SQL",
-                    "predicted_sql": parsed_data.get("predicted_sql"),
+                    "predicted_sql": predicted_sql,
                     "row_count": len(records),
                     "data": records,
                     "response": None
                 }
-            except json.JSONDecodeError:
-                # Fallback if agent responds conversationally
+            except Exception as parse_err:
+                # Fallback if agent fails to adhere to Pydantic structure
                 payload = {
                     "question": user_question,
                     "status": "Success",
@@ -75,7 +80,7 @@ async def _process_single_job(job: dict):
                     "predicted_sql": None,
                     "row_count": 0,
                     "data": [],
-                    "response": agent_response
+                    "response": str(agent_result)
                 }
 
         job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
