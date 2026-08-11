@@ -2,8 +2,8 @@ import sys
 import json
 import asyncio
 import re
+from datetime import datetime
 from crewai_service.app.core import job_db
-
 from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent
 
 _active_tasks: dict[str, asyncio.Task] = {}
@@ -12,6 +12,10 @@ POLICY_KEYWORDS = (
     "kebijakan", "sop", "prosedur", "manual", "panduan", "kriteria",
     "aturan", "regulasi", "dokumen", "syarat", "sk", "surat keputusan"
 )
+
+def log_ts(msg: str):
+    ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    print(f"⏱️ [{ts}] {msg}", flush=True)
 
 def is_policy_question(question: str) -> bool:
     return any(keyword in question.casefold() for keyword in POLICY_KEYWORDS)
@@ -23,12 +27,12 @@ def _is_cancelled(job_id: str) -> bool:
 async def _process_single_job(job: dict):
     job_id = job["job_id"]
     user_question = job["question"]
+    job_start_time = datetime.now()
 
     try:
-        print(f"\n⚡ [CrewAI Engine] Executing Job {job_id}: '{user_question}'", flush=True)
+        log_ts(f"⚡ [Worker Engine] Starting Job {job_id}: '{user_question[:50]}...'")
 
         if is_policy_question(user_question):
-            # --- 1. RUN RAG AGENT WORKFLOW ---
             agent_response = await run_rag_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
@@ -43,23 +47,18 @@ async def _process_single_job(job: dict):
                 "response": agent_response
             }
         else:
-            # --- 2. RUN 3-STEP SEQUENTIAL SQL CREW ---
             crew_output = await run_sql_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
 
-            # Extract outputs from each sequential task
             tasks = getattr(crew_output, 'tasks_output', [])
             
-            # Task 2 Output: Predicted SQL
             raw_sql = tasks[1].raw if len(tasks) > 1 else str(crew_output)
             predicted_sql = re.sub(r"```sql|```", "", raw_sql).strip()
 
-            # Task 3 Output: Executed Impala Records
             raw_data = tasks[2].raw if len(tasks) > 2 else "[]"
 
             try:
-                # Clean up markdown in case the LLM wrapped the JSON
                 clean_json = re.sub(r"```json|```", "", raw_data).strip()
                 records = json.loads(clean_json)
                 if not isinstance(records, list):
@@ -86,14 +85,15 @@ async def _process_single_job(job: dict):
                 }
 
         job_db.update_job_status(job_id, status="completed", result=json.dumps(payload))
-        print(f"✅ [CrewAI Engine] Finished Job {job_id}", flush=True)
+        total_time = (datetime.now() - job_start_time).total_seconds()
+        log_ts(f"✅ [Worker Engine] Job {job_id} Completed in {total_time:.2f}s TOTAL")
 
     except asyncio.CancelledError:
-        print(f"🚫 [CrewAI Engine] Job {job_id} was cancelled.", flush=True)
+        log_ts(f"🚫 [Worker Engine] Job {job_id} was cancelled.")
         job_db.update_job_status(job_id, status="cancelled", error="Job cancelled by user request.")
         raise
     except Exception as e:
-        print(f"❌ [CrewAI Engine Error] Task {job_id} failed: {e}", flush=True)
+        log_ts(f"❌ [Worker Engine Error] Task {job_id} failed: {e}")
         job_db.update_job_status(job_id, status="failed", error=str(e))
 
 def cancel_job(job_id: str) -> bool:
@@ -105,7 +105,7 @@ def cancel_job(job_id: str) -> bool:
     return db_cancelled
 
 async def run_worker_loop(max_concurrent_jobs: int = 5):
-    print(f"🤖 [CrewAI Service Engine] Starting worker loop...", flush=True)
+    log_ts("🤖 [Worker Engine] Starting worker loop...")
     job_db.init_db()
     semaphore = asyncio.Semaphore(max_concurrent_jobs)
 
@@ -128,5 +128,5 @@ async def run_worker_loop(max_concurrent_jobs: int = 5):
             task.add_done_callback(lambda fut, jid=job_id: _active_tasks.pop(jid, None))
 
         except Exception as e:
-            print(f"❌ [CrewAI Engine Dispatch Error]: {e}", flush=True)
+            log_ts(f"❌ [Worker Dispatch Error]: {e}")
             await asyncio.sleep(1.0)
