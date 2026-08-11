@@ -13,7 +13,7 @@ draft_sql_task:
     Process the user query: '{user_question}'
 
     DATABASE SCHEMA:
-    {schema}
+    {db_schema}
 
     PREVIOUS ERROR TO FIX (If Empty, ignore):
     {error_context}

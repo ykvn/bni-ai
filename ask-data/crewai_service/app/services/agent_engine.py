@@ -182,7 +182,7 @@ class RAGAgentCrew:
 # --- 4. STATE AND FLOW ---
 class SQLState(BaseModel):
     user_question: str = ""
-    schema: str = ""
+    db_schema: str = ""  # 🚀 Renamed to avoid Pydantic conflict
     sql_query: str = ""
     error_context: str = ""
     final_data: str = ""
@@ -199,7 +199,7 @@ class SQLGenerationFlow(Flow[SQLState]):
             tasks=[crew_instance.fetch_schema_task()]
         )
         result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
-        self.state.schema = result.raw
+        self.state.db_schema = result.raw  # 🚀 Updated
         return "schema_fetched"
 
     @listen("schema_fetched")
@@ -212,9 +212,10 @@ class SQLGenerationFlow(Flow[SQLState]):
         )
         result = await crew.kickoff_async(inputs={
             "user_question": self.state.user_question,
-            "schema": self.state.schema,
+            "db_schema": self.state.db_schema,  # 🚀 Updated to match tasks.yaml
             "error_context": self.state.error_context
         })
+        import re
         self.state.sql_query = re.sub(r"```sql|```", "", result.raw).strip()
         return "sql_drafted"
 
