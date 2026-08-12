@@ -1,5 +1,5 @@
 """
-Converts bni_dbt_definitions_2.xlsx into bni_dbt_schema.yaml
+Converts bni_dbt_definitions.xlsx into bni_dbt_schema.yaml
 Path: /home/cdsw/ask-data/dbt_service/app/core/excel_to_dbt.py
 """
 import sys
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     except Exception:
         ask_data_root = Path("/home/cdsw/ask-data")
 
-    input_excel = ask_data_root / "data" / "bni_dbt_definitions_2.xlsx"
+    input_excel = ask_data_root / "data" / "bni_dbt_definitions.xlsx"
     output_yaml = ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
     
     print(f"📂 Input Source: {input_excel}")

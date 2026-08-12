@@ -29,15 +29,10 @@ semantic_models:
   - name: bank_name
     type: categorical
     expr: bank_name
-    description: The banking institution name (e.g., 'ABC', 'BNI'). Filter by this
-      when queries specify a particular bank's customers.
-    meta:
-      value_mode: DYNAMIC_SQL_INDEX
-      synonyms:
-      - BNI
-      - Bank BNI
-      - Bank Negara Indonesia
-      - PT Bank Negara Indonesia
+    description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
+      this when queries specify a particular bank''s customers. [LLM Context: Mode:
+      DYNAMIC_SQL_INDEX | Synonyms: [Bank BNI, Bank Negara Indonesia, PT Bank Negara
+      Indonesia, BNI]]'
   - name: join_date
     type: time
     expr: join_date
@@ -73,23 +68,9 @@ semantic_models:
   - name: status
     type: categorical
     expr: status
-    description: Account state. Expected values are 'ACTIVE' or 'DORMANT'.
-    meta:
-      value_mode: STATIC_ENUM
-      allowed_values:
-      - ACTIVE
-      - DORMANT
-      synonyms:
-      - dormant
-      - 180 hari
-      - active
-      - pasif
-      - berjalan
-      - live
-      - aktif
-      - lancar
-      - non-aktif
-      - mati
+    description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
+      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [pasif,
+      non-aktif, 180 hari, lancar, aktif, dormant, berjalan, mati, active, live]]'
   measures:
   - name: cai_savings_balance_sum
     expr: balance
@@ -144,13 +125,8 @@ semantic_models:
   - name: status
     type: categorical
     expr: status
-    description: The current status state of the investment term (e.g., 'ACTIVE').
-    meta:
-      value_mode: STATIC_ENUM
-      allowed_values:
-      - ACTIVE
-      - MATURED
-      - CANCELLED
+    description: 'The current status state of the investment term (e.g., ''ACTIVE'').
+      [LLM Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, MATURED, CANCELLED]]'
   measures:
   - name: cai_deposits_principal_amount_sum
     expr: principal_amount
@@ -186,28 +162,10 @@ semantic_models:
   - name: loan_type
     type: categorical
     expr: loan_type
-    description: Type of loan facility (e.g., 'Home', 'Auto', 'Personal').
-    meta:
-      value_mode: STATIC_ENUM
-      allowed_values:
-      - Home
-      - Auto
-      - Personal
-      synonyms:
-      - home loan
-      - tanpa agunan
-      - KPR
-      - motor
-      - rumah
-      - kredit pemilikan rumah
-      - KMT
-      - property
-      - kendaraan
-      - auto loan
-      - personal loan
-      - perorangan
-      - KTA
-      - mobil
+    description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
+      [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Synonyms:
+      [rumah, home loan, KPR, kredit pemilikan rumah, motor, perorangan, mobil, property,
+      KMT, kendaraan, personal loan, tanpa agunan, auto loan, KTA]]'
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -225,13 +183,8 @@ semantic_models:
   - name: status
     type: categorical
     expr: status
-    description: Operational loan indicator flag status state (e.g., 'ACTIVE').
-    meta:
-      value_mode: STATIC_ENUM
-      allowed_values:
-      - ACTIVE
-      - PAID_OFF
-      - DEFAULTED
+    description: 'Operational loan indicator flag status state (e.g., ''ACTIVE'').
+      [LLM Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, PAID_OFF, DEFAULTED]]'
   measures:
   - name: cai_loans_principal_amount_sum
     expr: principal_amount
@@ -288,13 +241,8 @@ semantic_models:
   - name: status
     type: categorical
     expr: status
-    description: Revolving line risk indicators. Expected values are 'ACTIVE' or 'WARNING'.
-    meta:
-      value_mode: STATIC_ENUM
-      allowed_values:
-      - ACTIVE
-      - WARNING
-      - BLOCKED
+    description: 'Revolving line risk indicators. Expected values are ''ACTIVE'' or
+      ''WARNING''. [LLM Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, WARNING, BLOCKED]]'
   measures:
   - name: cai_credit_cards_credit_limit_sum
     expr: credit_limit
@@ -331,25 +279,10 @@ semantic_models:
   - name: transaction_type
     type: categorical
     expr: transaction_type
-    description: Accounting ledger category direction. Expected values are 'DEBIT'
-      (withdrawals/charges) or 'CREDIT' (deposits/payroll).
-    meta:
-      value_mode: STATIC_ENUM
-      allowed_values:
-      - DEBIT
-      - CREDIT
-      synonyms:
-      - tarik tunai
-      - gaji
-      - kredit
-      - transfer keluar
-      - potongan
-      - payroll
-      - penarikan
-      - setoran
-      - topup
-      - debit
-      - masuk
+    description: 'Accounting ledger category direction. Expected values are ''DEBIT''
+      (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
+      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [debit, transfer keluar,
+      tarik tunai, topup, potongan, setoran, payroll, kredit, penarikan, gaji, masuk]]'
   - name: transaction_timestamp
     type: time
     expr: transaction_timestamp
@@ -385,17 +318,13 @@ semantic_models:
   - name: branch_name
     type: categorical
     expr: branch_name
-    description: The clean geographical or municipal name designation of the branch
-      location.
-    meta:
-      value_mode: DYNAMIC_SQL_INDEX
+    description: 'The clean geographical or municipal name designation of the branch
+      location. [LLM Context: Mode: DYNAMIC_SQL_INDEX]'
   - name: region
     type: categorical
     expr: region
-    description: The broader provincial administrative territory area grouping (e.g.,
-      'DKI Jakarta').
-    meta:
-      value_mode: DYNAMIC_SQL_INDEX
+    description: 'The broader provincial administrative territory area grouping (e.g.,
+      ''DKI Jakarta''). [LLM Context: Mode: DYNAMIC_SQL_INDEX]'
   - name: total_active_customers
     type: categorical
     expr: total_active_customers
