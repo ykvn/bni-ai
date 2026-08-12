@@ -22,6 +22,14 @@ from litellm.integrations.custom_logger import CustomLogger
 from generate_token import get_cdp_token
 from shared.cml_auth import build_cml_headers
 
+import logging
+# --- SILENCE CML HEALTH CHECK LOG ---
+class HealthCheckFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        # Hide "GET / " or "GET /healthz" health check requests from CML
+        return "GET / " not in record.getMessage() and "GET /health" not in record.getMessage()
+
+logging.getLogger("uvicorn.access").addFilter(HealthCheckFilter())
 
 class DynamicCDPAuthHandler(CustomLogger):
     """
