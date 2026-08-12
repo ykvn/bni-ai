@@ -46,7 +46,7 @@ def trigger_dbt_preflight_checks(dbt_service_dir: Path, env: dict | None = None)
             profile_content = f"""
 default:
   target: dev
-  targets:
+  outputs:
     dev:
       type: impala
       host: {impala_host}
