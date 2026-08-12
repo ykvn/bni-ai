@@ -116,7 +116,7 @@ def build_ui() -> object:
             if not question.strip():
                 yield (
                     gr.update(visible=False, value=""),
-                    "Please enter a valid question.",
+                    gr.update(visible=(qtype != "rag"), value="Please enter a valid question."),
                     gr.update(visible=False),
                     gr.update(interactive=True),
                     gr.update(visible=False, interactive=False)
@@ -134,7 +134,7 @@ def build_ui() -> object:
             )
             yield (
                 gr.update(visible=True, value=initial_job_box),
-                "Submitting question to CrewAI Engine...",
+                gr.update(visible=(qtype != "rag"), value="Submitting question to CrewAI Engine..."),
                 gr.update(visible=False),
                 gr.update(interactive=False),
                 gr.update(visible=True, interactive=True)
@@ -165,7 +165,7 @@ def build_ui() -> object:
                             job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_cancelled),
-                                "\u274c Request was cancelled by user.",
+                                gr.update(visible=(qtype != "rag"), value="\u274c Request was cancelled by user."),
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -203,7 +203,7 @@ def build_ui() -> object:
                             job_box_completed = format_job_info(job_id, "SUCCESS", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_completed),
-                                text_out,
+                                gr.update(visible=(qtype == "sql") or bool(str(text_out).strip()), value=text_out),
                                 df_out,
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -215,7 +215,7 @@ def build_ui() -> object:
                             job_box_failed = format_job_info(job_id, "FAILED", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_failed),
-                                f"\u274c Task Failed:\n{error_msg}",
+                                gr.update(visible=(qtype != "rag"), value=f"\u274c Task Failed:\n{error_msg}"),
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -226,7 +226,7 @@ def build_ui() -> object:
                             job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_cancelled),
-                                "\u274c Request was cancelled.",
+                                gr.update(visible=(qtype != "rag"), value="\u274c Request was cancelled."),
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -237,7 +237,7 @@ def build_ui() -> object:
                             job_box_running = format_job_info(job_id, status, start_time, is_final=False)
                             yield (
                                 gr.update(visible=True, value=job_box_running),
-                                "\u23f3 CrewAI is currently executing your request...",
+                                gr.update(visible=(qtype != "rag"), value="\u23f3 CrewAI is currently executing your request..."),
                                 gr.update(visible=False),
                                 gr.update(interactive=False),
                                 gr.update(visible=True, interactive=True)
@@ -247,7 +247,7 @@ def build_ui() -> object:
                     job_box_direct = format_job_info("N/A (Direct)", "SUCCESS", start_time, is_final=True)
                     yield (
                         gr.update(visible=True, value=job_box_direct),
-                        text_out,
+                        gr.update(visible=(qtype == "sql") or bool(str(text_out).strip()), value=text_out),
                         df_out,
                         gr.update(interactive=True),
                         gr.update(visible=False, interactive=False)
@@ -258,7 +258,7 @@ def build_ui() -> object:
                 job_box_err = format_job_info("ERROR", "FAILED", start_time, is_final=True)
                 yield (
                     gr.update(visible=True, value=job_box_err),
-                    f"\u274c Exception Error:\n{error_details}",
+                    gr.update(visible=(qtype != "rag"), value=f"\u274c Exception Error:\n{error_details}"),
                     gr.update(visible=False),
                     gr.update(interactive=True),
                     gr.update(visible=False, interactive=False)
@@ -276,7 +276,7 @@ def build_ui() -> object:
                     print(f"Cancel request error: {e}", flush=True)
             return (
                 gr.update(visible=True, value="### \u23f3 Cancellation requested..."),
-                "Cancelling request...",
+                gr.update(visible=(qtype != "rag"), value="Cancelling request..."),
                 gr.update(visible=False),
                 gr.update(interactive=True),
                 gr.update(visible=False, interactive=False)
@@ -330,7 +330,7 @@ def build_ui() -> object:
                 rag_cancel_btn = gr.Button("Cancel", visible=False)
 
             rag_job_info_box = gr.Markdown(visible=False)
-            rag_output_text = gr.Textbox(label="Answer", lines=12, interactive=False)
+            rag_output_text = gr.Textbox(label="Answer", lines=12, interactive=False, visible=False)
             rag_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
             rag_ask, rag_cancel = make_tab_handlers()
