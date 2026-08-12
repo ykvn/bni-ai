@@ -51,7 +51,7 @@ CROSS JOIN numbers d
         "entities": [{
             "name": "date_id",           # ✅ Renamed entity to avoid namespace collision
             "type": "primary",
-            "expr": "date_day"           # ✅ Still points to the correct SQL column
+            "expr": "date_day"           # ✅ Points to the correct SQL column
         }],
         "dimensions": [{
             "name": "date_day",
@@ -64,12 +64,17 @@ CROSS JOIN numbers d
     # 3. Process Business Tables
     for _, table in tables_df.iterrows():
         table_name = str(table["Table Name"]).strip()
+        custom_schema = str(table.get("Schema / Database", "")).strip()
         table_cols = cols_df[cols_df["Table Name"] == table_name]
 
-        # Generate dbt stub SQL file
+        # Generate dbt stub SQL file with dynamic schema support
         sql_path = models_dir / f"{table_name}.sql"
         with open(sql_path, "w") as sql_file:
-            sql_file.write(f"select * from {{{{ target.schema }}}}.{table_name}\n")
+            if custom_schema and custom_schema.lower() != "nan":
+                sql_file.write(f"{{{{ config(schema='{custom_schema}') }}}}\n")
+                sql_file.write(f"select * from {custom_schema}.{table_name}\n")
+            else:
+                sql_file.write(f"select * from {{{{ target.schema }}}}.{table_name}\n")
 
         entities = []
         dimensions = []
@@ -101,16 +106,27 @@ CROSS JOIN numbers d
                 if pd.notna(static_vals):
                     meta_parts.append(f"Allowed: [{str(static_vals).strip()}]")
 
+                # ✅ FIX: Map value-level Database Values, Synonyms, and Context
                 if not vals_df.empty:
                     col_mappings = vals_df[(vals_df["Table Name"] == table_name) & (vals_df["Column Name"] == col_name)]
                     if not col_mappings.empty:
-                        synonyms_list = []
+                        value_entries = []
                         for _, mapping_row in col_mappings.iterrows():
-                            syns = [s.strip() for s in str(mapping_row.get("Synonyms / User Phrasing", "")).split(",") if s.strip()]
-                            synonyms_list.extend(syns)
+                            db_val = str(mapping_row.get("Database Value", "")).strip()
+                            syns = str(mapping_row.get("Synonyms / User Phrasing", "")).strip()
+                            ctx = str(mapping_row.get("Description / Context", "")).strip()
+                            
+                            if db_val and db_val.lower() != "nan":
+                                entry = f"{db_val}"
+                                syn_list = [s.strip() for s in syns.split(",") if s.strip() and s.lower() != "nan"]
+                                if syn_list:
+                                    entry += f" (Synonyms: {', '.join(syn_list)})"
+                                if ctx and ctx.lower() != "nan":
+                                    entry += f" - {ctx}"
+                                value_entries.append(entry)
                         
-                        if synonyms_list:
-                            meta_parts.append(f"Synonyms: [{', '.join(set(synonyms_list))}]")
+                        if value_entries:
+                            meta_parts.append(f"Value Mappings: [{'; '.join(value_entries)}]")
                 
                 if meta_parts:
                     base_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
@@ -202,7 +218,6 @@ if __name__ == "__main__":
     except Exception:
         ask_data_root = Path("/home/cdsw/ask-data")
 
-    # Corrected Excel path
     input_excel = ask_data_root / "data" / "bni_dbt_definitions.xlsx"
     output_yaml = ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
 

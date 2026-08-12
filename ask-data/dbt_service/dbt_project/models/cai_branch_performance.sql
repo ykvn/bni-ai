@@ -1,1 +1,2 @@
-select * from {{ target.schema }}.cai_branch_performance
+{{ config(schema='test') }}
+select * from test.cai_branch_performance

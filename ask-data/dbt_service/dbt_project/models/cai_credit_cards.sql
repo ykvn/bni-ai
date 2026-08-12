@@ -1,1 +1,2 @@
-select * from {{ target.schema }}.cai_credit_cards
+{{ config(schema='test') }}
+select * from test.cai_credit_cards

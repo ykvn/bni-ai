@@ -44,8 +44,8 @@ semantic_models:
     expr: bank_name
     description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
       this when queries specify a particular bank''s customers. [LLM Context: Mode:
-      DYNAMIC_SQL_INDEX | Synonyms: [PT Bank Negara Indonesia, BNI, Bank Negara Indonesia,
-      Bank BNI]]'
+      DYNAMIC_SQL_INDEX | Value Mappings: [BNI (Synonyms: Bank Negara Indonesia, BNI,
+      Bank BNI, PT Bank Negara Indonesia) - Core bank entity designation.]]'
   - name: join_date
     type: time
     expr: join_date
@@ -81,8 +81,9 @@ semantic_models:
     type: categorical
     expr: status
     description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
-      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [lancar,
-      aktif, berjalan, mati, non-aktif, active, pasif, 180 hari, live, dormant]]'
+      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Value Mappings: [ACTIVE
+      (Synonyms: aktif, live, berjalan, active, lancar) - Account operating normally.;
+      DORMANT (Synonyms: pasif, mati, dormant, non-aktif, 180 hari) - Inactive account.]]'
   - name: dbt_dummy_time
     type: time
     expr: CAST('2020-01-01' AS TIMESTAMP)
@@ -193,9 +194,11 @@ semantic_models:
     type: categorical
     expr: loan_type
     description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
-      [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Synonyms:
-      [perorangan, rumah, motor, personal loan, tanpa agunan, property, KPR, mobil,
-      kendaraan, KTA, KMT, kredit pemilikan rumah, auto loan, home loan]]'
+      [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Value Mappings:
+      [Home (Synonyms: KPR, rumah, kredit pemilikan rumah, property, home loan) -
+      Mortgage/Home financing facility.; Auto (Synonyms: KMT, mobil, kendaraan, motor,
+      auto loan) - Vehicle loan facility.; Personal (Synonyms: KTA, tanpa agunan,
+      personal loan, perorangan) - Unsecured personal loan facility.]]'
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -325,8 +328,10 @@ semantic_models:
     expr: transaction_type
     description: 'Accounting ledger category direction. Expected values are ''DEBIT''
       (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
-      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [tarik tunai, masuk, penarikan,
-      debit, topup, gaji, kredit, setoran, transfer keluar, payroll, potongan]]'
+      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Value Mappings: [DEBIT (Synonyms: debit,
+      penarikan, tarik tunai, transfer keluar, potongan) - Outflow ledger posting.;
+      CREDIT (Synonyms: kredit, setoran, masuk, payroll, gaji, topup) - Inflow ledger
+      posting.]]'
   - name: transaction_timestamp
     type: time
     expr: transaction_timestamp
