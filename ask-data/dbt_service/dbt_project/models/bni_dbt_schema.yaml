@@ -31,7 +31,7 @@ semantic_models:
     expr: bank_name
     description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
       this when queries specify a particular bank''s customers. [LLM Context: Mode:
-      DYNAMIC_SQL_INDEX | Synonyms: [Bank BNI, Bank Negara Indonesia, PT Bank Negara
+      DYNAMIC_SQL_INDEX | Synonyms: [PT Bank Negara Indonesia, Bank BNI, Bank Negara
       Indonesia, BNI]]'
   - name: join_date
     type: time
@@ -69,8 +69,8 @@ semantic_models:
     type: categorical
     expr: status
     description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
-      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [pasif,
-      non-aktif, 180 hari, lancar, aktif, dormant, berjalan, mati, active, live]]'
+      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [live, active,
+      aktif, berjalan, lancar, pasif, non-aktif, 180 hari, dormant, mati]]'
   measures:
   - name: cai_savings_balance_sum
     expr: balance
@@ -164,8 +164,8 @@ semantic_models:
     expr: loan_type
     description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
       [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Synonyms:
-      [rumah, home loan, KPR, kredit pemilikan rumah, motor, perorangan, mobil, property,
-      KMT, kendaraan, personal loan, tanpa agunan, auto loan, KTA]]'
+      [KPR, mobil, tanpa agunan, property, kendaraan, personal loan, kredit pemilikan
+      rumah, perorangan, rumah, home loan, KTA, auto loan, KMT, motor]]'
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -281,8 +281,8 @@ semantic_models:
     expr: transaction_type
     description: 'Accounting ledger category direction. Expected values are ''DEBIT''
       (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
-      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [debit, transfer keluar,
-      tarik tunai, topup, potongan, setoran, payroll, kredit, penarikan, gaji, masuk]]'
+      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [payroll, penarikan, gaji,
+      kredit, setoran, potongan, topup, masuk, tarik tunai, transfer keluar, debit]]'
   - name: transaction_timestamp
     type: time
     expr: transaction_timestamp
