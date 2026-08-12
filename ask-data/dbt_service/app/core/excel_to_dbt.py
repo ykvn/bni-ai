@@ -1,5 +1,5 @@
 """
-Converts bni_dbt_definitions.xlsx into bni_dbt_schema.yaml
+Converts bni_dbt_definitions_2.xlsx into bni_dbt_schema.yaml
 Path: /home/cdsw/ask-data/dbt_service/app/core/excel_to_dbt.py
 """
 import sys
@@ -33,9 +33,9 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
             ref_fk = col.get("References (Foreign Keys)")
             custom_measures = col.get("Custom Measures (Optional)")
             
-            # --- NEW: Extract Value Mode & Static Values ---
             val_mode = col.get("Distinct Value Mode")
             static_vals = col.get("Static Allowed Values")
+            base_desc = str(col.get("Description", "")).strip()
 
             if is_pk:
                 entities.append({"name": col_name, "type": "primary", "expr": col_name})
@@ -44,23 +44,14 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
                 entities.append({"name": foreign_entity, "type": "foreign", "expr": col_name})
             else:
                 dim_type = "time" if "DATE" in str(col["Data Type"]).upper() or "TIME" in str(col["Data Type"]).upper() else "categorical"
-                dim_obj = {
-                    "name": col_name, 
-                    "type": dim_type, 
-                    "expr": col_name, 
-                    "description": str(col.get("Description", ""))
-                }
-                if dim_type == "time":
-                    dim_obj["type_params"] = {"time_granularity": "day"}
                 
-                # --- NEW: Initialize meta dictionary ---
-                meta_dict = {}
-
+                # --- NEW: Build LLM Context into Description ---
+                meta_parts = []
                 if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
-                    meta_dict["value_mode"] = str(val_mode).strip()
+                    meta_parts.append(f"Mode: {str(val_mode).strip()}")
                 
                 if pd.notna(static_vals):
-                    meta_dict["allowed_values"] = [v.strip() for v in str(static_vals).split(",")]
+                    meta_parts.append(f"Allowed: [{str(static_vals).strip()}]")
 
                 # Extract Synonyms from Value_Mappings
                 if not vals_df.empty:
@@ -72,11 +63,21 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
                             synonyms_list.extend(syns)
                         
                         if synonyms_list:
-                            meta_dict["synonyms"] = list(set(synonyms_list))
+                            meta_parts.append(f"Synonyms: [{', '.join(set(synonyms_list))}]")
                 
-                # Attach meta dictionary if it contains anything
-                if meta_dict:
-                    dim_obj["meta"] = meta_dict
+                # Append context if it exists
+                if meta_parts:
+                    base_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
+
+                dim_obj = {
+                    "name": col_name, 
+                    "type": dim_type, 
+                    "expr": col_name, 
+                    "description": base_desc.strip()
+                }
+                
+                if dim_type == "time":
+                    dim_obj["type_params"] = {"time_granularity": "day"}
                 
                 dimensions.append(dim_obj)
 
@@ -88,7 +89,7 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
                     metrics.append({
                         "name": f"{table_name}_{col_name}_{agg}_metric",
                         "label": f"{table_name} {col_name} {agg}".title(),
-                        "description": str(col.get("Description", "")),
+                        "description": base_desc,
                         "type": "simple",
                         "type_params": {"measure": m_name}
                     })
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     except Exception:
         ask_data_root = Path("/home/cdsw/ask-data")
 
-    input_excel = ask_data_root / "data" / "bni_dbt_definitions.xlsx"
+    input_excel = ask_data_root / "data" / "bni_dbt_definitions_2.xlsx"
     output_yaml = ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
     
     print(f"📂 Input Source: {input_excel}")
@@ -135,7 +136,7 @@ if __name__ == "__main__":
 
     try:
         convert_excel_to_dbt_yaml(str(input_excel), str(output_yaml))
-        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml with synonyms and allowed values!")
+        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml (Metadata safely embedded in descriptions!)")
     except Exception as e:
         print(f"\n❌ Generation failed: {str(e)}")
         sys.exit(1)
