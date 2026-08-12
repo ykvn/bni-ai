@@ -1,0 +1,652 @@
+version: 2
+semantic_models:
+- name: cai_customers
+  model: ref('cai_customers')
+  entities:
+  - name: customer_id
+    type: primary
+    expr: customer_id
+  dimensions:
+  - name: first_name
+    type: categorical
+    expr: first_name
+    description: The customer's first name.
+  - name: last_name
+    type: categorical
+    expr: last_name
+    description: The customer's last name or surname.
+  - name: email
+    type: categorical
+    expr: email
+    description: The electronic email address of the account holder.
+  - name: birth_date
+    type: time
+    expr: birth_date
+    description: Date of birth. Crucial for calculating age or identifying upcoming
+      birthdays.
+    type_params:
+      time_granularity: day
+  - name: bank_name
+    type: categorical
+    expr: bank_name
+    description: The banking institution name (e.g., 'ABC', 'BNI'). Filter by this
+      when queries specify a particular bank's customers.
+    meta:
+      value_mode: DYNAMIC_SQL_INDEX
+      synonyms:
+      - BNI
+      - Bank BNI
+      - Bank Negara Indonesia
+      - PT Bank Negara Indonesia
+  - name: join_date
+    type: time
+    expr: join_date
+    description: The exact date the customer first registered an account with the
+      bank.
+    type_params:
+      time_granularity: day
+  measures: []
+- name: cai_savings
+  model: ref('cai_savings')
+  entities:
+  - name: savings_id
+    type: primary
+    expr: savings_id
+  - name: customer_id
+    type: foreign
+    expr: customer_id
+  dimensions:
+  - name: account_number
+    type: categorical
+    expr: account_number
+    description: The unique public-facing alphanumeric bank account identifier number.
+  - name: balance
+    type: categorical
+    expr: balance
+    description: Current liquid money available. Use this for 'total savings' or 'wealthiest
+      customers' metrics.
+  - name: interest_rate
+    type: categorical
+    expr: interest_rate
+    description: The annual percentage yield interest tracking rate assigned to this
+      savings account.
+  - name: status
+    type: categorical
+    expr: status
+    description: Account state. Expected values are 'ACTIVE' or 'DORMANT'.
+    meta:
+      value_mode: STATIC_ENUM
+      allowed_values:
+      - ACTIVE
+      - DORMANT
+      synonyms:
+      - dormant
+      - 180 hari
+      - active
+      - pasif
+      - berjalan
+      - live
+      - aktif
+      - lancar
+      - non-aktif
+      - mati
+  measures:
+  - name: cai_savings_balance_sum
+    expr: balance
+    agg: sum
+  - name: cai_savings_balance_avg
+    expr: balance
+    agg: avg
+  - name: cai_savings_balance_min
+    expr: balance
+    agg: min
+  - name: cai_savings_balance_max
+    expr: balance
+    agg: max
+  - name: cai_savings_interest_rate_avg
+    expr: interest_rate
+    agg: avg
+  - name: cai_savings_interest_rate_min
+    expr: interest_rate
+    agg: min
+  - name: cai_savings_interest_rate_max
+    expr: interest_rate
+    agg: max
+- name: cai_deposits
+  model: ref('cai_deposits')
+  entities:
+  - name: deposit_id
+    type: primary
+    expr: deposit_id
+  - name: customer_id
+    type: foreign
+    expr: customer_id
+  dimensions:
+  - name: account_number
+    type: categorical
+    expr: account_number
+    description: The unique account number identifier for this deposit facility.
+  - name: principal_amount
+    type: categorical
+    expr: principal_amount
+    description: The initial locked investment asset amount.
+  - name: maturity_date
+    type: time
+    expr: maturity_date
+    description: The date when the fixed deposit expires and pays out. Check this
+      for 'approaching maturity' questions.
+    type_params:
+      time_granularity: day
+  - name: interest_rate
+    type: categorical
+    expr: interest_rate
+    description: The fixed contract interest rate paid out at maturity.
+  - name: status
+    type: categorical
+    expr: status
+    description: The current status state of the investment term (e.g., 'ACTIVE').
+    meta:
+      value_mode: STATIC_ENUM
+      allowed_values:
+      - ACTIVE
+      - MATURED
+      - CANCELLED
+  measures:
+  - name: cai_deposits_principal_amount_sum
+    expr: principal_amount
+    agg: sum
+  - name: cai_deposits_principal_amount_avg
+    expr: principal_amount
+    agg: avg
+  - name: cai_deposits_principal_amount_min
+    expr: principal_amount
+    agg: min
+  - name: cai_deposits_principal_amount_max
+    expr: principal_amount
+    agg: max
+  - name: cai_deposits_interest_rate_avg
+    expr: interest_rate
+    agg: avg
+  - name: cai_deposits_interest_rate_min
+    expr: interest_rate
+    agg: min
+  - name: cai_deposits_interest_rate_max
+    expr: interest_rate
+    agg: max
+- name: cai_loans
+  model: ref('cai_loans')
+  entities:
+  - name: loan_id
+    type: primary
+    expr: loan_id
+  - name: customer_id
+    type: foreign
+    expr: customer_id
+  dimensions:
+  - name: loan_type
+    type: categorical
+    expr: loan_type
+    description: Type of loan facility (e.g., 'Home', 'Auto', 'Personal').
+    meta:
+      value_mode: STATIC_ENUM
+      allowed_values:
+      - Home
+      - Auto
+      - Personal
+      synonyms:
+      - home loan
+      - tanpa agunan
+      - KPR
+      - motor
+      - rumah
+      - kredit pemilikan rumah
+      - KMT
+      - property
+      - kendaraan
+      - auto loan
+      - personal loan
+      - perorangan
+      - KTA
+      - mobil
+  - name: principal_amount
+    type: categorical
+    expr: principal_amount
+    description: The original total borrowed credit capital sum.
+  - name: outstanding_balance
+    type: categorical
+    expr: outstanding_balance
+    description: The remaining debt balance amount the customer still owes the bank.
+  - name: maturity_date
+    type: time
+    expr: maturity_date
+    description: The final payoff deadline date for the loan obligation.
+    type_params:
+      time_granularity: day
+  - name: status
+    type: categorical
+    expr: status
+    description: Operational loan indicator flag status state (e.g., 'ACTIVE').
+    meta:
+      value_mode: STATIC_ENUM
+      allowed_values:
+      - ACTIVE
+      - PAID_OFF
+      - DEFAULTED
+  measures:
+  - name: cai_loans_principal_amount_sum
+    expr: principal_amount
+    agg: sum
+  - name: cai_loans_principal_amount_avg
+    expr: principal_amount
+    agg: avg
+  - name: cai_loans_principal_amount_min
+    expr: principal_amount
+    agg: min
+  - name: cai_loans_principal_amount_max
+    expr: principal_amount
+    agg: max
+  - name: cai_loans_outstanding_balance_sum
+    expr: outstanding_balance
+    agg: sum
+  - name: cai_loans_outstanding_balance_avg
+    expr: outstanding_balance
+    agg: avg
+  - name: cai_loans_outstanding_balance_min
+    expr: outstanding_balance
+    agg: min
+  - name: cai_loans_outstanding_balance_max
+    expr: outstanding_balance
+    agg: max
+- name: cai_credit_cards
+  model: ref('cai_credit_cards')
+  entities:
+  - name: card_id
+    type: primary
+    expr: card_id
+  - name: customer_id
+    type: foreign
+    expr: customer_id
+  dimensions:
+  - name: card_number
+    type: categorical
+    expr: card_number
+    description: The unique plastic card PAN number format identifier sequence.
+  - name: credit_limit
+    type: categorical
+    expr: credit_limit
+    description: The maximum revolving credit threshold limit extended to the customer.
+  - name: current_balance
+    type: categorical
+    expr: current_balance
+    description: The active amount spent and currently owed on the credit card balance.
+  - name: expiry_date
+    type: time
+    expr: expiry_date
+    description: The operational expiration timeline date of the card.
+    type_params:
+      time_granularity: day
+  - name: status
+    type: categorical
+    expr: status
+    description: Revolving line risk indicators. Expected values are 'ACTIVE' or 'WARNING'.
+    meta:
+      value_mode: STATIC_ENUM
+      allowed_values:
+      - ACTIVE
+      - WARNING
+      - BLOCKED
+  measures:
+  - name: cai_credit_cards_credit_limit_sum
+    expr: credit_limit
+    agg: sum
+  - name: cai_credit_cards_credit_limit_avg
+    expr: credit_limit
+    agg: avg
+  - name: cai_credit_cards_current_balance_sum
+    expr: current_balance
+    agg: sum
+  - name: cai_credit_cards_current_balance_avg
+    expr: current_balance
+    agg: avg
+  - name: cai_credit_cards_current_balance_min
+    expr: current_balance
+    agg: min
+  - name: cai_credit_cards_current_balance_max
+    expr: current_balance
+    agg: max
+- name: cai_transactions
+  model: ref('cai_transactions')
+  entities:
+  - name: transaction_id
+    type: primary
+    expr: transaction_id
+  - name: account_number
+    type: foreign
+    expr: account_number
+  dimensions:
+  - name: amount
+    type: categorical
+    expr: amount
+    description: The absolute numerical money value of the execution.
+  - name: transaction_type
+    type: categorical
+    expr: transaction_type
+    description: Accounting ledger category direction. Expected values are 'DEBIT'
+      (withdrawals/charges) or 'CREDIT' (deposits/payroll).
+    meta:
+      value_mode: STATIC_ENUM
+      allowed_values:
+      - DEBIT
+      - CREDIT
+      synonyms:
+      - tarik tunai
+      - gaji
+      - kredit
+      - transfer keluar
+      - potongan
+      - payroll
+      - penarikan
+      - setoran
+      - topup
+      - debit
+      - masuk
+  - name: transaction_timestamp
+    type: time
+    expr: transaction_timestamp
+    description: The complete system timestamp tracker of when the execution posted
+      to the ledger.
+    type_params:
+      time_granularity: day
+  - name: description
+    type: categorical
+    expr: description
+    description: The descriptive transaction text annotation (e.g., 'ATM Withdrawal',
+      'Payroll Transfer').
+  measures:
+  - name: cai_transactions_amount_sum
+    expr: amount
+    agg: sum
+  - name: cai_transactions_amount_avg
+    expr: amount
+    agg: avg
+  - name: cai_transactions_amount_min
+    expr: amount
+    agg: min
+  - name: cai_transactions_amount_max
+    expr: amount
+    agg: max
+- name: cai_branch_performance
+  model: ref('cai_branch_performance')
+  entities:
+  - name: branch_id
+    type: primary
+    expr: branch_id
+  dimensions:
+  - name: branch_name
+    type: categorical
+    expr: branch_name
+    description: The clean geographical or municipal name designation of the branch
+      location.
+    meta:
+      value_mode: DYNAMIC_SQL_INDEX
+  - name: region
+    type: categorical
+    expr: region
+    description: The broader provincial administrative territory area grouping (e.g.,
+      'DKI Jakarta').
+    meta:
+      value_mode: DYNAMIC_SQL_INDEX
+  - name: total_active_customers
+    type: categorical
+    expr: total_active_customers
+    description: Total client profile count actively assigned to this node.
+  - name: monthly_target_achieved
+    type: categorical
+    expr: monthly_target_achieved
+    description: Performance target milestone percentage index ranking tracker.
+  measures:
+  - name: cai_branch_performance_total_active_customers_sum
+    expr: total_active_customers
+    agg: sum
+  - name: cai_branch_performance_total_active_customers_avg
+    expr: total_active_customers
+    agg: avg
+  - name: cai_branch_performance_monthly_target_achieved_avg
+    expr: monthly_target_achieved
+    agg: avg
+  - name: cai_branch_performance_monthly_target_achieved_min
+    expr: monthly_target_achieved
+    agg: min
+  - name: cai_branch_performance_monthly_target_achieved_max
+    expr: monthly_target_achieved
+    agg: max
+metrics:
+- name: cai_savings_balance_sum_metric
+  label: Cai_Savings Balance Sum
+  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
+    customers' metrics.
+  type: simple
+  type_params:
+    measure: cai_savings_balance_sum
+- name: cai_savings_balance_avg_metric
+  label: Cai_Savings Balance Avg
+  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
+    customers' metrics.
+  type: simple
+  type_params:
+    measure: cai_savings_balance_avg
+- name: cai_savings_balance_min_metric
+  label: Cai_Savings Balance Min
+  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
+    customers' metrics.
+  type: simple
+  type_params:
+    measure: cai_savings_balance_min
+- name: cai_savings_balance_max_metric
+  label: Cai_Savings Balance Max
+  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
+    customers' metrics.
+  type: simple
+  type_params:
+    measure: cai_savings_balance_max
+- name: cai_savings_interest_rate_avg_metric
+  label: Cai_Savings Interest_Rate Avg
+  description: The annual percentage yield interest tracking rate assigned to this
+    savings account.
+  type: simple
+  type_params:
+    measure: cai_savings_interest_rate_avg
+- name: cai_savings_interest_rate_min_metric
+  label: Cai_Savings Interest_Rate Min
+  description: The annual percentage yield interest tracking rate assigned to this
+    savings account.
+  type: simple
+  type_params:
+    measure: cai_savings_interest_rate_min
+- name: cai_savings_interest_rate_max_metric
+  label: Cai_Savings Interest_Rate Max
+  description: The annual percentage yield interest tracking rate assigned to this
+    savings account.
+  type: simple
+  type_params:
+    measure: cai_savings_interest_rate_max
+- name: cai_deposits_principal_amount_sum_metric
+  label: Cai_Deposits Principal_Amount Sum
+  description: The initial locked investment asset amount.
+  type: simple
+  type_params:
+    measure: cai_deposits_principal_amount_sum
+- name: cai_deposits_principal_amount_avg_metric
+  label: Cai_Deposits Principal_Amount Avg
+  description: The initial locked investment asset amount.
+  type: simple
+  type_params:
+    measure: cai_deposits_principal_amount_avg
+- name: cai_deposits_principal_amount_min_metric
+  label: Cai_Deposits Principal_Amount Min
+  description: The initial locked investment asset amount.
+  type: simple
+  type_params:
+    measure: cai_deposits_principal_amount_min
+- name: cai_deposits_principal_amount_max_metric
+  label: Cai_Deposits Principal_Amount Max
+  description: The initial locked investment asset amount.
+  type: simple
+  type_params:
+    measure: cai_deposits_principal_amount_max
+- name: cai_deposits_interest_rate_avg_metric
+  label: Cai_Deposits Interest_Rate Avg
+  description: The fixed contract interest rate paid out at maturity.
+  type: simple
+  type_params:
+    measure: cai_deposits_interest_rate_avg
+- name: cai_deposits_interest_rate_min_metric
+  label: Cai_Deposits Interest_Rate Min
+  description: The fixed contract interest rate paid out at maturity.
+  type: simple
+  type_params:
+    measure: cai_deposits_interest_rate_min
+- name: cai_deposits_interest_rate_max_metric
+  label: Cai_Deposits Interest_Rate Max
+  description: The fixed contract interest rate paid out at maturity.
+  type: simple
+  type_params:
+    measure: cai_deposits_interest_rate_max
+- name: cai_loans_principal_amount_sum_metric
+  label: Cai_Loans Principal_Amount Sum
+  description: The original total borrowed credit capital sum.
+  type: simple
+  type_params:
+    measure: cai_loans_principal_amount_sum
+- name: cai_loans_principal_amount_avg_metric
+  label: Cai_Loans Principal_Amount Avg
+  description: The original total borrowed credit capital sum.
+  type: simple
+  type_params:
+    measure: cai_loans_principal_amount_avg
+- name: cai_loans_principal_amount_min_metric
+  label: Cai_Loans Principal_Amount Min
+  description: The original total borrowed credit capital sum.
+  type: simple
+  type_params:
+    measure: cai_loans_principal_amount_min
+- name: cai_loans_principal_amount_max_metric
+  label: Cai_Loans Principal_Amount Max
+  description: The original total borrowed credit capital sum.
+  type: simple
+  type_params:
+    measure: cai_loans_principal_amount_max
+- name: cai_loans_outstanding_balance_sum_metric
+  label: Cai_Loans Outstanding_Balance Sum
+  description: The remaining debt balance amount the customer still owes the bank.
+  type: simple
+  type_params:
+    measure: cai_loans_outstanding_balance_sum
+- name: cai_loans_outstanding_balance_avg_metric
+  label: Cai_Loans Outstanding_Balance Avg
+  description: The remaining debt balance amount the customer still owes the bank.
+  type: simple
+  type_params:
+    measure: cai_loans_outstanding_balance_avg
+- name: cai_loans_outstanding_balance_min_metric
+  label: Cai_Loans Outstanding_Balance Min
+  description: The remaining debt balance amount the customer still owes the bank.
+  type: simple
+  type_params:
+    measure: cai_loans_outstanding_balance_min
+- name: cai_loans_outstanding_balance_max_metric
+  label: Cai_Loans Outstanding_Balance Max
+  description: The remaining debt balance amount the customer still owes the bank.
+  type: simple
+  type_params:
+    measure: cai_loans_outstanding_balance_max
+- name: cai_credit_cards_credit_limit_sum_metric
+  label: Cai_Credit_Cards Credit_Limit Sum
+  description: The maximum revolving credit threshold limit extended to the customer.
+  type: simple
+  type_params:
+    measure: cai_credit_cards_credit_limit_sum
+- name: cai_credit_cards_credit_limit_avg_metric
+  label: Cai_Credit_Cards Credit_Limit Avg
+  description: The maximum revolving credit threshold limit extended to the customer.
+  type: simple
+  type_params:
+    measure: cai_credit_cards_credit_limit_avg
+- name: cai_credit_cards_current_balance_sum_metric
+  label: Cai_Credit_Cards Current_Balance Sum
+  description: The active amount spent and currently owed on the credit card balance.
+  type: simple
+  type_params:
+    measure: cai_credit_cards_current_balance_sum
+- name: cai_credit_cards_current_balance_avg_metric
+  label: Cai_Credit_Cards Current_Balance Avg
+  description: The active amount spent and currently owed on the credit card balance.
+  type: simple
+  type_params:
+    measure: cai_credit_cards_current_balance_avg
+- name: cai_credit_cards_current_balance_min_metric
+  label: Cai_Credit_Cards Current_Balance Min
+  description: The active amount spent and currently owed on the credit card balance.
+  type: simple
+  type_params:
+    measure: cai_credit_cards_current_balance_min
+- name: cai_credit_cards_current_balance_max_metric
+  label: Cai_Credit_Cards Current_Balance Max
+  description: The active amount spent and currently owed on the credit card balance.
+  type: simple
+  type_params:
+    measure: cai_credit_cards_current_balance_max
+- name: cai_transactions_amount_sum_metric
+  label: Cai_Transactions Amount Sum
+  description: The absolute numerical money value of the execution.
+  type: simple
+  type_params:
+    measure: cai_transactions_amount_sum
+- name: cai_transactions_amount_avg_metric
+  label: Cai_Transactions Amount Avg
+  description: The absolute numerical money value of the execution.
+  type: simple
+  type_params:
+    measure: cai_transactions_amount_avg
+- name: cai_transactions_amount_min_metric
+  label: Cai_Transactions Amount Min
+  description: The absolute numerical money value of the execution.
+  type: simple
+  type_params:
+    measure: cai_transactions_amount_min
+- name: cai_transactions_amount_max_metric
+  label: Cai_Transactions Amount Max
+  description: The absolute numerical money value of the execution.
+  type: simple
+  type_params:
+    measure: cai_transactions_amount_max
+- name: cai_branch_performance_total_active_customers_sum_metric
+  label: Cai_Branch_Performance Total_Active_Customers Sum
+  description: Total client profile count actively assigned to this node.
+  type: simple
+  type_params:
+    measure: cai_branch_performance_total_active_customers_sum
+- name: cai_branch_performance_total_active_customers_avg_metric
+  label: Cai_Branch_Performance Total_Active_Customers Avg
+  description: Total client profile count actively assigned to this node.
+  type: simple
+  type_params:
+    measure: cai_branch_performance_total_active_customers_avg
+- name: cai_branch_performance_monthly_target_achieved_avg_metric
+  label: Cai_Branch_Performance Monthly_Target_Achieved Avg
+  description: Performance target milestone percentage index ranking tracker.
+  type: simple
+  type_params:
+    measure: cai_branch_performance_monthly_target_achieved_avg
+- name: cai_branch_performance_monthly_target_achieved_min_metric
+  label: Cai_Branch_Performance Monthly_Target_Achieved Min
+  description: Performance target milestone percentage index ranking tracker.
+  type: simple
+  type_params:
+    measure: cai_branch_performance_monthly_target_achieved_min
+- name: cai_branch_performance_monthly_target_achieved_max_metric
+  label: Cai_Branch_Performance Monthly_Target_Achieved Max
+  description: Performance target milestone percentage index ranking tracker.
+  type: simple
+  type_params:
+    measure: cai_branch_performance_monthly_target_achieved_max
