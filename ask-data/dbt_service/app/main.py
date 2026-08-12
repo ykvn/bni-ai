@@ -36,7 +36,6 @@ DBT_PROFILES_DIR = Path.home() / ".dbt"
 PROFILE_FILE = DBT_PROFILES_DIR / "profiles.yml"
 
 
-# --- Request/Response Models ---
 class MetricQueryRequest(BaseModel):
     metrics: List[str] = Field(..., description="List of metric names to query")
     group_by: Optional[List[str]] = Field(default=[], description="List of dimension names")
@@ -50,7 +49,7 @@ class MetricQueryResponse(BaseModel):
 
 
 def resolve_cmd(binary_name: str) -> List[str]:
-    """Dynamically locates executables (e.g., 'dbt' or 'mf') in PATH or python bin."""
+    """Dynamically locates executables in PATH or python bin."""
     found_path = shutil.which(binary_name)
     if found_path:
         return [found_path]
@@ -72,39 +71,17 @@ def ensure_metricflow_dummy_adapter():
         subprocess.run([sys.executable, "-m", "pip", "install", "dbt-postgres"], check=True)
 
 
-def write_profile(profile_type: str = "impala"):
-    """
-    Writes a profiles.yml file to disk. 
-    If profile_type="postgres", it generates a dummy postgres profile for MetricFlow to use.
-    If profile_type="impala", it generates the real CDW Impala profile for dbt parse.
-    """
+def ensure_static_profile():
+    """Writes a static profiles.yml containing both Impala and Postgres compilation targets."""
     DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
-    
     impala_db = os.environ.get("DB_NAME", "test")
+    impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
+    impala_port = os.environ.get("IMPALA_PORT", "443")
+    impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
+    impala_user = os.environ.get("CDP_USER", "")
+    impala_password = os.environ.get("CDP_PASS", "")
 
-    if profile_type == "postgres":
-        profile_content = f"""
-default:
-  target: dev
-  outputs:
-    dev:
-      type: postgres
-      host: localhost
-      port: 5432
-      user: dummy
-      pass: dummy
-      dbname: dummy
-      schema: {impala_db}
-      threads: 1
-"""
-    else:
-        impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
-        impala_port = os.environ.get("IMPALA_PORT", "443")
-        impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
-        impala_user = os.environ.get("CDP_USER", "")
-        impala_password = os.environ.get("CDP_PASS", "")
-        
-        profile_content = f"""
+    profile_content = f"""
 default:
   target: dev
   outputs:
@@ -120,8 +97,43 @@ default:
       http_path: {impala_http_path}
       use_ssl: true
       threads: 1
+    mf_compile:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: dummy
+      pass: dummy
+      dbname: dummy
+      schema: {impala_db}
+      threads: 1
 """
     PROFILE_FILE.write_text(profile_content.strip())
+
+
+def reparse_project_if_needed(env: dict):
+    """Parses dbt project only when the schema YAML changes, and pre-patches manifest for MetricFlow."""
+    needs_parse = False
+    if not MANIFEST_PATH.exists():
+        needs_parse = True
+    elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
+        needs_parse = True
+
+    if needs_parse:
+        dbt_parse_cmd = resolve_cmd("dbt") + ["parse"]
+        parse_proc = subprocess.run(
+            dbt_parse_cmd,
+            cwd=str(DBT_PROJECT_DIR),
+            env=env,
+            capture_output=True,
+            text=True
+        )
+        if parse_proc.returncode != 0:
+            raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
+
+        # Pre-patch manifest once after parse so requests don't need disk I/O
+        manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
+        patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
+        MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
 
 
 def load_dbt_catalog() -> Dict[str, Any]:
@@ -133,34 +145,30 @@ def load_dbt_catalog() -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
-# --- API Routes ---
 @app.on_event("startup")
 def startup_event():
-    """Bootstraps the dbt environment the moment the API starts."""
-    print("🚀 Bootstrapping dbt environment and generating profiles.yml...")
-    write_profile(profile_type="impala")
+    """Bootstraps environment and pre-compiles configuration on app startup."""
+    print("🚀 Bootstrapping dbt environment...")
+    ensure_static_profile()
+    ensure_metricflow_dummy_adapter()
 
 
 @app.get("/healthz")
 def health_check():
-    """Health check endpoint for CML Application router."""
     return {"status": "healthy", "service": "dbt_service", "dbt_project_found": DBT_PROJECT_DIR.exists()}
 
 
 @app.get("/api/v1/meta")
 def get_semantic_catalog():
-    """Returns available dbt metrics and dimensions for LLM prompt context."""
     catalog = load_dbt_catalog()
-    
-    available_metrics = []
-    for metric in catalog.get("metrics", []):
-        available_metrics.append({
-            "name": metric.get("name"),
-            "label": metric.get("label"),
-            "description": metric.get("description"),
-            "synonyms": metric.get("meta", {}).get("synonyms", [])
-        })
-
+    available_metrics = [
+        {
+            "name": m.get("name"),
+            "label": m.get("label"),
+            "description": m.get("description"),
+            "synonyms": m.get("meta", {}).get("synonyms", [])
+        } for m in catalog.get("metrics", [])
+    ]
     available_dimensions = []
     for model in catalog.get("semantic_models", []):
         model_name = model.get("name")
@@ -171,84 +179,47 @@ def get_semantic_catalog():
                 "meta": dim.get("meta", {})
             })
 
-    return {
-        "metrics": available_metrics,
-        "dimensions": available_dimensions
-    }
+    return {"metrics": available_metrics, "dimensions": available_dimensions}
 
 
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
 def execute_metric_query(payload: MetricQueryRequest):
-    """
-    Compiles dynamic MetricFlow metrics into Impala-compatible SQL for LLM models.
-    (Execution is disabled; returns pure SQL string).
-    """
+    """Compiles dynamic MetricFlow metrics into Impala-compatible SQL without executing against DB."""
     try:
-        ensure_metricflow_dummy_adapter()
-        
         env = os.environ.copy()
         env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
+        env["DBT_TARGET"] = "mf_compile"
 
-        # 1. Write the genuine Impala profile for dbt parse
-        write_profile(profile_type="impala")
+        # 1. Parse project ONLY if schema YAML changed (pre-patches manifest once)
+        reparse_project_if_needed(env)
 
-        # 2. Auto-generate target/semantic_manifest.json if missing or outdated
-        needs_parse = False
-        if not MANIFEST_PATH.exists():
-            needs_parse = True
-        elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
-            needs_parse = True
+        # 2. Compile SQL via MetricFlow CLI
+        mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
+        if payload.group_by:
+            mf_cmd.extend(["--group-by", ",".join(payload.group_by)])
+        mf_cmd.append("--explain")
 
-        if needs_parse:
-            dbt_parse_cmd = resolve_cmd("dbt") + ["parse"]
-            parse_proc = subprocess.run(
-                dbt_parse_cmd,
-                cwd=str(DBT_PROJECT_DIR),
-                env=env,
-                capture_output=True,
-                text=True
-            )
-            if parse_proc.returncode != 0:
-                raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
+        process = subprocess.run(
+            mf_cmd,
+            cwd=str(DBT_PROJECT_DIR),
+            env=env,
+            capture_output=True,
+            text=True
+        )
 
-        # 3. Compile SQL via MetricFlow
-        manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
-        try:
-            patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
-            MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
-            
-            write_profile(profile_type="postgres")
-            
-            mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
-            if payload.group_by:
-                mf_cmd.extend(["--group-by", ",".join(payload.group_by)])
-            mf_cmd.append("--explain")
-
-            process = subprocess.run(
-                mf_cmd,
-                cwd=str(DBT_PROJECT_DIR),
-                env=env,
-                capture_output=True,
-                text=True
-            )
-        finally:
-            MANIFEST_PATH.write_text(manifest_text, encoding="utf-8")
-            write_profile(profile_type="impala")
-        
         if process.returncode != 0:
             error_msg = process.stderr.strip() or process.stdout.strip()
             raise Exception(f"MetricFlow compilation failed: {error_msg}")
 
         output_text = process.stdout.strip()
 
-        # Extract compiled SQL block starting from WITH or SELECT
+        # Extract compiled SQL block
         match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
         compiled_sql = output_text[match.start():] if match else output_text
 
-        # Format Postgres-flavored SQL for Impala (convert "identifier" to `identifier`)
+        # Format Postgres identifier quotes to Impala backticks
         compiled_sql = compiled_sql.replace('"', '`')
 
-        # 4. Return compiled SQL directly to your LLM / model pipeline
         return MetricQueryResponse(
             status="success",
             sql=compiled_sql,
