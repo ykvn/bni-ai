@@ -4,6 +4,8 @@ Located at: /home/cdsw/ask-data/dbt_service/app/main.py
 """
 import os
 import sys
+import shutil
+import subprocess
 import yaml
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -32,8 +34,8 @@ SCHEMA_YAML_PATH = DBT_PROJECT_DIR / "models" / "bni_dbt_schema.yaml"
 
 # --- Request/Response Models ---
 class MetricQueryRequest(BaseModel):
-    metrics: List[str] = Field(..., description="List of metric names to query (e.g. ['total_principal_amount'])")
-    group_by: Optional[List[str]] = Field(default=[], description="List of dimension names (e.g. ['deposits__status'])")
+    metrics: List[str] = Field(..., description="List of metric names to query")
+    group_by: Optional[List[str]] = Field(default=[], description="List of dimension names")
     where: Optional[str] = Field(default=None, description="Optional filter expression")
 
 
@@ -41,6 +43,23 @@ class MetricQueryResponse(BaseModel):
     status: str
     sql: str
     data: List[Dict[str, Any]]
+
+
+def resolve_mf_command() -> List[str]:
+    """Dynamically locates the MetricFlow CLI executable or python module command."""
+    mf_path = shutil.which("mf")
+    if mf_path:
+        return [mf_path]
+    
+    py_bin = Path(sys.executable).parent / "mf"
+    if py_bin.exists():
+        return [str(py_bin)]
+    
+    user_local_mf = Path.home() / ".local" / "bin" / "mf"
+    if user_local_mf.exists():
+        return [str(user_local_mf)]
+    
+    return [sys.executable, "-m", "metricflow.cli.main"]
 
 
 # --- Helper to load dbt Catalog ---
@@ -80,7 +99,8 @@ def get_semantic_catalog():
         for dim in model.get("dimensions", []):
             available_dimensions.append({
                 "name": f"{model_name}__{dim.get('name')}",
-                "description": dim.get("description", "")
+                "description": dim.get("description", ""),
+                "meta": dim.get("meta", {})
             })
 
     return {
@@ -88,8 +108,6 @@ def get_semantic_catalog():
         "dimensions": available_dimensions
     }
 
-
-import subprocess
 
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
 def execute_metric_query(payload: MetricQueryRequest):
@@ -99,40 +117,51 @@ def execute_metric_query(payload: MetricQueryRequest):
     try:
         from impala.dbapi import connect
 
-        # 1. DYNAMICALLY COMPILE SQL VIA DBT METRICFLOW
-        # Construct the CLI command: mf query --metrics <m> --group-by <g> --compile
-        mf_command = ["mf", "query", "--metrics", ",".join(payload.metrics)]
+        # 1. Resolve executable command
+        mf_base_cmd = resolve_mf_command()
         
+        # Build command using --explain to generate SQL without running it directly via MetricFlow
+        cmd = mf_base_cmd + ["query", "--metrics", ",".join(payload.metrics)]
         if payload.group_by:
-            mf_command.extend(["--group-by", ",".join(payload.group_by)])
-            
-        mf_command.append("--compile") # Only compile to SQL, do not execute via CLI
+            cmd.extend(["--group-by", ",".join(payload.group_by)])
+        cmd.append("--explain")  # FIXED: Changed from --compile to --explain
 
-        # Run MetricFlow inside the dbt project directory
+        # 2. Execute compilation
         process = subprocess.run(
-            mf_command,
+            cmd,
             cwd=str(DBT_PROJECT_DIR),
             capture_output=True,
             text=True
         )
         
         if process.returncode != 0:
-            raise Exception(f"MetricFlow compilation failed: {process.stderr}")
+            error_msg = process.stderr.strip() or process.stdout.strip()
+            raise Exception(f"MetricFlow compilation failed: {error_msg}")
 
-        # The output is the pure, dynamically generated Impala SQL
-        compiled_sql = process.stdout.strip()
+        output_text = process.stdout.strip()
 
-        # 2. EXECUTE THE COMPILED SQL ON IMPALA (CDW over 443)
+        # Extract clean SQL statement starting from WITH or SELECT
+        sql_start = -1
+        for keyword in ["WITH ", "SELECT "]:
+            pos = output_text.upper().find(keyword)
+            if pos != -1 and (sql_start == -1 or pos < sql_start):
+                sql_start = pos
+
+        compiled_sql = output_text[sql_start:] if sql_start != -1 else output_text
+
+        # 3. Execute compiled SQL on CDW Impala over port 443
         impala_host = os.environ.get("IMPALA_HOST", "localhost")
         impala_port = int(os.environ.get("IMPALA_PORT", 443))
+        impala_db = os.environ.get("DB_NAME", "test")
         impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
         auth_mech = os.environ.get("IMPALA_AUTH_MECHANISM", "LDAP") 
-        impala_user = os.environ.get("CDP_USER", "")
-        impala_password = os.environ.get("CDP_PASS", "")
+        impala_user = os.environ.get("IMPALA_USER", "")
+        impala_password = os.environ.get("IMPALA_PASSWORD", "")
 
         conn = connect(
             host=impala_host, 
             port=impala_port, 
+            database=impala_db,
             auth_mechanism=auth_mech,
             user=impala_user,
             password=impala_password,
@@ -150,7 +179,7 @@ def execute_metric_query(payload: MetricQueryRequest):
 
         return MetricQueryResponse(
             status="success",
-            sql=compiled_sql,  # Returns the dynamic SQL for transparency/debugging
+            sql=compiled_sql,
             data=data
         )
 
