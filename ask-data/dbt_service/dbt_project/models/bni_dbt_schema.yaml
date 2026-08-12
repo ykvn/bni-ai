@@ -3,12 +3,17 @@ semantic_models:
 - name: metricflow_time_spine
   description: Required time spine for MetricFlow aggregations
   model: ref('metricflow_time_spine')
+  entities:
+  - name: date_day
+    type: primary
+    expr: date_day
   dimensions:
   - name: date_day
     type: time
     expr: date_day
     type_params:
       time_granularity: day
+      is_primary: true
 - name: cai_customers
   model: ref('cai_customers')
   entities:
@@ -35,13 +40,14 @@ semantic_models:
       birthdays.
     type_params:
       time_granularity: day
+      is_primary: true
   - name: bank_name
     type: categorical
     expr: bank_name
     description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
       this when queries specify a particular bank''s customers. [LLM Context: Mode:
-      DYNAMIC_SQL_INDEX | Synonyms: [PT Bank Negara Indonesia, Bank Negara Indonesia,
-      BNI, Bank BNI]]'
+      DYNAMIC_SQL_INDEX | Synonyms: [Bank BNI, Bank Negara Indonesia, BNI, PT Bank
+      Negara Indonesia]]'
   - name: join_date
     type: time
     expr: join_date
@@ -59,11 +65,10 @@ semantic_models:
   - name: customer_id
     type: foreign
     expr: customer_id
-  dimensions:
   - name: account_number
-    type: categorical
+    type: foreign
     expr: account_number
-    description: The unique public-facing alphanumeric bank account identifier number.
+  dimensions:
   - name: balance
     type: categorical
     expr: balance
@@ -78,8 +83,14 @@ semantic_models:
     type: categorical
     expr: status
     description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
-      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [live, active,
-      180 hari, aktif, dormant, lancar, non-aktif, berjalan, pasif, mati]]'
+      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [aktif,
+      mati, active, 180 hari, live, dormant, pasif, lancar, non-aktif, berjalan]]'
+  - name: dbt_dummy_time
+    type: time
+    expr: CAST('2020-01-01' AS TIMESTAMP)
+    type_params:
+      time_granularity: day
+      is_primary: true
   measures:
   - name: cai_savings_balance_sum
     expr: balance
@@ -111,11 +122,10 @@ semantic_models:
   - name: customer_id
     type: foreign
     expr: customer_id
-  dimensions:
   - name: account_number
-    type: categorical
+    type: foreign
     expr: account_number
-    description: The unique account number identifier for this deposit facility.
+  dimensions:
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -127,6 +137,7 @@ semantic_models:
       for 'approaching maturity' questions.
     type_params:
       time_granularity: day
+      is_primary: true
   - name: interest_rate
     type: categorical
     expr: interest_rate
@@ -173,8 +184,8 @@ semantic_models:
     expr: loan_type
     description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
       [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Synonyms:
-      [auto loan, personal loan, KPR, KMT, kredit pemilikan rumah, rumah, kendaraan,
-      motor, KTA, tanpa agunan, property, perorangan, home loan, mobil]]'
+      [mobil, property, KMT, kredit pemilikan rumah, kendaraan, KTA, rumah, KPR, motor,
+      tanpa agunan, auto loan, perorangan, personal loan, home loan]]'
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -189,6 +200,7 @@ semantic_models:
     description: The final payoff deadline date for the loan obligation.
     type_params:
       time_granularity: day
+      is_primary: true
   - name: status
     type: categorical
     expr: status
@@ -247,6 +259,7 @@ semantic_models:
     description: The operational expiration timeline date of the card.
     type_params:
       time_granularity: day
+      is_primary: true
   - name: status
     type: categorical
     expr: status
@@ -290,8 +303,8 @@ semantic_models:
     expr: transaction_type
     description: 'Accounting ledger category direction. Expected values are ''DEBIT''
       (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
-      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [kredit, debit, penarikan,
-      tarik tunai, setoran, gaji, topup, masuk, potongan, transfer keluar, payroll]]'
+      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [transfer keluar, kredit,
+      payroll, masuk, setoran, debit, penarikan, topup, gaji, potongan, tarik tunai]]'
   - name: transaction_timestamp
     type: time
     expr: transaction_timestamp
@@ -299,6 +312,7 @@ semantic_models:
       to the ledger.
     type_params:
       time_granularity: day
+      is_primary: true
   - name: description
     type: categorical
     expr: description
@@ -342,6 +356,12 @@ semantic_models:
     type: categorical
     expr: monthly_target_achieved
     description: Performance target milestone percentage index ranking tracker.
+  - name: dbt_dummy_time
+    type: time
+    expr: CAST('2020-01-01' AS TIMESTAMP)
+    type_params:
+      time_granularity: day
+      is_primary: true
   measures:
   - name: cai_branch_performance_total_active_customers_sum
     expr: total_active_customers
