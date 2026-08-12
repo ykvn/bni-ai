@@ -29,12 +29,12 @@ def format_rag_answer(text: str) -> str:
         'background:#ffffff;font-family:-apple-system,Segoe UI,sans-serif;">'
         '<div style="display:flex;align-items:center;justify-content:space-between;'
         'padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:10px;">'
-        '<span style="font-weight:600;font-size:15px;color:#111827;">Answers</span>'
+        '<span style="font-weight:600;font-size:15px;color:var(--body-text-color);">Answers</span>'
         f'<button type="button" onclick="{js}" style="cursor:pointer;border:1px solid #d1d5db;'
-        'background:#f9fafb;border-radius:6px;padding:4px 10px;font-size:13px;color:#374151;">'
+        'background:#f9fafb;border-radius:6px;padding:4px 10px;font-size:13px;color:var(--body-text-color);">'
         '📋 Copy</button>'
         '</div>'
-        f'<div id="rag-answer-text" style="color:#111827;font-size:14px;line-height:1.6;">{body}</div>'
+        f'<div id="rag-answer-text" style="color:var(--body-text-color);font-size:14px;line-height:1.6;">{body}</div>'
         '</div>'
     )
 
