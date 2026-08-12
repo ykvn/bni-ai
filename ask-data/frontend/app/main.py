@@ -1,7 +1,6 @@
 import os
 import time
 import json
-import html as _html
 import requests
 import sqlparse
 from datetime import datetime
@@ -9,34 +8,6 @@ import pandas as pd
 import gradio as gr
 
 from shared.cml_auth import build_cml_headers
-
-
-def format_rag_answer(text: str) -> str:
-    """Wraps a RAG prose answer in a bordered box with an 'Answers' header and
-    a copy-to-clipboard button (inline onclick works in Gradio's gr.HTML)."""
-    body = _html.escape(text or "").replace("\n", "<br>")
-    js = (
-        "(function(){var el=document.getElementById('rag-answer-text');if(!el)return;"
-        "var t=el.innerText;if(navigator.clipboard&&navigator.clipboard.writeText){"
-        "navigator.clipboard.writeText(t).catch(function(){var ta=document.createElement('textarea');"
-        "ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');"
-        "document.body.removeChild(ta);});}else{var ta=document.createElement('textarea');"
-        "ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');"
-        "document.body.removeChild(ta);}})();"
-    )
-    return (
-        '<div style="border:1px solid #d1d5db;border-radius:8px;padding:14px 18px;'
-        'background:#ffffff;font-family:-apple-system,Segoe UI,sans-serif;">'
-        '<div style="display:flex;align-items:center;justify-content:space-between;'
-        'padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:10px;">'
-        '<span style="font-weight:600;font-size:15px;color:var(--body-text-color);">Answers</span>'
-        f'<button type="button" onclick="{js}" style="cursor:pointer;border:1px solid #d1d5db;'
-        'background:#f9fafb;border-radius:6px;padding:4px 10px;font-size:13px;color:var(--body-text-color);">'
-        '📋 Copy</button>'
-        '</div>'
-        f'<div id="rag-answer-text" style="color:var(--body-text-color);font-size:14px;line-height:1.6;">{body}</div>'
-        '</div>'
-    )
 
 
 def format_sql(raw_sql: str) -> str:
@@ -229,8 +200,6 @@ def build_ui() -> object:
                                     final_payload = job_data["data"]
 
                             text_out, df_out = parse_payload_to_ui(final_payload)
-                            if qtype == "rag":
-                                text_out = format_rag_answer(text_out)
                             job_box_completed = format_job_info(job_id, "SUCCESS", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_completed),
@@ -275,8 +244,6 @@ def build_ui() -> object:
                             )
                 else:
                     text_out, df_out = parse_payload_to_ui(payload)
-                    if qtype == "rag":
-                        text_out = format_rag_answer(text_out)
                     job_box_direct = format_job_info("N/A (Direct)", "SUCCESS", start_time, is_final=True)
                     yield (
                         gr.update(visible=True, value=job_box_direct),
@@ -363,7 +330,7 @@ def build_ui() -> object:
                 rag_cancel_btn = gr.Button("Cancel", visible=False)
 
             rag_job_info_box = gr.Markdown(visible=False)
-            rag_output_text = gr.HTML(label="Answer")
+            rag_output_text = gr.Textbox(label="Answer", lines=12, interactive=False)
             rag_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
             rag_ask, rag_cancel = make_tab_handlers()
