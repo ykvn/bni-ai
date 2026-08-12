@@ -61,6 +61,18 @@ def resolve_cmd(binary_name: str) -> List[str]:
     return [sys.executable, "-m", f"{binary_name}.cli.main"]
 
 
+def ensure_metricflow_dummy_adapter():
+    """
+    MetricFlow hardcodes supported dialects and officially rejects 'impala'.
+    We silently install 'dbt-postgres' to act as a dummy compiler just for SQL generation.
+    """
+    try:
+        import dbt.adapters.postgres
+    except ImportError:
+        print("📦 Installing dbt-postgres as a dummy dialect compiler for MetricFlow...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "dbt-postgres"], check=True)
+
+
 def ensure_dbt_profile_exists():
     """Always regenerates and overwrites ~/.dbt/profiles.yml with current environment variables."""
     DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
@@ -89,6 +101,17 @@ default:
       http_path: {impala_http_path}
       use_ssl: true
       threads: 1
+      
+    # --- SET POSTGRES FOR METRICFLOW SQL COMPILATION ---
+    mf_compile:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: dummy
+      pass: dummy
+      dbname: dummy
+      schema: {impala_db}
+      threads: 1
 """
     # Overwrite the profile file on every execution
     profile_file.write_text(profile_content.strip())
@@ -109,6 +132,7 @@ def startup_event():
     """Bootstraps the dbt environment the moment the API starts."""
     print("🚀 Bootstrapping dbt environment and generating profiles.yml...")
     ensure_dbt_profile_exists()
+
 
 @app.get("/healthz")
 def health_check():
@@ -154,13 +178,21 @@ def execute_metric_query(payload: MetricQueryRequest):
     try:
         from impala.dbapi import connect
 
-        # 1. Always regenerate/overwrite profile & set environment
+        # 1. Ensure profiles exists & install dummy adapter
         ensure_dbt_profile_exists()
+        ensure_metricflow_dummy_adapter()
+        
         env = os.environ.copy()
         env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
 
-        # 2. Auto-generate target/semantic_manifest.json if missing
+        # 2. Auto-generate target/semantic_manifest.json if missing or outdated
+        needs_parse = False
         if not MANIFEST_PATH.exists():
+            needs_parse = True
+        elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
+            needs_parse = True
+
+        if needs_parse:
             dbt_parse_cmd = resolve_cmd("dbt") + ["parse"]
             parse_proc = subprocess.run(
                 dbt_parse_cmd,
@@ -172,19 +204,30 @@ def execute_metric_query(payload: MetricQueryRequest):
             if parse_proc.returncode != 0:
                 raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
 
-        # 3. Build & execute MetricFlow query command (--explain)
-        mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
-        if payload.group_by:
-            mf_cmd.extend(["--group-by", ",".join(payload.group_by)])
-        mf_cmd.append("--explain")
+        # 3. Hack: Bypass MetricFlow's Unsupported Adapter List
+        manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
+        try:
+            # Trick MetricFlow into using the Postgres dialect compiler
+            patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
+            MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
+            
+            mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
+            if payload.group_by:
+                mf_cmd.extend(["--group-by", ",".join(payload.group_by)])
+            
+            # Use the dummy postgres target to bypass connection checks
+            mf_cmd.extend(["--explain", "--target", "mf_compile"])
 
-        process = subprocess.run(
-            mf_cmd,
-            cwd=str(DBT_PROJECT_DIR),
-            env=env,
-            capture_output=True,
-            text=True
-        )
+            process = subprocess.run(
+                mf_cmd,
+                cwd=str(DBT_PROJECT_DIR),
+                env=env,
+                capture_output=True,
+                text=True
+            )
+        finally:
+            # Always restore the original Impala manifest for future dbt parse runs!
+            MANIFEST_PATH.write_text(manifest_text, encoding="utf-8")
         
         if process.returncode != 0:
             error_msg = process.stderr.strip() or process.stdout.strip()
@@ -200,6 +243,9 @@ def execute_metric_query(payload: MetricQueryRequest):
                 sql_start = pos
 
         compiled_sql = output_text[sql_start:] if sql_start != -1 else output_text
+        
+        # Format Postgres-flavored SQL for Impala (convert "identifier" to `identifier`)
+        compiled_sql = compiled_sql.replace('"', '`')
 
         # 4. Execute compiled SQL on CDW Impala over port 443
         impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
