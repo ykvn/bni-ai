@@ -2,7 +2,7 @@ litellm_settings:
   drop_params: true
 
 general_settings:
-  #master_key: os.environ/LITELLM_MASTER_KEY
+  # master_key: os.environ/LITELLM_MASTER_KEY
 
 model_list:
   - model_name: os.environ/CML_MODEL_NAME
