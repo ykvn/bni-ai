@@ -104,6 +104,12 @@ def load_dbt_catalog() -> Dict[str, Any]:
 
 
 # --- API Routes ---
+@app.on_event("startup")
+def startup_event():
+    """Bootstraps the dbt environment the moment the API starts."""
+    print("🚀 Bootstrapping dbt environment and generating profiles.yml...")
+    ensure_dbt_profile_exists()
+
 @app.get("/healthz")
 def health_check():
     """Health check endpoint for CML Application router."""
