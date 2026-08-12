@@ -160,7 +160,6 @@ def get_cached_engine():
             )
 
             if config_cls is None:
-                # Fallback: Find any class in the module that provides the 'mf' property
                 for attr in dir(cli_config_mod):
                     item = getattr(cli_config_mod, attr)
                     if isinstance(item, type) and hasattr(item, "mf"):
@@ -171,6 +170,12 @@ def get_cached_engine():
                 raise ImportError("Could not find configuration class inside dbt_metricflow.cli.cli_configuration")
 
             cfg = config_cls()
+            
+            # --- THE FIX: Initialize the configuration before accessing .mf ---
+            if hasattr(cfg, "setup"):
+                cfg.setup()
+            # ----------------------------------------------------------------
+            
             _ENGINE_CACHE = cfg.mf
             _LAST_YAML_MTIME = current_mtime
             print("✅ MetricFlow Engine cached in memory!")
