@@ -59,7 +59,7 @@ def parse_payload_to_ui(payload: dict):
                 df_update = gr.update(visible=True, value=df)
             except Exception as e:
                 text_parts.append(f"*(Could not render table: {e})*")
-        elif isinstance(data, list) and len(data) == 0:
+        elif isinstance(data, list) and len(data) == 0 and payload.get("type") == "SQL":
             text_parts.append("### \U0001f4ca Query Results:\n*Query executed successfully, but returned 0 rows.*")
 
     # Fallback if entirely unrecognized
@@ -290,7 +290,7 @@ def build_ui() -> object:
 
         # ---------------- SQL Question tab ----------------
         with gr.Tab("SQL Question"):
-            gr.Markdown("### \U0001f9ee Query bank data\nAsk for aggregates, balances, or reports. The question is converted to SQL and executed against the data warehouse.")
+            gr.Markdown("### \U0001f9ee Zero SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to SQL and executed against the data warehouse.")
             sql_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
             sql_type = gr.State("sql")
 
@@ -321,7 +321,7 @@ def build_ui() -> object:
 
         # ---------------- RAG Question tab ----------------
         with gr.Tab("RAG Question"):
-            gr.Markdown("### \U0001f4c4 Policy & knowledge retrieval\nAsk about manuals, SOPs, criteria, and regulations. Answers are retrieved from enterprise documents.")
+            gr.Markdown("### \U0001f4c4 Policy & Knowledge Retrieval Assistant\nAsk about manuals, SOPs, criteria, and regulations. Answers are retrieved from enterprise documents.")
             rag_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Apa saja kriteria yang harus dipenuhi untuk persetujuan kredit?")
             rag_type = gr.State("rag")
 
