@@ -1,5 +1,5 @@
 """
-Converts bni_dbt_definitions.xlsx into bni_dbt_schema.yaml
+Converts bni_dbt_definitions.xlsx into bni_dbt_schema.yaml and generates stub SQL files.
 Path: /home/cdsw/ask-data/dbt_service/app/core/excel_to_dbt.py
 """
 import sys
@@ -18,10 +18,21 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
 
     semantic_models = []
     metrics = []
+    
+    # Resolve the directory where models are stored
+    models_dir = Path(output_yaml_path).parent
+    models_dir.mkdir(parents=True, exist_ok=True)
 
     for _, table in tables_df.iterrows():
         table_name = str(table["Table Name"]).strip()
         table_cols = cols_df[cols_df["Table Name"] == table_name]
+
+        # --- NEW: Auto-generate the dbt SQL stub file ---
+        # This resolves the `ref('table_name')` error by pointing dbt to the physical Impala table.
+        sql_path = models_dir / f"{table_name}.sql"
+        with open(sql_path, "w") as sql_file:
+            sql_file.write(f"select * from {{{{ target.schema }}}}.{table_name}\n")
+        # ------------------------------------------------
 
         entities = []
         dimensions = []
@@ -45,7 +56,6 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
             else:
                 dim_type = "time" if "DATE" in str(col["Data Type"]).upper() or "TIME" in str(col["Data Type"]).upper() else "categorical"
                 
-                # --- NEW: Build LLM Context into Description ---
                 meta_parts = []
                 if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
                     meta_parts.append(f"Mode: {str(val_mode).strip()}")
@@ -53,7 +63,6 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
                 if pd.notna(static_vals):
                     meta_parts.append(f"Allowed: [{str(static_vals).strip()}]")
 
-                # Extract Synonyms from Value_Mappings
                 if not vals_df.empty:
                     col_mappings = vals_df[(vals_df["Table Name"] == table_name) & (vals_df["Column Name"] == col_name)]
                     if not col_mappings.empty:
@@ -65,7 +74,6 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
                         if synonyms_list:
                             meta_parts.append(f"Synonyms: [{', '.join(set(synonyms_list))}]")
                 
-                # Append context if it exists
                 if meta_parts:
                     base_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
 
@@ -82,10 +90,13 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
                 dimensions.append(dim_obj)
 
             if pd.notna(custom_measures):
-                aggs = [a.strip() for a in str(custom_measures).split(",")]
+                aggs = [a.strip().lower() for a in str(custom_measures).split(",")]
                 for agg in aggs:
+                    # Map 'avg' to 'average' for MetricFlow compatibility
+                    dbt_agg_type = "average" if agg == "avg" else agg
+                    
                     m_name = f"{table_name}_{col_name}_{agg}"
-                    measures.append({"name": m_name, "expr": col_name, "agg": agg})
+                    measures.append({"name": m_name, "expr": col_name, "agg": dbt_agg_type})
                     metrics.append({
                         "name": f"{table_name}_{col_name}_{agg}_metric",
                         "label": f"{table_name} {col_name} {agg}".title(),
@@ -108,9 +119,7 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
         "metrics": metrics
     }
 
-    out_path = Path(output_yaml_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w") as f:
+    with open(output_yaml_path, "w") as f:
         yaml.dump(dbt_schema, f, sort_keys=False, default_flow_style=False)
 
 
@@ -126,9 +135,6 @@ if __name__ == "__main__":
 
     input_excel = ask_data_root / "data" / "bni_dbt_definitions.xlsx"
     output_yaml = ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
-    
-    print(f"📂 Input Source: {input_excel}")
-    print(f"📂 Target YAML : {output_yaml}")
 
     if not input_excel.exists():
         print(f"\n❌ Error: Cannot find the Excel file at {input_excel}")
@@ -136,7 +142,7 @@ if __name__ == "__main__":
 
     try:
         convert_excel_to_dbt_yaml(str(input_excel), str(output_yaml))
-        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml (Metadata safely embedded in descriptions!)")
+        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml AND .sql files!")
     except Exception as e:
         print(f"\n❌ Generation failed: {str(e)}")
         sys.exit(1)
