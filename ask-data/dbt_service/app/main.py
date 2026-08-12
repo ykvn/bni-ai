@@ -131,7 +131,7 @@ def ensure_manifest_ready():
 
 def get_cached_engine():
     """
-    Loads the MetricFlow Engine into RAM once using CliConfiguration.
+    Loads the MetricFlow Engine into RAM once using dynamic class inspection.
     Rebuilds only if bni_dbt_schema.yaml has been modified.
     """
     global _ENGINE_CACHE, _LAST_YAML_MTIME
@@ -148,8 +148,29 @@ def get_cached_engine():
         try:
             os.chdir(str(DBT_PROJECT_DIR))
             os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
-            from dbt_metricflow.cli.cli_configuration import CliConfiguration
-            cfg = CliConfiguration()
+            
+            import dbt_metricflow.cli.cli_configuration as cli_config_mod
+
+            # Dynamically locate the configuration class regardless of exact class name
+            config_cls = (
+                getattr(cli_config_mod, "dbtMetricFlowCliConfiguration", None)
+                or getattr(cli_config_mod, "MetricFlowCliConfiguration", None)
+                or getattr(cli_config_mod, "CliConfiguration", None)
+                or getattr(cli_config_mod, "dbtCliConfiguration", None)
+            )
+
+            if config_cls is None:
+                # Fallback: Find any class in the module that provides the 'mf' property
+                for attr in dir(cli_config_mod):
+                    item = getattr(cli_config_mod, attr)
+                    if isinstance(item, type) and hasattr(item, "mf"):
+                        config_cls = item
+                        break
+
+            if config_cls is None:
+                raise ImportError("Could not find configuration class inside dbt_metricflow.cli.cli_configuration")
+
+            cfg = config_cls()
             _ENGINE_CACHE = cfg.mf
             _LAST_YAML_MTIME = current_mtime
             print("✅ MetricFlow Engine cached in memory!")
