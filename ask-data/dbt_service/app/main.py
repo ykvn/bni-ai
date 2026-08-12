@@ -8,12 +8,32 @@ import shutil
 import subprocess
 import yaml
 import re
+import signal
 import threading
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+# Disable MetricFlow / Rich terminal spinners and ANSI colors in server logs
+os.environ["TERM"] = "dumb"
+os.environ["NO_COLOR"] = "1"
+os.environ["DBT_USE_COLORS"] = "0"
+
+# --- THREAD-SAFE SIGNAL PATCH ---
+# Prevents "signal only works in main thread" error when MetricFlow runs inside FastAPI worker threads
+_orig_signal = signal.signal
+
+def _safe_signal(sig, handler):
+    try:
+        return _orig_signal(sig, handler)
+    except ValueError:
+        # Safely ignore signal registration attempts from non-main worker threads
+        return None
+
+signal.signal = _safe_signal
+# --------------------------------
 
 # Ensure ask-data/ root and service directory are in path
 _SERVICE_DIR = Path(__file__).resolve().parent.parent
@@ -171,36 +191,33 @@ def cache_and_monkeypatch_cli():
             if config_cls is None:
                 raise ImportError("Could not find configuration class inside dbt_metricflow.cli.cli_configuration")
 
-            # Restore original __new__ if we are rebuilding the cache
+            # Restore original __new__ if rebuilding the cache
             if hasattr(config_cls, "_original_new"):
                 config_cls.__new__ = config_cls._original_new
 
-            # 1. Instantiate the heavy configuration object
+            # 1. Instantiate configuration object
             cfg = config_cls()
             
-            # 2. Run the expensive setup logic ONCE
+            # 2. Run setup logic ONCE
             if hasattr(cfg, "setup"):
                 cfg.setup()
-                # Neuter the setup method so the CLI can't trigger it again
                 cfg.setup = lambda *args, **kwargs: None
             
-            # Trigger the engine graph build (cached property)
+            # Trigger engine graph build
             _ = cfg.mf 
             
-            # 3. Monkeypatch Python to return this exact instance whenever the CLI asks for it
+            # 3. Monkeypatch Python to return this instance on future calls
             _original_new = config_cls.__new__
             def _cached_new(cls, *args, **kwargs):
                 return cfg
             
             config_cls._original_new = _original_new
             config_cls.__new__ = staticmethod(_cached_new)
-            
-            # Also mock __init__ to prevent it resetting any states on the singleton
             config_cls.__init__ = lambda self, *args, **kwargs: None
             
             _GLOBAL_CACHED_CONFIG = cfg
             _LAST_YAML_MTIME = current_mtime
-            print("✅ MetricFlow CLI successfully monkeypatched into memory!")
+            print("✅ MetricFlow CLI successfully cached in memory!")
         finally:
             os.chdir(old_cwd)
 
@@ -256,9 +273,8 @@ def get_semantic_catalog():
 
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
 def execute_metric_query(payload: MetricQueryRequest):
-    """Compiles dynamic MetricFlow metrics using the official CLI (Monkeypatched to run in ~30ms)."""
+    """Compiles dynamic MetricFlow metrics using official CLI (Monkeypatched to run in ~30ms)."""
     try:
-        # Ensure cache is fresh
         cache_and_monkeypatch_cli()
         
         args = ["query", "--metrics", ",".join(payload.metrics)]
@@ -274,13 +290,30 @@ def execute_metric_query(payload: MetricQueryRequest):
             old_cwd = os.getcwd()
             try:
                 os.chdir(str(DBT_PROJECT_DIR))
-                from dbt_metricflow.cli.main import mf
-                from click.testing import CliRunner
                 
-                # Execute the CLI natively. Because of our Monkeypatch, it thinks it's 
-                # initializing a new config but instantly gets our pre-warmed singleton cache!
+                import dbt_metricflow.cli.main as cli_main_mod
+                from click.testing import CliRunner
+                import click
+
+                main_entry = (
+                    getattr(cli_main_mod, "cli", None)
+                    or getattr(cli_main_mod, "main", None)
+                    or getattr(cli_main_mod, "mf", None)
+                    or getattr(cli_main_mod, "app", None)
+                )
+
+                if main_entry is None:
+                    for attr in dir(cli_main_mod):
+                        item = getattr(cli_main_mod, attr)
+                        if isinstance(item, click.BaseCommand):
+                            main_entry = item
+                            break
+
+                if main_entry is None:
+                    raise ImportError("Could not locate Click entrypoint in dbt_metricflow.cli.main")
+
                 runner = CliRunner()
-                result = runner.invoke(mf, args)
+                result = runner.invoke(main_entry, args)
                 
                 if result.exit_code != 0:
                     raise Exception(result.output or str(result.exception))
@@ -288,7 +321,7 @@ def execute_metric_query(payload: MetricQueryRequest):
             finally:
                 os.chdir(old_cwd)
 
-        # Extract SQL query if preamble logs exist
+        # Extract SQL query block
         match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
         compiled_sql = output_text[match.start():] if match else output_text
 
