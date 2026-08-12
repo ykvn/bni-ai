@@ -7,6 +7,7 @@ import sys
 import shutil
 import subprocess
 import yaml
+import re
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -244,17 +245,19 @@ def execute_metric_query(payload: MetricQueryRequest):
 
         output_text = process.stdout.strip()
 
-        # Extract compiled SQL block starting from WITH or SELECT
-        sql_start = -1
-        for keyword in ["WITH ", "SELECT "]:
-            pos = output_text.upper().find(keyword)
-            if pos != -1 and (sql_start == -1 or pos < sql_start):
-                sql_start = pos
-
-        compiled_sql = output_text[sql_start:] if sql_start != -1 else output_text
+        # --- NEW EXTRACTION LOGIC ---
+        # MetricFlow outputs UI spinners and logs before the SQL. 
+        # We find the exact start of the SQL query by looking for 'WITH' or 'SELECT' at the beginning of a line.
+        match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
         
-        # Format Postgres-flavored SQL for Impala
+        if match:
+            compiled_sql = output_text[match.start():]
+        else:
+            compiled_sql = output_text
+
+        # Format Postgres-flavored SQL for Impala (convert "identifier" to `identifier`)
         compiled_sql = compiled_sql.replace('"', '`')
+        # ----------------------------
 
         # 4. Execute compiled SQL on CDW Impala over port 443
         impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
