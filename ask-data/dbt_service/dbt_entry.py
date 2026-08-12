@@ -25,46 +25,6 @@ _SERVICE_NAME = "dbt_service"
 _CALLER_FILE = __file__ if "__file__" in globals() else None
 
 
-def trigger_dbt_preflight_checks(dbt_service_dir: Path, env: dict | None = None) -> None:
-    """Pre-flight checks: Ensures dbt profiles.yml is configured for Impala CDW."""
-    try:
-        print("🔄 Running pre-flight dbt Semantic Layer checks...")
-        
-        # Ensure dbt profiles directory exists (~/.dbt/profiles.yml)
-        dbt_profile_dir = Path.home() / ".dbt"
-        dbt_profile_dir.mkdir(parents=True, exist_ok=True)
-        profile_file = dbt_profile_dir / "profiles.yml"
-
-        if not profile_file.exists():
-            print("📝 Generating default ~/.dbt/profiles.yml for Impala...")
-            impala_host = os.environ.get("IMPALA_HOST", "localhost")
-            impala_port = os.environ.get("IMPALA_PORT", "443")
-            impala_db = os.environ.get("DB_NAME", "test")
-            impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
-
-            # Updated dbt profile for CDW / Port 443
-            profile_content = f"""
-default:
-  target: dev
-  outputs:
-    dev:
-      type: impala
-      host: {impala_host}
-      port: {impala_port}
-      schema: {impala_db}
-      auth_type: LDAP
-      use_http_transport: true
-      http_path: {impala_http_path}
-      use_ssl: true
-      threads: 1
-"""
-            profile_file.write_text(profile_content.strip())
-            print(f"✅ Created {profile_file}")
-
-    except Exception as e:
-        print(f"⚠️ [dbt STARTUP WARNING] Bypass pre-flight check: {str(e)}")
-
-
 def main() -> None:
     ask_data_root = bootstrap_service(_SERVICE_NAME)
     service_dir = resolve_service_dir(_SERVICE_NAME, ask_data_root, caller_file=_CALLER_FILE)
@@ -77,10 +37,10 @@ def main() -> None:
     env = os.environ.copy()
     env["PYTHONPATH"] = build_pythonpath(service_dir, ask_data_root, env=env)
 
+    # 1. Install/verify Python dependencies
     ensure_dependencies(service_dir, env)
 
-    trigger_dbt_preflight_checks(service_dir, env=env)
-
+    # 2. Launch FastAPI service (main.py handles profiles.yml & dbt setup on boot/query)
     process = launch_uvicorn(service_dir, "app.main:app", app_port, env)
     print(f"🌐 Starting dbt Semantic Layer Application via subprocess on http://127.0.0.1:{app_port}")
 
