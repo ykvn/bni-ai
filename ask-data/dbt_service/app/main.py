@@ -1,369 +1,353 @@
-"""
-FastAPI Web Application serving dbt Semantic Layer & MetricFlow APIs.
-Located at: /home/cdsw/ask-data/dbt_service/app/main.py
-"""
 import os
-import sys
-import shutil
-import subprocess
-import yaml
-import re
-import signal
-import threading
-from pathlib import Path
-from typing import List, Optional, Dict, Any
+import time
+import json
+import requests
+import sqlparse
+from datetime import datetime
+import pandas as pd
+import gradio as gr
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from shared.cml_auth import build_cml_headers
 
-# --- ENVIRONMENT & LOGGING SUPPRESSION ---
-# Disables MetricFlow / Rich terminal spinners and ANSI colors in CML server logs
-os.environ["TERM"] = "dumb"
-os.environ["NO_COLOR"] = "1"
-os.environ["DBT_USE_COLORS"] = "0"
-os.environ["FORCE_COLOR"] = "0"
-os.environ["PYTHONUNBUFFERED"] = "1"
-os.environ["METRICFLOW_LOG_LEVEL"] = "ERROR"
 
-# --- THREAD-SAFE SIGNAL PATCH ---
-# Prevents "signal only works in main thread" error when MetricFlow runs inside FastAPI worker threads
-_orig_signal = signal.signal
-
-def _safe_signal(sig, handler):
+def format_sql(raw_sql: str) -> str:
+    """Formats a raw single-line SQL string into clean multi-line SQL."""
+    if not raw_sql or not raw_sql.strip():
+        return ""
     try:
-        return _orig_signal(sig, handler)
-    except ValueError:
-        # Safely ignore signal registration attempts from non-main worker threads
-        return None
-
-signal.signal = _safe_signal
-
-# --- DISABLE RICH SPINNER ANIMATIONS FOR NON-TTY LOGS ---
-# Prevents repeated "Initiating query..." Braille frame entries in non-interactive CML Application Logs
-try:
-    import rich.console
-    import rich.status
-    
-    # Force rich consoles to render in non-interactive/non-terminal mode
-    rich.console.Console.is_terminal = False
-    rich.console.Console.is_interactive = False
-    
-    # Disable status spinner rendering entirely
-    def _noop_status(self, *args, **kwargs):
-        class DummyStatus:
-            def __enter__(self): return self
-            def __exit__(self, *args): pass
-            def start(self): pass
-            def stop(self): pass
-            def update(self, *args, **kwargs): pass
-        return DummyStatus()
-
-    rich.console.Console.status = _noop_status
-except Exception:
-    pass
-# --------------------------------------------------------
-
-# Ensure ask-data/ root and service directory are in path
-_SERVICE_DIR = Path(__file__).resolve().parent.parent
-_ASK_DATA_ROOT = _SERVICE_DIR.parent
-if str(_ASK_DATA_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ASK_DATA_ROOT))
-if str(_SERVICE_DIR) not in sys.path:
-    sys.path.insert(0, str(_SERVICE_DIR))
-
-app = FastAPI(
-    title="dbt MetricFlow Semantic Layer API",
-    description="Exposes dbt semantic metrics compilation engine for LLM agents",
-    version="1.0.0",
-)
-
-# Paths
-DBT_PROJECT_DIR = _SERVICE_DIR / "dbt_project"
-SCHEMA_YAML_PATH = DBT_PROJECT_DIR / "models" / "bni_dbt_schema.yaml"
-MANIFEST_PATH = DBT_PROJECT_DIR / "target" / "semantic_manifest.json"
-DBT_PROFILES_DIR = Path.home() / ".dbt"
-PROFILE_FILE = DBT_PROFILES_DIR / "profiles.yml"
-
-# Global in-memory engine cache & thread lock
-_GLOBAL_CACHED_CONFIG = None
-_LAST_YAML_MTIME = 0
-_MF_LOCK = threading.Lock()
-
-
-class MetricQueryRequest(BaseModel):
-    metrics: List[str] = Field(..., description="List of metric names to query")
-    group_by: Optional[List[str]] = Field(default=[], description="List of dimension names")
-    where: Optional[str] = Field(default=None, description="Optional filter expression")
-
-
-class MetricQueryResponse(BaseModel):
-    status: str
-    sql: str
-    data: List[Dict[str, Any]] = Field(default=[], description="Empty list as query execution is disabled")
-
-
-def resolve_cmd(binary_name: str) -> List[str]:
-    """Dynamically locates executables in PATH or python bin."""
-    found_path = shutil.which(binary_name)
-    if found_path:
-        return [found_path]
-    py_bin = Path(sys.executable).parent / binary_name
-    if py_bin.exists():
-        return [str(py_bin)]
-    user_bin = Path.home() / ".local" / "bin" / binary_name
-    if user_bin.exists():
-        return [str(user_bin)]
-    return [sys.executable, "-m", f"{binary_name}.cli.main"]
-
-
-def ensure_metricflow_dummy_adapter():
-    """Silently installs 'dbt-postgres' as a dummy dialect compiler for MetricFlow."""
-    try:
-        import dbt.adapters.postgres
-    except ImportError:
-        print("📦 Installing dbt-postgres as a dummy dialect compiler for MetricFlow...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "dbt-postgres"], check=True)
-
-
-def ensure_compiler_profile():
-    """Writes a clean profiles.yml configuring dbt to compile purely using the dummy Postgres dialect."""
-    DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
-    impala_db = os.environ.get("DB_NAME", "test")
-
-    profile_content = f"""
-default:
-  target: dev
-  outputs:
-    dev:
-      type: postgres
-      host: localhost
-      port: 5432
-      user: dummy
-      pass: dummy
-      dbname: dummy
-      schema: {impala_db}
-      threads: 1
-"""
-    PROFILE_FILE.write_text(profile_content.strip())
-
-
-def ensure_manifest_ready():
-    """Parses project only if the YAML file changed. Builds a native Postgres semantic manifest."""
-    needs_parse = False
-    if not MANIFEST_PATH.exists():
-        needs_parse = True
-    elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
-        needs_parse = True
-
-    env = os.environ.copy()
-    env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
-
-    if needs_parse:
-        print("🔄 Schema modified or manifest missing. Running dbt parse...")
-        dbt_parse_cmd = resolve_cmd("dbt") + ["parse"]
-        parse_proc = subprocess.run(
-            dbt_parse_cmd,
-            cwd=str(DBT_PROJECT_DIR),
-            env=env,
-            capture_output=True,
-            text=True
+        return sqlparse.format(
+            raw_sql.strip(),
+            reindent=True,
+            keyword_case="upper",
+            comma_first=False,
+            indent_width=2
         )
-        if parse_proc.returncode != 0:
-            raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
-
-    # Always ensure adapter_type in semantic_manifest.json is patched to postgres
-    if MANIFEST_PATH.exists():
-        manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
-        if '"adapter_type": "impala"' in manifest_text:
-            patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
-            MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
+    except Exception:
+        return raw_sql.strip()
 
 
-def cache_and_monkeypatch_cli():
-    """
-    Loads the MetricFlow Engine into RAM once, then monkeypatches the CLI configuration 
-    class so that all subsequent CLI calls instantly return this pre-warmed instance.
-    """
-    global _GLOBAL_CACHED_CONFIG, _LAST_YAML_MTIME
+def parse_payload_to_ui(payload: dict):
+    """Parses payload into text components and a Pandas DataFrame for UI rendering."""
+    text_parts = []
+    df_update = gr.update(visible=False, value=None)
 
-    current_mtime = SCHEMA_YAML_PATH.stat().st_mtime if SCHEMA_YAML_PATH.exists() else 0
+    if not isinstance(payload, dict):
+        return str(payload), df_update
 
-    if _GLOBAL_CACHED_CONFIG is None or current_mtime > _LAST_YAML_MTIME:
-        ensure_compiler_profile()
-        ensure_metricflow_dummy_adapter()
-        ensure_manifest_ready()
+    # 1. Natural Language Response
+    if payload.get("response"):
+        text_parts.append(payload["response"])
 
-        print("⚡ Warming up MetricFlow Engine into RAM...")
-        old_cwd = os.getcwd()
-        try:
-            os.chdir(str(DBT_PROJECT_DIR))
-            os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
-            
-            import dbt_metricflow.cli.cli_configuration as cli_config_mod
+    # 2. Formatted SQL Code Block (Replaces single-line SQL with multi-line formatted SQL)
+    if payload.get("predicted_sql"):
+        formatted_sql = format_sql(payload["predicted_sql"])
+        text_parts.append(f"### \U0001f916 Generated SQL:\n```sql\n{formatted_sql}\n```")
 
-            # Dynamically locate the configuration class
-            config_cls = (
-                getattr(cli_config_mod, "dbtMetricFlowCliConfiguration", None)
-                or getattr(cli_config_mod, "MetricFlowCliConfiguration", None)
-                or getattr(cli_config_mod, "CliConfiguration", None)
-                or getattr(cli_config_mod, "dbtCliConfiguration", None)
+    # 3. True Tabular DataFrame Parsing
+    if "data" in payload and payload["data"] is not None:
+        data = payload["data"]
+
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except Exception:
+                pass
+
+        if isinstance(data, list) and len(data) > 0:
+            try:
+                df = pd.DataFrame(data)
+                df_update = gr.update(visible=True, value=df)
+            except Exception as e:
+                text_parts.append(f"*(Could not render table: {e})*")
+        elif isinstance(data, list) and len(data) == 0 and payload.get("type") == "SQL":
+            text_parts.append("### \U0001f4ca Query Results:\n*Query executed successfully, but returned 0 rows.*")
+
+    # Fallback if entirely unrecognized
+    if not text_parts and df_update["visible"] is False:
+        text_parts.append(f"```json\n{json.dumps(payload, indent=2, default=str)}\n```")
+
+    return "\n\n".join(text_parts), df_update
+
+
+def build_ui() -> object:
+    """Constructs and returns the Gradio Blocks UI instance."""
+    backend_url = os.environ.get("BACKEND_URL", "").rstrip("/")
+    if backend_url.endswith("/process") or backend_url.endswith("/ask"):
+        base_api_url = backend_url.rsplit("/", 1)[0]
+    else:
+        base_api_url = backend_url
+
+    def format_job_info(job_id: str, status: str, start_time: float, is_final: bool = False):
+        """Helper to render standardized Markdown Status Box vertically."""
+        elapsed = int(time.time() - start_time)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        status_upper = status.upper()
+        if status_upper in ("COMPLETED", "SUCCESS"):
+            badge = "\u2705 SUCCESS"
+        elif status_upper == "FAILED":
+            badge = "\u274c FAILED"
+        elif status_upper == "CANCELLED":
+            badge = "\U0001f6ab CANCELLED"
+        else:
+            badge = f"\u23f3 {status_upper}"
+
+        time_label = "Completed Time" if is_final else "Current Time"
+
+        # Formatted vertically using Markdown bullets
+        return (
+            f"### Job Execution Information\n"
+            f"- **Job ID:** `{job_id}`\n"
+            f"- **Status:** {badge}\n"
+            f"- **{time_label}:** `{now_str}` (Duration: `{elapsed}s`)\n"
+        )
+
+    def make_tab_handlers():
+        """
+        Builds an isolated pair (ask/cancel) of handler generators for a single tab.
+        Each tab gets its own job_id / cancel-flag state so switching tabs or
+        cancelling one tab never affects the other tab's running job.
+        """
+        state = {"job_id": None, "cancel": False}
+
+        def ask_backend(question: str, qtype: str):
+            state["cancel"] = False
+
+            if not question.strip():
+                yield (
+                    gr.update(visible=False, value=""),
+                    "Please enter a valid question.",
+                    gr.update(visible=False),
+                    gr.update(interactive=True),
+                    gr.update(visible=False, interactive=False)
+                )
+                return
+
+            start_time = time.time()
+
+            # Initial yield before network dispatch
+            initial_job_box = (
+                f"### Job Execution Information\n"
+                f"- **Job ID:** `Submitting...`\n"
+                f"- **Status:** \u23f3 ENQUEUEING\n"
+                f"- **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
+            )
+            yield (
+                gr.update(visible=True, value=initial_job_box),
+                "Submitting question to CrewAI Engine...",
+                gr.update(visible=False),
+                gr.update(interactive=False),
+                gr.update(visible=True, interactive=True)
             )
 
-            if config_cls is None:
-                for attr in dir(cli_config_mod):
-                    item = getattr(cli_config_mod, attr)
-                    if isinstance(item, type) and hasattr(item, "mf"):
-                        config_cls = item
-                        break
-
-            if config_cls is None:
-                raise ImportError("Could not find configuration class inside dbt_metricflow.cli.cli_configuration")
-
-            # Restore original __new__ if rebuilding the cache
-            if hasattr(config_cls, "_original_new"):
-                config_cls.__new__ = config_cls._original_new
-
-            # 1. Instantiate configuration object
-            cfg = config_cls()
-            
-            # 2. Run setup logic ONCE
-            if hasattr(cfg, "setup"):
-                cfg.setup()
-                cfg.setup = lambda *args, **kwargs: None
-            
-            # Trigger engine graph build
-            _ = cfg.mf 
-            
-            # 3. Monkeypatch Python to return this instance on future calls
-            _original_new = config_cls.__new__
-            def _cached_new(cls, *args, **kwargs):
-                return cfg
-            
-            config_cls._original_new = _original_new
-            config_cls.__new__ = staticmethod(_cached_new)
-            config_cls.__init__ = lambda self, *args, **kwargs: None
-            
-            _GLOBAL_CACHED_CONFIG = cfg
-            _LAST_YAML_MTIME = current_mtime
-            print("✅ MetricFlow CLI successfully cached in memory!")
-        finally:
-            os.chdir(old_cwd)
-
-
-def load_dbt_catalog() -> Dict[str, Any]:
-    """Loads and parses the dbt bni_dbt_schema.yaml file."""
-    if not SCHEMA_YAML_PATH.exists():
-        return {"semantic_models": [], "metrics": []}
-    
-    with open(SCHEMA_YAML_PATH, "r") as f:
-        return yaml.safe_load(f)
-
-
-@app.on_event("startup")
-def startup_event():
-    """Bootstraps environment and patches the CLI Engine into RAM on startup."""
-    print("🚀 Bootstrapping in-memory dbt environment...")
-    os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
-    try:
-        cache_and_monkeypatch_cli()
-    except Exception as e:
-        print(f"⚠️ Pre-load warning on startup: {str(e)}")
-
-
-@app.get("/healthz")
-def health_check():
-    return {"status": "healthy", "service": "dbt_service", "dbt_project_found": DBT_PROJECT_DIR.exists()}
-
-
-@app.get("/api/v1/meta")
-def get_semantic_catalog():
-    catalog = load_dbt_catalog()
-    available_metrics = [
-        {
-            "name": m.get("name"),
-            "label": m.get("label"),
-            "description": m.get("description"),
-            "synonyms": m.get("meta", {}).get("synonyms", [])
-        } for m in catalog.get("metrics", [])
-    ]
-    available_dimensions = []
-    for model in catalog.get("semantic_models", []):
-        model_name = model.get("name")
-        for dim in model.get("dimensions", []):
-            available_dimensions.append({
-                "name": f"{model_name}__{dim.get('name')}",
-                "description": dim.get("description", ""),
-                "meta": dim.get("meta", {})
-            })
-
-    return {"metrics": available_metrics, "dimensions": available_dimensions}
-
-
-@app.post("/api/v1/load", response_model=MetricQueryResponse)
-def execute_metric_query(payload: MetricQueryRequest):
-    """Compiles dynamic MetricFlow metrics using official CLI (Monkeypatched to run in ~30ms)."""
-    try:
-        cache_and_monkeypatch_cli()
-        
-        args = ["query", "--metrics", ",".join(payload.metrics)]
-        if payload.group_by:
-            args.extend(["--group-by", ",".join(payload.group_by)])
-        if payload.where:
-            args.extend(["--where", payload.where])
-        args.append("--explain")
-
-        output_text = ""
-        
-        with _MF_LOCK:
-            old_cwd = os.getcwd()
             try:
-                os.chdir(str(DBT_PROJECT_DIR))
-                
-                import dbt_metricflow.cli.main as cli_main_mod
-                from click.testing import CliRunner
-                import click
+                headers = build_cml_headers(extra={"Content-Type": "application/json", "accept": "application/json"})
 
-                main_entry = (
-                    getattr(cli_main_mod, "cli", None)
-                    or getattr(cli_main_mod, "main", None)
-                    or getattr(cli_main_mod, "mf", None)
-                    or getattr(cli_main_mod, "app", None)
+                response = requests.post(
+                    backend_url,
+                    json={"type": qtype, "question": question},
+                    headers=headers,
+                    timeout=30,
+                    verify=False
                 )
+                response.raise_for_status()
+                payload = response.json()
 
-                if main_entry is None:
-                    for attr in dir(cli_main_mod):
-                        item = getattr(cli_main_mod, attr)
-                        if isinstance(item, click.BaseCommand):
-                            main_entry = item
+                if "job_id" in payload:
+                    job_id = payload["job_id"]
+                    state["job_id"] = job_id
+                    job_status_url = f"{base_api_url}/job/{job_id}"
+
+                    while True:
+                        time.sleep(1.0)
+
+                        if state["cancel"]:
+                            job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
+                            yield (
+                                gr.update(visible=True, value=job_box_cancelled),
+                                "\u274c Request was cancelled by user.",
+                                gr.update(visible=False),
+                                gr.update(interactive=True),
+                                gr.update(visible=False, interactive=False)
+                            )
+                            state["cancel"] = False
                             break
 
-                if main_entry is None:
-                    raise ImportError("Could not locate Click entrypoint in dbt_metricflow.cli.main")
+                        status_response = requests.get(
+                            job_status_url,
+                            headers=headers,
+                            timeout=10,
+                            verify=False
+                        )
+                        status_response.raise_for_status()
+                        job_data = status_response.json()
+                        status = job_data.get("status", "processing")
 
-                runner = CliRunner()
-                result = runner.invoke(main_entry, args)
-                
-                if result.exit_code != 0:
-                    raise Exception(result.output or str(result.exception))
-                output_text = result.output
-            finally:
-                os.chdir(old_cwd)
+                        if status == "completed":
+                            final_payload = job_data
 
-        # Extract SQL query block
-        match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
-        compiled_sql = output_text[match.start():] if match else output_text
+                            if "result" in job_data:
+                                if isinstance(job_data["result"], str):
+                                    try:
+                                        final_payload = json.loads(job_data["result"])
+                                    except Exception:
+                                        final_payload = {"response": job_data["result"]}
+                                elif isinstance(job_data["result"], dict):
+                                    final_payload = job_data["result"]
 
-        # Format Postgres SQL to Impala Syntax
-        compiled_sql = compiled_sql.replace('"', '`')
-        
-        # Clean up dummy schema/database references
-        compiled_sql = re.sub(r'`?dummy`?\.', '', compiled_sql)
+                            elif "data" in job_data and isinstance(job_data["data"], dict):
+                                if "predicted_sql" in job_data["data"]:
+                                    final_payload = job_data["data"]
 
-        return MetricQueryResponse(
-            status="success",
-            sql=compiled_sql,
-            data=[]
-        )
+                            text_out, df_out = parse_payload_to_ui(final_payload)
+                            job_box_completed = format_job_info(job_id, "SUCCESS", start_time, is_final=True)
+                            yield (
+                                gr.update(visible=True, value=job_box_completed),
+                                text_out,
+                                df_out,
+                                gr.update(interactive=True),
+                                gr.update(visible=False, interactive=False)
+                            )
+                            break
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Metric Compilation Failed: {str(e)}")
+                        elif status == "failed":
+                            error_msg = job_data.get("error", "Unknown error encountered.")
+                            job_box_failed = format_job_info(job_id, "FAILED", start_time, is_final=True)
+                            yield (
+                                gr.update(visible=True, value=job_box_failed),
+                                f"\u274c Task Failed:\n{error_msg}",
+                                gr.update(visible=False),
+                                gr.update(interactive=True),
+                                gr.update(visible=False, interactive=False)
+                            )
+                            break
+
+                        elif status == "cancelled":
+                            job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
+                            yield (
+                                gr.update(visible=True, value=job_box_cancelled),
+                                "\u274c Request was cancelled.",
+                                gr.update(visible=False),
+                                gr.update(interactive=True),
+                                gr.update(visible=False, interactive=False)
+                            )
+                            break
+
+                        else:
+                            job_box_running = format_job_info(job_id, status, start_time, is_final=False)
+                            yield (
+                                gr.update(visible=True, value=job_box_running),
+                                "\u23f3 CrewAI is currently executing your request...",
+                                gr.update(visible=False),
+                                gr.update(interactive=False),
+                                gr.update(visible=True, interactive=True)
+                            )
+                else:
+                    text_out, df_out = parse_payload_to_ui(payload)
+                    job_box_direct = format_job_info("N/A (Direct)", "SUCCESS", start_time, is_final=True)
+                    yield (
+                        gr.update(visible=True, value=job_box_direct),
+                        text_out,
+                        df_out,
+                        gr.update(interactive=True),
+                        gr.update(visible=False, interactive=False)
+                    )
+
+            except Exception as exc:
+                error_details = str(exc) if str(exc) and str(exc) != "0" else repr(exc)
+                job_box_err = format_job_info("ERROR", "FAILED", start_time, is_final=True)
+                yield (
+                    gr.update(visible=True, value=job_box_err),
+                    f"\u274c Exception Error:\n{error_details}",
+                    gr.update(visible=False),
+                    gr.update(interactive=True),
+                    gr.update(visible=False, interactive=False)
+                )
+
+        def cancel_backend():
+            state["cancel"] = True
+            job_id = state["job_id"]
+            if job_id:
+                try:
+                    headers = build_cml_headers(extra={"Content-Type": "application/json", "accept": "application/json"})
+                    cancel_url = f"{base_api_url}/job/{job_id}/cancel"
+                    requests.delete(cancel_url, headers=headers, timeout=10, verify=False)
+                except Exception as e:
+                    print(f"Cancel request error: {e}", flush=True)
+            return (
+                gr.update(visible=True, value="### \u23f3 Cancellation requested..."),
+                "Cancelling request...",
+                gr.update(visible=False),
+                gr.update(interactive=True),
+                gr.update(visible=False, interactive=False)
+            )
+
+        return ask_backend, cancel_backend
+
+    with gr.Blocks(title="Bank Negara Indonesia Q&A") as demo:
+        gr.Markdown("# Bank Negara Indonesia Zero Query Assistant")
+        gr.Markdown("Ask questions about bank data (SQL) or retrieve answers from policy documents (RAG).")
+
+        # ---------------- SQL Question tab ----------------
+        with gr.Tab("SQL Question"):
+            gr.Markdown("### \U0001f9ee Zero SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to SQL and executed against the data warehouse.")
+            sql_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
+            sql_type = gr.State("sql")
+
+            with gr.Row():
+                sql_submit_btn = gr.Button("Ask")
+                sql_cancel_btn = gr.Button("Cancel", visible=False)
+
+            sql_job_info_box = gr.Markdown(visible=False)
+            sql_output_text = gr.Markdown(label="Answer & SQL")
+            sql_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
+
+            sql_ask, sql_cancel = make_tab_handlers()
+
+            sql_submit_btn.click(
+                fn=sql_ask,
+                inputs=[sql_question, sql_type],
+                outputs=[sql_job_info_box, sql_output_text, sql_output_table, sql_submit_btn, sql_cancel_btn],
+                concurrency_limit=None,
+                show_progress="hidden"
+            )
+            sql_cancel_btn.click(
+                fn=sql_cancel,
+                inputs=None,
+                outputs=[sql_job_info_box, sql_output_text, sql_output_table, sql_submit_btn, sql_cancel_btn],
+                concurrency_limit=None,
+                show_progress="hidden"
+            )
+
+        # ---------------- RAG Question tab ----------------
+        with gr.Tab("RAG Question"):
+            gr.Markdown("### \U0001f4c4 Policy & Knowledge Retrieval Assistant\nAsk about manuals, SOPs, criteria, and regulations. Answers are retrieved from enterprise documents.")
+            rag_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Apa saja kriteria yang harus dipenuhi untuk persetujuan kredit?")
+            rag_type = gr.State("rag")
+
+            with gr.Row():
+                rag_submit_btn = gr.Button("Ask")
+                rag_cancel_btn = gr.Button("Cancel", visible=False)
+
+            rag_job_info_box = gr.Markdown(visible=False)
+            rag_output_text = gr.Textbox(label="Answer", lines=12, interactive=False)
+            rag_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
+
+            rag_ask, rag_cancel = make_tab_handlers()
+
+            rag_submit_btn.click(
+                fn=rag_ask,
+                inputs=[rag_question, rag_type],
+                outputs=[rag_job_info_box, rag_output_text, rag_output_table, rag_submit_btn, rag_cancel_btn],
+                concurrency_limit=None,
+                show_progress="hidden"
+            )
+            rag_cancel_btn.click(
+                fn=rag_cancel,
+                inputs=None,
+                outputs=[rag_job_info_box, rag_output_text, rag_output_table, rag_submit_btn, rag_cancel_btn],
+                concurrency_limit=None,
+                show_progress="hidden"
+            )
+
+    return demo
