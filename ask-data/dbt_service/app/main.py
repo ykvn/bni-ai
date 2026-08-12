@@ -215,8 +215,11 @@ def execute_metric_query(payload: MetricQueryRequest):
             if payload.group_by:
                 mf_cmd.extend(["--group-by", ",".join(payload.group_by)])
             
-            # Use the dummy postgres target to bypass connection checks
-            mf_cmd.extend(["--explain", "--target", "mf_compile"])
+            # Just ask for the SQL string
+            mf_cmd.append("--explain")
+
+            # Tell MetricFlow to use the dummy Postgres target via Environment Variable instead of CLI flag
+            env["DBT_TARGET"] = "mf_compile"
 
             process = subprocess.run(
                 mf_cmd,
