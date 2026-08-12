@@ -4,20 +4,15 @@ Located at: /home/cdsw/ask-data/dbt_service/app/main.py
 """
 import os
 import sys
-import json
-import yaml
+import shutil
 import subprocess
+import yaml
+import re
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-
-# Direct in-process MetricFlow imports
-from dbt_semantic_interfaces.implementations.semantic_manifest import PydanticSemanticManifest
-from metricflow.manifest.manifest_converter import MetricFlowManifestConverter
-from metricflow.engine.metricflow_engine_factory import MetricFlowEngineFactory
-from metricflow.protocols.query_param_protocol import MetricFlowQueryRequest
 
 # Ensure ask-data/ root and service directory are in path
 _SERVICE_DIR = Path(__file__).resolve().parent.parent
@@ -40,10 +35,6 @@ MANIFEST_PATH = DBT_PROJECT_DIR / "target" / "semantic_manifest.json"
 DBT_PROFILES_DIR = Path.home() / ".dbt"
 PROFILE_FILE = DBT_PROFILES_DIR / "profiles.yml"
 
-# Global in-memory cache
-_ENGINE_CACHE = None
-_LAST_YAML_MTIME = 0
-
 
 class MetricQueryRequest(BaseModel):
     metrics: List[str] = Field(..., description="List of metric names to query")
@@ -59,7 +50,6 @@ class MetricQueryResponse(BaseModel):
 
 def resolve_cmd(binary_name: str) -> List[str]:
     """Dynamically locates executables in PATH or python bin."""
-    import shutil
     found_path = shutil.which(binary_name)
     if found_path:
         return [found_path]
@@ -72,22 +62,21 @@ def resolve_cmd(binary_name: str) -> List[str]:
     return [sys.executable, "-m", f"{binary_name}.cli.main"]
 
 
-def ensure_dbt_manifest():
-    """Runs dbt parse if target/semantic_manifest.json is missing or outdated."""
-    needs_parse = False
-    if not MANIFEST_PATH.exists():
-        needs_parse = True
-    elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
-        needs_parse = True
+def ensure_metricflow_dummy_adapter():
+    """Silently installs 'dbt-postgres' as a dummy dialect compiler for MetricFlow."""
+    try:
+        import dbt.adapters.postgres
+    except ImportError:
+        print("📦 Installing dbt-postgres as a dummy dialect compiler for MetricFlow...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "dbt-postgres"], check=True)
 
-    if needs_parse:
-        print("🔄 Parsing dbt project to regenerate semantic_manifest.json...")
-        env = os.environ.copy()
-        env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
-        
-        DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
-        impala_db = os.environ.get("DB_NAME", "test")
-        PROFILE_FILE.write_text(f"""
+
+def ensure_compiler_profile():
+    """Writes a clean profiles.yml configuring dbt/MetricFlow to compile using Postgres dialect."""
+    DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+    impala_db = os.environ.get("DB_NAME", "test")
+
+    profile_content = f"""
 default:
   target: dev
   outputs:
@@ -100,8 +89,23 @@ default:
       dbname: dummy
       schema: {impala_db}
       threads: 1
-""".strip())
+"""
+    PROFILE_FILE.write_text(profile_content.strip())
 
+
+def ensure_manifest_ready():
+    """Ensures target/semantic_manifest.json exists, is up-to-date, and patched to postgres adapter."""
+    needs_parse = False
+    if not MANIFEST_PATH.exists():
+        needs_parse = True
+    elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
+        needs_parse = True
+
+    env = os.environ.copy()
+    env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
+
+    if needs_parse:
+        print("🔄 Schema modified or manifest missing. Running dbt parse...")
         dbt_parse_cmd = resolve_cmd("dbt") + ["parse"]
         parse_proc = subprocess.run(
             dbt_parse_cmd,
@@ -113,32 +117,11 @@ default:
         if parse_proc.returncode != 0:
             raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
 
-
-def get_metricflow_engine():
-    """
-    Returns a cached MetricFlowEngine loaded directly into Python memory.
-    Rebuilds only if bni_dbt_schema.yaml has been modified.
-    """
-    global _ENGINE_CACHE, _LAST_YAML_MTIME
-
-    current_mtime = SCHEMA_YAML_PATH.stat().st_mtime if SCHEMA_YAML_PATH.exists() else 0
-
-    if _ENGINE_CACHE is None or current_mtime > _LAST_YAML_MTIME:
-        ensure_dbt_manifest()
-
-        print("⚡ Loading MetricFlow Engine into RAM...")
-        with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
-            manifest_dict = json.load(f)
-
-        manifest_dict["adapter_type"] = "postgres"
-
-        semantic_manifest = PydanticSemanticManifest.parse_obj(manifest_dict)
-        mf_manifest = MetricFlowManifestConverter().convert_manifest(semantic_manifest)
-        
-        _ENGINE_CACHE = MetricFlowEngineFactory.create_engine(semantic_manifest=mf_manifest)
-        _LAST_YAML_MTIME = current_mtime
-
-    return _ENGINE_CACHE
+        # Patch manifest once after parsing
+        if MANIFEST_PATH.exists():
+            manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
+            patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
+            MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
 
 
 def load_dbt_catalog() -> Dict[str, Any]:
@@ -152,13 +135,15 @@ def load_dbt_catalog() -> Dict[str, Any]:
 
 @app.on_event("startup")
 def startup_event():
-    """Pre-loads the MetricFlow Engine on startup so requests respond instantly."""
-    print("🚀 Bootstrapping dbt environment and pre-loading MetricFlow Engine...")
+    """Bootstraps environment on app startup."""
+    print("🚀 Bootstrapping dbt environment...")
+    ensure_compiler_profile()
+    ensure_metricflow_dummy_adapter()
     try:
-        get_metricflow_engine()
-        print("✅ MetricFlow Engine successfully pre-loaded in memory!")
+        ensure_manifest_ready()
+        print("✅ dbt Semantic Manifest ready!")
     except Exception as e:
-        print(f"⚠️ Startup pre-load warning: {str(e)}")
+        print(f"⚠️ Startup manifest warning: {str(e)}")
 
 
 @app.get("/healthz")
@@ -192,24 +177,39 @@ def get_semantic_catalog():
 
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
 def execute_metric_query(payload: MetricQueryRequest):
-    """
-    Compiles dynamic MetricFlow metrics into Impala-compatible SQL directly in Python memory.
-    """
+    """Compiles dynamic MetricFlow metrics into Impala-compatible SQL without executing against DB."""
     try:
-        engine = get_metricflow_engine()
+        ensure_compiler_profile()
+        ensure_manifest_ready()
 
-        request = MetricFlowQueryRequest.create_with_string_inputs(
-            metric_names=payload.metrics,
-            group_by_names=payload.group_by or [],
+        env = os.environ.copy()
+        env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
+
+        # Compile SQL via MetricFlow CLI
+        mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
+        if payload.group_by:
+            mf_cmd.extend(["--group-by", ",".join(payload.group_by)])
+        mf_cmd.append("--explain")
+
+        process = subprocess.run(
+            mf_cmd,
+            cwd=str(DBT_PROJECT_DIR),
+            env=env,
+            capture_output=True,
+            text=True
         )
 
-        explain_result = engine.explain(request)
-        
-        if hasattr(explain_result, "rendered_sql") and explain_result.rendered_sql:
-            compiled_sql = explain_result.rendered_sql
-        else:
-            compiled_sql = str(explain_result)
+        if process.returncode != 0:
+            error_msg = process.stderr.strip() or process.stdout.strip()
+            raise Exception(f"MetricFlow compilation failed: {error_msg}")
 
+        output_text = process.stdout.strip()
+
+        # Extract compiled SQL block using regex
+        match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
+        compiled_sql = output_text[match.start():] if match else output_text
+
+        # Format Postgres identifier quotes to Impala backticks
         compiled_sql = compiled_sql.replace('"', '`')
 
         return MetricQueryResponse(
