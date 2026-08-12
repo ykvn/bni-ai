@@ -31,8 +31,8 @@ semantic_models:
     expr: bank_name
     description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
       this when queries specify a particular bank''s customers. [LLM Context: Mode:
-      DYNAMIC_SQL_INDEX | Synonyms: [PT Bank Negara Indonesia, Bank BNI, Bank Negara
-      Indonesia, BNI]]'
+      DYNAMIC_SQL_INDEX | Synonyms: [PT Bank Negara Indonesia, BNI, Bank Negara Indonesia,
+      Bank BNI]]'
   - name: join_date
     type: time
     expr: join_date
@@ -69,24 +69,24 @@ semantic_models:
     type: categorical
     expr: status
     description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
-      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [live, active,
-      aktif, berjalan, lancar, pasif, non-aktif, 180 hari, dormant, mati]]'
+      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [non-aktif,
+      180 hari, live, active, mati, aktif, lancar, dormant, berjalan, pasif]]'
   measures:
   - name: cai_savings_balance_sum
     expr: balance
     agg: sum
-  - name: cai_savings_balance_avg
+  - name: cai_savings_balance_average
     expr: balance
-    agg: avg
+    agg: average
   - name: cai_savings_balance_min
     expr: balance
     agg: min
   - name: cai_savings_balance_max
     expr: balance
     agg: max
-  - name: cai_savings_interest_rate_avg
+  - name: cai_savings_interest_rate_average
     expr: interest_rate
-    agg: avg
+    agg: average
   - name: cai_savings_interest_rate_min
     expr: interest_rate
     agg: min
@@ -131,18 +131,18 @@ semantic_models:
   - name: cai_deposits_principal_amount_sum
     expr: principal_amount
     agg: sum
-  - name: cai_deposits_principal_amount_avg
+  - name: cai_deposits_principal_amount_average
     expr: principal_amount
-    agg: avg
+    agg: average
   - name: cai_deposits_principal_amount_min
     expr: principal_amount
     agg: min
   - name: cai_deposits_principal_amount_max
     expr: principal_amount
     agg: max
-  - name: cai_deposits_interest_rate_avg
+  - name: cai_deposits_interest_rate_average
     expr: interest_rate
-    agg: avg
+    agg: average
   - name: cai_deposits_interest_rate_min
     expr: interest_rate
     agg: min
@@ -164,8 +164,8 @@ semantic_models:
     expr: loan_type
     description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
       [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Synonyms:
-      [KPR, mobil, tanpa agunan, property, kendaraan, personal loan, kredit pemilikan
-      rumah, perorangan, rumah, home loan, KTA, auto loan, KMT, motor]]'
+      [auto loan, rumah, kendaraan, property, mobil, KTA, tanpa agunan, motor, KPR,
+      perorangan, home loan, personal loan, KMT, kredit pemilikan rumah]]'
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -189,9 +189,9 @@ semantic_models:
   - name: cai_loans_principal_amount_sum
     expr: principal_amount
     agg: sum
-  - name: cai_loans_principal_amount_avg
+  - name: cai_loans_principal_amount_average
     expr: principal_amount
-    agg: avg
+    agg: average
   - name: cai_loans_principal_amount_min
     expr: principal_amount
     agg: min
@@ -201,9 +201,9 @@ semantic_models:
   - name: cai_loans_outstanding_balance_sum
     expr: outstanding_balance
     agg: sum
-  - name: cai_loans_outstanding_balance_avg
+  - name: cai_loans_outstanding_balance_average
     expr: outstanding_balance
-    agg: avg
+    agg: average
   - name: cai_loans_outstanding_balance_min
     expr: outstanding_balance
     agg: min
@@ -247,15 +247,15 @@ semantic_models:
   - name: cai_credit_cards_credit_limit_sum
     expr: credit_limit
     agg: sum
-  - name: cai_credit_cards_credit_limit_avg
+  - name: cai_credit_cards_credit_limit_average
     expr: credit_limit
-    agg: avg
+    agg: average
   - name: cai_credit_cards_current_balance_sum
     expr: current_balance
     agg: sum
-  - name: cai_credit_cards_current_balance_avg
+  - name: cai_credit_cards_current_balance_average
     expr: current_balance
-    agg: avg
+    agg: average
   - name: cai_credit_cards_current_balance_min
     expr: current_balance
     agg: min
@@ -281,8 +281,8 @@ semantic_models:
     expr: transaction_type
     description: 'Accounting ledger category direction. Expected values are ''DEBIT''
       (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
-      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [payroll, penarikan, gaji,
-      kredit, setoran, potongan, topup, masuk, tarik tunai, transfer keluar, debit]]'
+      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [setoran, transfer keluar,
+      masuk, debit, payroll, kredit, potongan, gaji, penarikan, topup, tarik tunai]]'
   - name: transaction_timestamp
     type: time
     expr: transaction_timestamp
@@ -299,9 +299,9 @@ semantic_models:
   - name: cai_transactions_amount_sum
     expr: amount
     agg: sum
-  - name: cai_transactions_amount_avg
+  - name: cai_transactions_amount_average
     expr: amount
-    agg: avg
+    agg: average
   - name: cai_transactions_amount_min
     expr: amount
     agg: min
@@ -337,12 +337,12 @@ semantic_models:
   - name: cai_branch_performance_total_active_customers_sum
     expr: total_active_customers
     agg: sum
-  - name: cai_branch_performance_total_active_customers_avg
+  - name: cai_branch_performance_total_active_customers_average
     expr: total_active_customers
-    agg: avg
-  - name: cai_branch_performance_monthly_target_achieved_avg
+    agg: average
+  - name: cai_branch_performance_monthly_target_achieved_average
     expr: monthly_target_achieved
-    agg: avg
+    agg: average
   - name: cai_branch_performance_monthly_target_achieved_min
     expr: monthly_target_achieved
     agg: min
@@ -357,13 +357,13 @@ metrics:
   type: simple
   type_params:
     measure: cai_savings_balance_sum
-- name: cai_savings_balance_avg_metric
-  label: Cai_Savings Balance Avg
+- name: cai_savings_balance_average_metric
+  label: Cai_Savings Balance Average
   description: Current liquid money available. Use this for 'total savings' or 'wealthiest
     customers' metrics.
   type: simple
   type_params:
-    measure: cai_savings_balance_avg
+    measure: cai_savings_balance_average
 - name: cai_savings_balance_min_metric
   label: Cai_Savings Balance Min
   description: Current liquid money available. Use this for 'total savings' or 'wealthiest
@@ -378,13 +378,13 @@ metrics:
   type: simple
   type_params:
     measure: cai_savings_balance_max
-- name: cai_savings_interest_rate_avg_metric
-  label: Cai_Savings Interest_Rate Avg
+- name: cai_savings_interest_rate_average_metric
+  label: Cai_Savings Interest_Rate Average
   description: The annual percentage yield interest tracking rate assigned to this
     savings account.
   type: simple
   type_params:
-    measure: cai_savings_interest_rate_avg
+    measure: cai_savings_interest_rate_average
 - name: cai_savings_interest_rate_min_metric
   label: Cai_Savings Interest_Rate Min
   description: The annual percentage yield interest tracking rate assigned to this
@@ -405,12 +405,12 @@ metrics:
   type: simple
   type_params:
     measure: cai_deposits_principal_amount_sum
-- name: cai_deposits_principal_amount_avg_metric
-  label: Cai_Deposits Principal_Amount Avg
+- name: cai_deposits_principal_amount_average_metric
+  label: Cai_Deposits Principal_Amount Average
   description: The initial locked investment asset amount.
   type: simple
   type_params:
-    measure: cai_deposits_principal_amount_avg
+    measure: cai_deposits_principal_amount_average
 - name: cai_deposits_principal_amount_min_metric
   label: Cai_Deposits Principal_Amount Min
   description: The initial locked investment asset amount.
@@ -423,12 +423,12 @@ metrics:
   type: simple
   type_params:
     measure: cai_deposits_principal_amount_max
-- name: cai_deposits_interest_rate_avg_metric
-  label: Cai_Deposits Interest_Rate Avg
+- name: cai_deposits_interest_rate_average_metric
+  label: Cai_Deposits Interest_Rate Average
   description: The fixed contract interest rate paid out at maturity.
   type: simple
   type_params:
-    measure: cai_deposits_interest_rate_avg
+    measure: cai_deposits_interest_rate_average
 - name: cai_deposits_interest_rate_min_metric
   label: Cai_Deposits Interest_Rate Min
   description: The fixed contract interest rate paid out at maturity.
@@ -447,12 +447,12 @@ metrics:
   type: simple
   type_params:
     measure: cai_loans_principal_amount_sum
-- name: cai_loans_principal_amount_avg_metric
-  label: Cai_Loans Principal_Amount Avg
+- name: cai_loans_principal_amount_average_metric
+  label: Cai_Loans Principal_Amount Average
   description: The original total borrowed credit capital sum.
   type: simple
   type_params:
-    measure: cai_loans_principal_amount_avg
+    measure: cai_loans_principal_amount_average
 - name: cai_loans_principal_amount_min_metric
   label: Cai_Loans Principal_Amount Min
   description: The original total borrowed credit capital sum.
@@ -471,12 +471,12 @@ metrics:
   type: simple
   type_params:
     measure: cai_loans_outstanding_balance_sum
-- name: cai_loans_outstanding_balance_avg_metric
-  label: Cai_Loans Outstanding_Balance Avg
+- name: cai_loans_outstanding_balance_average_metric
+  label: Cai_Loans Outstanding_Balance Average
   description: The remaining debt balance amount the customer still owes the bank.
   type: simple
   type_params:
-    measure: cai_loans_outstanding_balance_avg
+    measure: cai_loans_outstanding_balance_average
 - name: cai_loans_outstanding_balance_min_metric
   label: Cai_Loans Outstanding_Balance Min
   description: The remaining debt balance amount the customer still owes the bank.
@@ -495,24 +495,24 @@ metrics:
   type: simple
   type_params:
     measure: cai_credit_cards_credit_limit_sum
-- name: cai_credit_cards_credit_limit_avg_metric
-  label: Cai_Credit_Cards Credit_Limit Avg
+- name: cai_credit_cards_credit_limit_average_metric
+  label: Cai_Credit_Cards Credit_Limit Average
   description: The maximum revolving credit threshold limit extended to the customer.
   type: simple
   type_params:
-    measure: cai_credit_cards_credit_limit_avg
+    measure: cai_credit_cards_credit_limit_average
 - name: cai_credit_cards_current_balance_sum_metric
   label: Cai_Credit_Cards Current_Balance Sum
   description: The active amount spent and currently owed on the credit card balance.
   type: simple
   type_params:
     measure: cai_credit_cards_current_balance_sum
-- name: cai_credit_cards_current_balance_avg_metric
-  label: Cai_Credit_Cards Current_Balance Avg
+- name: cai_credit_cards_current_balance_average_metric
+  label: Cai_Credit_Cards Current_Balance Average
   description: The active amount spent and currently owed on the credit card balance.
   type: simple
   type_params:
-    measure: cai_credit_cards_current_balance_avg
+    measure: cai_credit_cards_current_balance_average
 - name: cai_credit_cards_current_balance_min_metric
   label: Cai_Credit_Cards Current_Balance Min
   description: The active amount spent and currently owed on the credit card balance.
@@ -531,12 +531,12 @@ metrics:
   type: simple
   type_params:
     measure: cai_transactions_amount_sum
-- name: cai_transactions_amount_avg_metric
-  label: Cai_Transactions Amount Avg
+- name: cai_transactions_amount_average_metric
+  label: Cai_Transactions Amount Average
   description: The absolute numerical money value of the execution.
   type: simple
   type_params:
-    measure: cai_transactions_amount_avg
+    measure: cai_transactions_amount_average
 - name: cai_transactions_amount_min_metric
   label: Cai_Transactions Amount Min
   description: The absolute numerical money value of the execution.
@@ -555,18 +555,18 @@ metrics:
   type: simple
   type_params:
     measure: cai_branch_performance_total_active_customers_sum
-- name: cai_branch_performance_total_active_customers_avg_metric
-  label: Cai_Branch_Performance Total_Active_Customers Avg
+- name: cai_branch_performance_total_active_customers_average_metric
+  label: Cai_Branch_Performance Total_Active_Customers Average
   description: Total client profile count actively assigned to this node.
   type: simple
   type_params:
-    measure: cai_branch_performance_total_active_customers_avg
-- name: cai_branch_performance_monthly_target_achieved_avg_metric
-  label: Cai_Branch_Performance Monthly_Target_Achieved Avg
+    measure: cai_branch_performance_total_active_customers_average
+- name: cai_branch_performance_monthly_target_achieved_average_metric
+  label: Cai_Branch_Performance Monthly_Target_Achieved Average
   description: Performance target milestone percentage index ranking tracker.
   type: simple
   type_params:
-    measure: cai_branch_performance_monthly_target_achieved_avg
+    measure: cai_branch_performance_monthly_target_achieved_average
 - name: cai_branch_performance_monthly_target_achieved_min_metric
   label: Cai_Branch_Performance Monthly_Target_Achieved Min
   description: Performance target milestone percentage index ranking tracker.
