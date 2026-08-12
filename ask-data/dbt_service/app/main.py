@@ -16,10 +16,14 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-# Disable MetricFlow / Rich terminal spinners and ANSI colors in server logs
+# --- ENVIRONMENT & LOGGING SUPPRESSION ---
+# Disables MetricFlow / Rich terminal spinners and ANSI colors in CML server logs
 os.environ["TERM"] = "dumb"
 os.environ["NO_COLOR"] = "1"
 os.environ["DBT_USE_COLORS"] = "0"
+os.environ["FORCE_COLOR"] = "0"
+os.environ["PYTHONUNBUFFERED"] = "1"
+os.environ["METRICFLOW_LOG_LEVEL"] = "ERROR"
 
 # --- THREAD-SAFE SIGNAL PATCH ---
 # Prevents "signal only works in main thread" error when MetricFlow runs inside FastAPI worker threads
@@ -33,7 +37,31 @@ def _safe_signal(sig, handler):
         return None
 
 signal.signal = _safe_signal
-# --------------------------------
+
+# --- DISABLE RICH SPINNER ANIMATIONS FOR NON-TTY LOGS ---
+# Prevents repeated "Initiating query..." Braille frame entries in non-interactive CML Application Logs
+try:
+    import rich.console
+    import rich.status
+    
+    # Force rich consoles to render in non-interactive/non-terminal mode
+    rich.console.Console.is_terminal = False
+    rich.console.Console.is_interactive = False
+    
+    # Disable status spinner rendering entirely
+    def _noop_status(self, *args, **kwargs):
+        class DummyStatus:
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def start(self): pass
+            def stop(self): pass
+            def update(self, *args, **kwargs): pass
+        return DummyStatus()
+
+    rich.console.Console.status = _noop_status
+except Exception:
+    pass
+# --------------------------------------------------------
 
 # Ensure ask-data/ root and service directory are in path
 _SERVICE_DIR = Path(__file__).resolve().parent.parent
