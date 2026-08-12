@@ -24,7 +24,7 @@ if str(_SERVICE_DIR) not in sys.path:
 
 app = FastAPI(
     title="dbt MetricFlow Semantic Layer API",
-    description="Exposes dbt semantic metrics and Impala execution engine for LLM agents",
+    description="Exposes dbt semantic metrics compilation engine for LLM agents",
     version="1.0.0",
 )
 
@@ -46,7 +46,7 @@ class MetricQueryRequest(BaseModel):
 class MetricQueryResponse(BaseModel):
     status: str
     sql: str
-    data: List[Dict[str, Any]]
+    data: List[Dict[str, Any]] = Field(default=[], description="Empty list as query execution is disabled")
 
 
 def resolve_cmd(binary_name: str) -> List[str]:
@@ -180,11 +180,10 @@ def get_semantic_catalog():
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
 def execute_metric_query(payload: MetricQueryRequest):
     """
-    Executes a metric query against Impala dynamically using dbt's MetricFlow.
+    Compiles dynamic MetricFlow metrics into Impala-compatible SQL for LLM models.
+    (Execution is disabled; returns pure SQL string).
     """
     try:
-        from impala.dbapi import connect
-
         ensure_metricflow_dummy_adapter()
         
         env = os.environ.copy()
@@ -212,14 +211,12 @@ def execute_metric_query(payload: MetricQueryRequest):
             if parse_proc.returncode != 0:
                 raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
 
-        # 3. HACK: Bypass MetricFlow's Unsupported Adapter List
+        # 3. Compile SQL via MetricFlow
         manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
         try:
-            # A) Swap the manifest to Postgres
             patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
             MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
             
-            # B) Replace the physical profiles.yml file with a dummy Postgres profile
             write_profile(profile_type="postgres")
             
             mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
@@ -235,7 +232,6 @@ def execute_metric_query(payload: MetricQueryRequest):
                 text=True
             )
         finally:
-            # C) Always restore the original Impala manifest AND profile for future dbt runs!
             MANIFEST_PATH.write_text(manifest_text, encoding="utf-8")
             write_profile(profile_type="impala")
         
@@ -245,53 +241,19 @@ def execute_metric_query(payload: MetricQueryRequest):
 
         output_text = process.stdout.strip()
 
-        # --- NEW EXTRACTION LOGIC ---
-        # MetricFlow outputs UI spinners and logs before the SQL. 
-        # We find the exact start of the SQL query by looking for 'WITH' or 'SELECT' at the beginning of a line.
+        # Extract compiled SQL block starting from WITH or SELECT
         match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
-        
-        if match:
-            compiled_sql = output_text[match.start():]
-        else:
-            compiled_sql = output_text
+        compiled_sql = output_text[match.start():] if match else output_text
 
         # Format Postgres-flavored SQL for Impala (convert "identifier" to `identifier`)
         compiled_sql = compiled_sql.replace('"', '`')
-        # ----------------------------
 
-        # 4. Execute compiled SQL on CDW Impala over port 443
-        impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
-        impala_port = int(os.environ.get("IMPALA_PORT", 443))
-        impala_db = os.environ.get("DB_NAME", "test")
-        impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
-        auth_mech = os.environ.get("IMPALA_AUTH_MECHANISM", "LDAP") 
-        impala_user = os.environ.get("CDP_USER", "")
-        impala_password = os.environ.get("CDP_PASS", "")
-
-        conn = connect(
-            host=impala_host, 
-            port=impala_port, 
-            database=impala_db,
-            auth_mechanism=auth_mech,
-            user=impala_user,
-            password=impala_password,
-            use_ssl=True, 
-            use_http_transport=True, 
-            http_path=impala_http_path
-        )
-        
-        cursor = conn.cursor()
-        cursor.execute(compiled_sql)
-
-        columns = [desc[0] for desc in cursor.description]
-        rows = cursor.fetchall()
-        data = [dict(zip(columns, row)) for row in rows]
-
+        # 4. Return compiled SQL directly to your LLM / model pipeline
         return MetricQueryResponse(
             status="success",
             sql=compiled_sql,
-            data=data
+            data=[]
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Dynamic Query Execution Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Metric Compilation Failed: {str(e)}")
