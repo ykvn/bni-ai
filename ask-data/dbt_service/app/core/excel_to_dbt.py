@@ -16,7 +16,7 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
     except Exception:
         vals_df = pd.DataFrame()
 
-    # --- FIX 1: Pre-pass to find global entities (prevents Dimension/Entity namespace crashes) ---
+    # Pre-pass: Find global entities (PKs or FKs across all tables) to prevent entity vs dimension collisions
     global_entities = set()
     for _, col in cols_df.iterrows():
         if col.get("Is PK?", False) or pd.notna(col.get("References (Foreign Keys)")):
@@ -28,7 +28,7 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
     models_dir = Path(output_yaml_path).parent
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- FIX 3: Add Primary Entity to Time Spine ---
+    # 1. Generate MetricFlow Time Spine SQL
     time_spine_sql_path = models_dir / "metricflow_time_spine.sql"
     with open(time_spine_sql_path, "w") as sql_file:
         sql_file.write("""
@@ -43,6 +43,7 @@ CROSS JOIN numbers c
 CROSS JOIN numbers d
         """.strip())
 
+    # 2. Register Time Spine Model
     semantic_models.append({
         "name": "metricflow_time_spine",
         "description": "Required time spine for MetricFlow aggregations",
@@ -56,14 +57,16 @@ CROSS JOIN numbers d
             "name": "date_day",
             "type": "time",
             "expr": "date_day",
-            "type_params": {"time_granularity": "day", "is_primary": True}
+            "type_params": {"time_granularity": "day"}
         }]
     })
 
+    # 3. Process Business Tables
     for _, table in tables_df.iterrows():
         table_name = str(table["Table Name"]).strip()
         table_cols = cols_df[cols_df["Table Name"] == table_name]
 
+        # Generate dbt stub SQL file
         sql_path = models_dir / f"{table_name}.sql"
         with open(sql_path, "w") as sql_file:
             sql_file.write(f"select * from {{{{ target.schema }}}}.{table_name}\n")
@@ -72,8 +75,7 @@ CROSS JOIN numbers d
         dimensions = []
         measures = []
         
-        # Track if we have assigned a primary time dimension
-        has_time_dim = False
+        first_time_dim = None
 
         for _, col in table_cols.iterrows():
             col_name = str(col["Column Name"]).strip()
@@ -85,7 +87,6 @@ CROSS JOIN numbers d
             static_vals = col.get("Static Allowed Values")
             base_desc = str(col.get("Description", "")).strip()
 
-            # Global Entity Check
             if is_pk:
                 entities.append({"name": col_name, "type": "primary", "expr": col_name})
             elif pd.notna(ref_fk) or col_name in global_entities:
@@ -123,11 +124,8 @@ CROSS JOIN numbers d
                 
                 if dim_type == "time":
                     dim_obj["type_params"] = {"time_granularity": "day"}
-                    
-                    # --- FIX 2: Set the first time dimension as primary ---
-                    if not has_time_dim:
-                        dim_obj["type_params"]["is_primary"] = True
-                        has_time_dim = True
+                    if not first_time_dim:
+                        first_time_dim = col_name
                 
                 dimensions.append(dim_obj)
 
@@ -136,22 +134,44 @@ CROSS JOIN numbers d
                 for agg in aggs:
                     dbt_agg_type = "average" if agg == "avg" else agg
                     m_name = f"{table_name}_{col_name}_{agg}"
-                    measures.append({"name": m_name, "expr": col_name, "agg": dbt_agg_type})
-                    metrics.append({
-                        "name": f"{table_name}_{col_name}_{agg}_metric",
-                        "label": f"{table_name} {col_name} {agg}".title(),
-                        "description": base_desc,
-                        "type": "simple",
-                        "type_params": {"measure": m_name}
+                    
+                    measures.append({
+                        "name": m_name, 
+                        "expr": col_name, 
+                        "agg": dbt_agg_type,
+                        "_base_desc": base_desc,
+                        "_col_name": col_name,
+                        "_agg": agg
                     })
 
-        # --- FIX 2 (Fallback): Inject a dummy time dimension if table has measures but no dates ---
-        if measures and not has_time_dim:
+        # Fallback: If model has measures but no date column, inject dummy time dimension
+        if measures and not first_time_dim:
             dimensions.append({
                 "name": "dbt_dummy_time",
                 "type": "time",
                 "expr": "CAST('2020-01-01' AS TIMESTAMP)",
-                "type_params": {"time_granularity": "day", "is_primary": True}
+                "type_params": {"time_granularity": "day"}
+            })
+            first_time_dim = "dbt_dummy_time"
+
+        # Attach agg_time_dimension to measures and construct metrics
+        formatted_measures = []
+        for m in measures:
+            base_desc = m.pop("_base_desc")
+            col_name = m.pop("_col_name")
+            agg = m.pop("_agg")
+            
+            if first_time_dim:
+                m["agg_time_dimension"] = first_time_dim
+                
+            formatted_measures.append(m)
+            
+            metrics.append({
+                "name": f"{table_name}_{col_name}_{agg}_metric",
+                "label": f"{table_name} {col_name} {agg}".title(),
+                "description": base_desc,
+                "type": "simple",
+                "type_params": {"measure": m["name"]}
             })
 
         semantic_models.append({
@@ -159,7 +179,7 @@ CROSS JOIN numbers d
             "model": f"ref('{table_name}')",
             "entities": entities,
             "dimensions": dimensions,
-            "measures": measures
+            "measures": formatted_measures
         })
 
     dbt_schema = {
@@ -182,6 +202,7 @@ if __name__ == "__main__":
     except Exception:
         ask_data_root = Path("/home/cdsw/ask-data")
 
+    # Corrected Excel path
     input_excel = ask_data_root / "data" / "bni_dbt_definitions.xlsx"
     output_yaml = ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
 
@@ -191,7 +212,7 @@ if __name__ == "__main__":
 
     try:
         convert_excel_to_dbt_yaml(str(input_excel), str(output_yaml))
-        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml (Fixed Namespaces & Time Spines)!")
+        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml from bni_dbt_definitions.xlsx!")
     except Exception as e:
         print(f"\n❌ Generation failed: {str(e)}")
         sys.exit(1)

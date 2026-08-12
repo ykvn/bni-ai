@@ -13,7 +13,6 @@ semantic_models:
     expr: date_day
     type_params:
       time_granularity: day
-      is_primary: true
 - name: cai_customers
   model: ref('cai_customers')
   entities:
@@ -40,13 +39,12 @@ semantic_models:
       birthdays.
     type_params:
       time_granularity: day
-      is_primary: true
   - name: bank_name
     type: categorical
     expr: bank_name
     description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
       this when queries specify a particular bank''s customers. [LLM Context: Mode:
-      DYNAMIC_SQL_INDEX | Synonyms: [Bank BNI, Bank Negara Indonesia, BNI, PT Bank
+      DYNAMIC_SQL_INDEX | Synonyms: [BNI, PT Bank Negara Indonesia, Bank BNI, Bank
       Negara Indonesia]]'
   - name: join_date
     type: time
@@ -83,36 +81,42 @@ semantic_models:
     type: categorical
     expr: status
     description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
-      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [aktif,
-      mati, active, 180 hari, live, dormant, pasif, lancar, non-aktif, berjalan]]'
+      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [pasif,
+      180 hari, active, berjalan, dormant, aktif, lancar, mati, non-aktif, live]]'
   - name: dbt_dummy_time
     type: time
     expr: CAST('2020-01-01' AS TIMESTAMP)
     type_params:
       time_granularity: day
-      is_primary: true
   measures:
   - name: cai_savings_balance_sum
     expr: balance
     agg: sum
+    agg_time_dimension: dbt_dummy_time
   - name: cai_savings_balance_average
     expr: balance
     agg: average
+    agg_time_dimension: dbt_dummy_time
   - name: cai_savings_balance_min
     expr: balance
     agg: min
+    agg_time_dimension: dbt_dummy_time
   - name: cai_savings_balance_max
     expr: balance
     agg: max
+    agg_time_dimension: dbt_dummy_time
   - name: cai_savings_interest_rate_average
     expr: interest_rate
     agg: average
+    agg_time_dimension: dbt_dummy_time
   - name: cai_savings_interest_rate_min
     expr: interest_rate
     agg: min
+    agg_time_dimension: dbt_dummy_time
   - name: cai_savings_interest_rate_max
     expr: interest_rate
     agg: max
+    agg_time_dimension: dbt_dummy_time
 - name: cai_deposits
   model: ref('cai_deposits')
   entities:
@@ -137,7 +141,6 @@ semantic_models:
       for 'approaching maturity' questions.
     type_params:
       time_granularity: day
-      is_primary: true
   - name: interest_rate
     type: categorical
     expr: interest_rate
@@ -151,24 +154,31 @@ semantic_models:
   - name: cai_deposits_principal_amount_sum
     expr: principal_amount
     agg: sum
+    agg_time_dimension: maturity_date
   - name: cai_deposits_principal_amount_average
     expr: principal_amount
     agg: average
+    agg_time_dimension: maturity_date
   - name: cai_deposits_principal_amount_min
     expr: principal_amount
     agg: min
+    agg_time_dimension: maturity_date
   - name: cai_deposits_principal_amount_max
     expr: principal_amount
     agg: max
+    agg_time_dimension: maturity_date
   - name: cai_deposits_interest_rate_average
     expr: interest_rate
     agg: average
+    agg_time_dimension: maturity_date
   - name: cai_deposits_interest_rate_min
     expr: interest_rate
     agg: min
+    agg_time_dimension: maturity_date
   - name: cai_deposits_interest_rate_max
     expr: interest_rate
     agg: max
+    agg_time_dimension: maturity_date
 - name: cai_loans
   model: ref('cai_loans')
   entities:
@@ -184,8 +194,8 @@ semantic_models:
     expr: loan_type
     description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
       [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Synonyms:
-      [mobil, property, KMT, kredit pemilikan rumah, kendaraan, KTA, rumah, KPR, motor,
-      tanpa agunan, auto loan, perorangan, personal loan, home loan]]'
+      [home loan, auto loan, mobil, tanpa agunan, perorangan, KTA, kredit pemilikan
+      rumah, rumah, personal loan, KPR, motor, KMT, property, kendaraan]]'
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -200,7 +210,6 @@ semantic_models:
     description: The final payoff deadline date for the loan obligation.
     type_params:
       time_granularity: day
-      is_primary: true
   - name: status
     type: categorical
     expr: status
@@ -210,27 +219,35 @@ semantic_models:
   - name: cai_loans_principal_amount_sum
     expr: principal_amount
     agg: sum
+    agg_time_dimension: maturity_date
   - name: cai_loans_principal_amount_average
     expr: principal_amount
     agg: average
+    agg_time_dimension: maturity_date
   - name: cai_loans_principal_amount_min
     expr: principal_amount
     agg: min
+    agg_time_dimension: maturity_date
   - name: cai_loans_principal_amount_max
     expr: principal_amount
     agg: max
+    agg_time_dimension: maturity_date
   - name: cai_loans_outstanding_balance_sum
     expr: outstanding_balance
     agg: sum
+    agg_time_dimension: maturity_date
   - name: cai_loans_outstanding_balance_average
     expr: outstanding_balance
     agg: average
+    agg_time_dimension: maturity_date
   - name: cai_loans_outstanding_balance_min
     expr: outstanding_balance
     agg: min
+    agg_time_dimension: maturity_date
   - name: cai_loans_outstanding_balance_max
     expr: outstanding_balance
     agg: max
+    agg_time_dimension: maturity_date
 - name: cai_credit_cards
   model: ref('cai_credit_cards')
   entities:
@@ -259,7 +276,6 @@ semantic_models:
     description: The operational expiration timeline date of the card.
     type_params:
       time_granularity: day
-      is_primary: true
   - name: status
     type: categorical
     expr: status
@@ -269,21 +285,27 @@ semantic_models:
   - name: cai_credit_cards_credit_limit_sum
     expr: credit_limit
     agg: sum
+    agg_time_dimension: expiry_date
   - name: cai_credit_cards_credit_limit_average
     expr: credit_limit
     agg: average
+    agg_time_dimension: expiry_date
   - name: cai_credit_cards_current_balance_sum
     expr: current_balance
     agg: sum
+    agg_time_dimension: expiry_date
   - name: cai_credit_cards_current_balance_average
     expr: current_balance
     agg: average
+    agg_time_dimension: expiry_date
   - name: cai_credit_cards_current_balance_min
     expr: current_balance
     agg: min
+    agg_time_dimension: expiry_date
   - name: cai_credit_cards_current_balance_max
     expr: current_balance
     agg: max
+    agg_time_dimension: expiry_date
 - name: cai_transactions
   model: ref('cai_transactions')
   entities:
@@ -303,8 +325,8 @@ semantic_models:
     expr: transaction_type
     description: 'Accounting ledger category direction. Expected values are ''DEBIT''
       (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
-      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [transfer keluar, kredit,
-      payroll, masuk, setoran, debit, penarikan, topup, gaji, potongan, tarik tunai]]'
+      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [tarik tunai, potongan, setoran,
+      payroll, gaji, masuk, kredit, penarikan, transfer keluar, topup, debit]]'
   - name: transaction_timestamp
     type: time
     expr: transaction_timestamp
@@ -312,7 +334,6 @@ semantic_models:
       to the ledger.
     type_params:
       time_granularity: day
-      is_primary: true
   - name: description
     type: categorical
     expr: description
@@ -322,15 +343,19 @@ semantic_models:
   - name: cai_transactions_amount_sum
     expr: amount
     agg: sum
+    agg_time_dimension: transaction_timestamp
   - name: cai_transactions_amount_average
     expr: amount
     agg: average
+    agg_time_dimension: transaction_timestamp
   - name: cai_transactions_amount_min
     expr: amount
     agg: min
+    agg_time_dimension: transaction_timestamp
   - name: cai_transactions_amount_max
     expr: amount
     agg: max
+    agg_time_dimension: transaction_timestamp
 - name: cai_branch_performance
   model: ref('cai_branch_performance')
   entities:
@@ -361,23 +386,27 @@ semantic_models:
     expr: CAST('2020-01-01' AS TIMESTAMP)
     type_params:
       time_granularity: day
-      is_primary: true
   measures:
   - name: cai_branch_performance_total_active_customers_sum
     expr: total_active_customers
     agg: sum
+    agg_time_dimension: dbt_dummy_time
   - name: cai_branch_performance_total_active_customers_average
     expr: total_active_customers
     agg: average
+    agg_time_dimension: dbt_dummy_time
   - name: cai_branch_performance_monthly_target_achieved_average
     expr: monthly_target_achieved
     agg: average
+    agg_time_dimension: dbt_dummy_time
   - name: cai_branch_performance_monthly_target_achieved_min
     expr: monthly_target_achieved
     agg: min
+    agg_time_dimension: dbt_dummy_time
   - name: cai_branch_performance_monthly_target_achieved_max
     expr: monthly_target_achieved
     agg: max
+    agg_time_dimension: dbt_dummy_time
 metrics:
 - name: cai_savings_balance_sum_metric
   label: Cai_Savings Balance Sum
