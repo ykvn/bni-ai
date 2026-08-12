@@ -71,33 +71,16 @@ def ensure_metricflow_dummy_adapter():
         subprocess.run([sys.executable, "-m", "pip", "install", "dbt-postgres"], check=True)
 
 
-def ensure_static_profile():
-    """Writes a static profiles.yml containing both Impala and Postgres compilation targets."""
+def ensure_compiler_profile():
+    """Writes a clean profiles.yml that configures dbt and MetricFlow to compile via Postgres adapter."""
     DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
     impala_db = os.environ.get("DB_NAME", "test")
-    impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
-    impala_port = os.environ.get("IMPALA_PORT", "443")
-    impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
-    impala_user = os.environ.get("CDP_USER", "")
-    impala_password = os.environ.get("CDP_PASS", "")
 
     profile_content = f"""
 default:
   target: dev
   outputs:
     dev:
-      type: impala
-      host: {impala_host}
-      port: {impala_port}
-      schema: {impala_db}
-      auth_type: LDAP
-      username: "{impala_user}"
-      password: "{impala_password}"
-      use_http_transport: true
-      http_path: {impala_http_path}
-      use_ssl: true
-      threads: 1
-    mf_compile:
       type: postgres
       host: localhost
       port: 5432
@@ -110,8 +93,8 @@ default:
     PROFILE_FILE.write_text(profile_content.strip())
 
 
-def reparse_project_if_needed(env: dict):
-    """Parses dbt project only when the schema YAML changes, and pre-patches manifest for MetricFlow."""
+def ensure_manifest_ready(env: dict):
+    """Ensures target/semantic_manifest.json exists, is up-to-date, and patched to postgres adapter."""
     needs_parse = False
     if not MANIFEST_PATH.exists():
         needs_parse = True
@@ -130,10 +113,12 @@ def reparse_project_if_needed(env: dict):
         if parse_proc.returncode != 0:
             raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
 
-        # Pre-patch manifest once after parse so requests don't need disk I/O
+    # ALWAYS ensure manifest adapter_type is patched to postgres (even if dbt parse was skipped)
+    if MANIFEST_PATH.exists():
         manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
-        patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
-        MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
+        if '"adapter_type": "impala"' in manifest_text:
+            patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
+            MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
 
 
 def load_dbt_catalog() -> Dict[str, Any]:
@@ -147,9 +132,9 @@ def load_dbt_catalog() -> Dict[str, Any]:
 
 @app.on_event("startup")
 def startup_event():
-    """Bootstraps environment and pre-compiles configuration on app startup."""
+    """Bootstraps environment on app startup."""
     print("🚀 Bootstrapping dbt environment...")
-    ensure_static_profile()
+    ensure_compiler_profile()
     ensure_metricflow_dummy_adapter()
 
 
@@ -186,12 +171,14 @@ def get_semantic_catalog():
 def execute_metric_query(payload: MetricQueryRequest):
     """Compiles dynamic MetricFlow metrics into Impala-compatible SQL without executing against DB."""
     try:
+        ensure_compiler_profile()
+        ensure_metricflow_dummy_adapter()
+
         env = os.environ.copy()
         env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
-        env["DBT_TARGET"] = "mf_compile"
 
-        # 1. Parse project ONLY if schema YAML changed (pre-patches manifest once)
-        reparse_project_if_needed(env)
+        # 1. Ensure semantic manifest exists, is updated, and patched
+        ensure_manifest_ready(env)
 
         # 2. Compile SQL via MetricFlow CLI
         mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
