@@ -19,20 +19,45 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
     semantic_models = []
     metrics = []
     
-    # Resolve the directory where models are stored
     models_dir = Path(output_yaml_path).parent
     models_dir.mkdir(parents=True, exist_ok=True)
+
+    # --- NEW: Auto-generate MetricFlow Time Spine ---
+    time_spine_sql_path = models_dir / "metricflow_time_spine.sql"
+    with open(time_spine_sql_path, "w") as sql_file:
+        # Generates a 10,000 day calendar in Impala starting from 2015
+        sql_file.write("""
+WITH numbers AS (
+  SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 
+  UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+)
+SELECT CAST('2015-01-01' AS TIMESTAMP) + INTERVAL (a.n + b.n*10 + c.n*100 + d.n*1000) DAY AS date_day
+FROM numbers a 
+CROSS JOIN numbers b 
+CROSS JOIN numbers c 
+CROSS JOIN numbers d
+        """.strip())
+
+    semantic_models.append({
+        "name": "metricflow_time_spine",
+        "description": "Required time spine for MetricFlow aggregations",
+        "model": "ref('metricflow_time_spine')",
+        "dimensions": [{
+            "name": "date_day",
+            "type": "time",
+            "expr": "date_day",
+            "type_params": {"time_granularity": "day"}
+        }]
+    })
+    # ------------------------------------------------
 
     for _, table in tables_df.iterrows():
         table_name = str(table["Table Name"]).strip()
         table_cols = cols_df[cols_df["Table Name"] == table_name]
 
-        # --- NEW: Auto-generate the dbt SQL stub file ---
-        # This resolves the `ref('table_name')` error by pointing dbt to the physical Impala table.
         sql_path = models_dir / f"{table_name}.sql"
         with open(sql_path, "w") as sql_file:
             sql_file.write(f"select * from {{{{ target.schema }}}}.{table_name}\n")
-        # ------------------------------------------------
 
         entities = []
         dimensions = []
@@ -92,9 +117,7 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
             if pd.notna(custom_measures):
                 aggs = [a.strip().lower() for a in str(custom_measures).split(",")]
                 for agg in aggs:
-                    # Map 'avg' to 'average' for MetricFlow compatibility
                     dbt_agg_type = "average" if agg == "avg" else agg
-                    
                     m_name = f"{table_name}_{col_name}_{agg}"
                     measures.append({"name": m_name, "expr": col_name, "agg": dbt_agg_type})
                     metrics.append({
@@ -142,7 +165,7 @@ if __name__ == "__main__":
 
     try:
         convert_excel_to_dbt_yaml(str(input_excel), str(output_yaml))
-        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml AND .sql files!")
+        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml AND Time Spine!")
     except Exception as e:
         print(f"\n❌ Generation failed: {str(e)}")
         sys.exit(1)
