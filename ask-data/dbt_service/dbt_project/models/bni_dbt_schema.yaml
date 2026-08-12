@@ -4,7 +4,7 @@ semantic_models:
   description: Required time spine for MetricFlow aggregations
   model: ref('metricflow_time_spine')
   entities:
-  - name: date_day
+  - name: date_id
     type: primary
     expr: date_day
   dimensions:
@@ -44,8 +44,8 @@ semantic_models:
     expr: bank_name
     description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
       this when queries specify a particular bank''s customers. [LLM Context: Mode:
-      DYNAMIC_SQL_INDEX | Synonyms: [BNI, PT Bank Negara Indonesia, Bank BNI, Bank
-      Negara Indonesia]]'
+      DYNAMIC_SQL_INDEX | Synonyms: [PT Bank Negara Indonesia, BNI, Bank Negara Indonesia,
+      Bank BNI]]'
   - name: join_date
     type: time
     expr: join_date
@@ -81,8 +81,8 @@ semantic_models:
     type: categorical
     expr: status
     description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
-      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [pasif,
-      180 hari, active, berjalan, dormant, aktif, lancar, mati, non-aktif, live]]'
+      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Synonyms: [lancar,
+      aktif, berjalan, mati, non-aktif, active, pasif, 180 hari, live, dormant]]'
   - name: dbt_dummy_time
     type: time
     expr: CAST('2020-01-01' AS TIMESTAMP)
@@ -194,8 +194,8 @@ semantic_models:
     expr: loan_type
     description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
       [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Synonyms:
-      [home loan, auto loan, mobil, tanpa agunan, perorangan, KTA, kredit pemilikan
-      rumah, rumah, personal loan, KPR, motor, KMT, property, kendaraan]]'
+      [perorangan, rumah, motor, personal loan, tanpa agunan, property, KPR, mobil,
+      kendaraan, KTA, KMT, kredit pemilikan rumah, auto loan, home loan]]'
   - name: principal_amount
     type: categorical
     expr: principal_amount
@@ -325,8 +325,8 @@ semantic_models:
     expr: transaction_type
     description: 'Accounting ledger category direction. Expected values are ''DEBIT''
       (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
-      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [tarik tunai, potongan, setoran,
-      payroll, gaji, masuk, kredit, penarikan, transfer keluar, topup, debit]]'
+      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Synonyms: [tarik tunai, masuk, penarikan,
+      debit, topup, gaji, kredit, setoran, transfer keluar, payroll, potongan]]'
   - name: transaction_timestamp
     type: time
     expr: transaction_timestamp

@@ -49,9 +49,9 @@ CROSS JOIN numbers d
         "description": "Required time spine for MetricFlow aggregations",
         "model": "ref('metricflow_time_spine')",
         "entities": [{
-            "name": "date_day",
+            "name": "date_id",           # ✅ Renamed entity to avoid namespace collision
             "type": "primary",
-            "expr": "date_day"
+            "expr": "date_day"           # ✅ Still points to the correct SQL column
         }],
         "dimensions": [{
             "name": "date_day",
