@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 # Direct in-process MetricFlow imports
-from dbt_semantic_interfaces.models.semantic_manifest import PydanticSemanticManifest
+from dbt_semantic_interfaces.implementations.semantic_manifest import PydanticSemanticManifest
 from metricflow.manifest.manifest_converter import MetricFlowManifestConverter
 from metricflow.engine.metricflow_engine_factory import MetricFlowEngineFactory
 from metricflow.protocols.query_param_protocol import MetricFlowQueryRequest
