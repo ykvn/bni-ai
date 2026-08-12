@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import yaml
 import re
+import threading
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -34,6 +35,9 @@ SCHEMA_YAML_PATH = DBT_PROJECT_DIR / "models" / "bni_dbt_schema.yaml"
 MANIFEST_PATH = DBT_PROJECT_DIR / "target" / "semantic_manifest.json"
 DBT_PROFILES_DIR = Path.home() / ".dbt"
 PROFILE_FILE = DBT_PROFILES_DIR / "profiles.yml"
+
+# Thread lock for safe in-memory CLI execution
+_MF_LOCK = threading.Lock()
 
 
 class MetricQueryRequest(BaseModel):
@@ -72,7 +76,7 @@ def ensure_metricflow_dummy_adapter():
 
 
 def ensure_compiler_profile():
-    """Writes a clean profiles.yml configuring dbt/MetricFlow to compile using Postgres dialect."""
+    """Writes a clean profiles.yml configuring dbt to compile purely using the dummy Postgres dialect."""
     DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
     impala_db = os.environ.get("DB_NAME", "test")
 
@@ -94,15 +98,12 @@ default:
 
 
 def ensure_manifest_ready():
-    """Ensures target/semantic_manifest.json exists, is up-to-date, and patched to postgres adapter."""
+    """Parses project only if the YAML file changed. Builds a native Postgres semantic manifest."""
     needs_parse = False
     if not MANIFEST_PATH.exists():
         needs_parse = True
     elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
         needs_parse = True
-
-    env = os.environ.copy()
-    env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
 
     if needs_parse:
         print("🔄 Schema modified or manifest missing. Running dbt parse...")
@@ -110,18 +111,11 @@ def ensure_manifest_ready():
         parse_proc = subprocess.run(
             dbt_parse_cmd,
             cwd=str(DBT_PROJECT_DIR),
-            env=env,
             capture_output=True,
             text=True
         )
         if parse_proc.returncode != 0:
             raise Exception(f"dbt parse failed: {parse_proc.stderr or parse_proc.stdout}")
-
-        # Patch manifest once after parsing
-        if MANIFEST_PATH.exists():
-            manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
-            patched_manifest = manifest_text.replace('"adapter_type": "impala"', '"adapter_type": "postgres"')
-            MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
 
 
 def load_dbt_catalog() -> Dict[str, Any]:
@@ -135,15 +129,14 @@ def load_dbt_catalog() -> Dict[str, Any]:
 
 @app.on_event("startup")
 def startup_event():
-    """Bootstraps environment on app startup."""
-    print("🚀 Bootstrapping dbt environment...")
+    """Bootstraps environment and injects profile globals on app startup."""
+    print("🚀 Bootstrapping in-memory dbt environment...")
+    os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
+    
     ensure_compiler_profile()
     ensure_metricflow_dummy_adapter()
-    try:
-        ensure_manifest_ready()
-        print("✅ dbt Semantic Manifest ready!")
-    except Exception as e:
-        print(f"⚠️ Startup manifest warning: {str(e)}")
+    ensure_manifest_ready()
+    print("✅ System Ready.")
 
 
 @app.get("/healthz")
@@ -177,40 +170,55 @@ def get_semantic_catalog():
 
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
 def execute_metric_query(payload: MetricQueryRequest):
-    """Compiles dynamic MetricFlow metrics into Impala-compatible SQL without executing against DB."""
+    """Compiles dynamic MetricFlow metrics into Impala SQL using an in-memory CLI executor."""
     try:
-        ensure_compiler_profile()
         ensure_manifest_ready()
 
-        env = os.environ.copy()
-        env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
-
-        # Compile SQL via MetricFlow CLI
-        mf_cmd = resolve_cmd("mf") + ["query", "--metrics", ",".join(payload.metrics)]
+        args = ["query", "--metrics", ",".join(payload.metrics)]
         if payload.group_by:
-            mf_cmd.extend(["--group-by", ",".join(payload.group_by)])
-        mf_cmd.append("--explain")
+            args.extend(["--group-by", ",".join(payload.group_by)])
+        args.append("--explain")
 
-        process = subprocess.run(
-            mf_cmd,
-            cwd=str(DBT_PROJECT_DIR),
-            env=env,
-            capture_output=True,
-            text=True
-        )
-
-        if process.returncode != 0:
-            error_msg = process.stderr.strip() or process.stdout.strip()
-            raise Exception(f"MetricFlow compilation failed: {error_msg}")
-
-        output_text = process.stdout.strip()
+        output_text = ""
+        
+        # FAST PATH: In-memory CLI Execution (Eliminates 13-second Python subprocess boot)
+        with _MF_LOCK:
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(str(DBT_PROJECT_DIR))
+                try:
+                    from dbt_metricflow.cli.main import mf
+                    from click.testing import CliRunner
+                    
+                    runner = CliRunner()
+                    result = runner.invoke(mf, args)
+                    
+                    if result.exit_code != 0:
+                        raise Exception(result.output or str(result.exception))
+                    output_text = result.output
+                    
+                except ImportError:
+                    # FALLBACK: Safely downgrade to subprocess if module imports fail
+                    process = subprocess.run(
+                        ["mf"] + args,
+                        capture_output=True,
+                        text=True
+                    )
+                    if process.returncode != 0:
+                        raise Exception(process.stderr or process.stdout)
+                    output_text = process.stdout
+            finally:
+                os.chdir(old_cwd)
 
         # Extract compiled SQL block using regex
         match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
         compiled_sql = output_text[match.start():] if match else output_text
 
-        # Format Postgres identifier quotes to Impala backticks
+        # Format Postgres SQL to Impala Syntax
         compiled_sql = compiled_sql.replace('"', '`')
+        
+        # Clean up the dummy database alias generated by the fake postgres profile
+        compiled_sql = re.sub(r'`?dummy`?\.', '', compiled_sql)
 
         return MetricQueryResponse(
             status="success",
