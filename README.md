@@ -116,7 +116,7 @@ ask-data/                              # Root project directory
 │   │   │   └── job_db.py               # SQLite job queue — manages job lifecycle (pending → processing → completed/failed/cancelled) with timeout-safe NFS-friendly WAL disabled
 │   │   ├── services/
 │   │   │   └── agent_engine.py         # Core agent orchestration — defines 4 CrewAI agents (Schema Analyst, SQL Developer, SQL Executor, Compliance Officer), SQL generation flow with retry logic, and RAG agent
-│   │   └── worker.py                   # Background async worker loop — polls pending jobs, dispatches to SQL/RAG agents based on question keywords, manages concurrency with semaphore
+│   │   └── worker.py                   # Background async worker loop — polls pending jobs, dispatches to SQL/RAG agents based on the job's `type` (set by the page the question was submitted from), manages concurrency with semaphore
 │   ├── config/
 │   │   ├── agents.yaml                 # CrewAI agent definitions: schema_analyst, sql_developer, sql_executor, compliance_officer
 │   │   └── tasks.yaml                  # CrewAI task templates: fetch_schema_task, draft_sql_task, execute_sql_task, evaluate_policy_task
@@ -125,7 +125,7 @@ ask-data/                              # Root project directory
 ├── frontend/                            # Gradio Web UI
 │   ├── frontend_entry.py               # CML application entry — bootstraps config, installs deps, builds and launches Gradio UI on port 8080
 │   ├── app/
-│   │   └── main.py                     # Gradio Blocks UI — chat interface with question input, job status tracking, SQL/code formatting, DataFrame rendering, cancel button
+│   │   └── main.py                     # Gradio Blocks UI — SQL & RAG tabs (each with question input, job status tracking, SQL/code formatting, DataFrame rendering, cancel button); each tab routes its question to the matching agent via a `type` field
 │   ├── package.json                    # Node.js package manifest (empty/minimal — likely not used in CML Python context)
 │   ├── requirements.txt                # Frontend dependencies (appears minimal)
 │   └── README.md                       # Quick start instructions for running the Gradio app

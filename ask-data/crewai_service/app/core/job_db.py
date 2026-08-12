@@ -10,26 +10,33 @@ def init_db():
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
         # Explicitly enforce standard journal mode to prevent NFS lock crashes
         conn.execute("PRAGMA journal_mode=DELETE;")
-        
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
                 job_id TEXT PRIMARY KEY,
                 question TEXT NOT NULL,
                 status TEXT NOT NULL,
+                type TEXT NOT NULL DEFAULT 'sql',
                 result TEXT,
                 error TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Migration: add the `type` column to pre-existing databases
+        columns = [row[1] for row in conn.execute("PRAGMA table_info(jobs)").fetchall()]
+        if "type" not in columns:
+            conn.execute("ALTER TABLE jobs ADD COLUMN type TEXT NOT NULL DEFAULT 'sql'")
+
         conn.commit()
 
 
-def create_job(job_id: str, question: str) -> Dict[str, Any]:
+def create_job(job_id: str, question: str, qtype: str = "sql") -> Dict[str, Any]:
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
         conn.execute(
-            "INSERT INTO jobs (job_id, question, status) VALUES (?, ?, ?)",
-            (job_id, question, "pending")
+            "INSERT INTO jobs (job_id, question, status, type) VALUES (?, ?, ?, ?)",
+            (job_id, question, "pending", qtype)
         )
         conn.commit()
     return {"job_id": job_id, "status": "pending"}
@@ -59,8 +66,8 @@ def update_job_status(job_id: str, status: str, result: Optional[str] = None, er
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
         conn.execute(
             """
-            UPDATE jobs 
-            SET status = ?, result = ?, error = ?, updated_at = CURRENT_TIMESTAMP 
+            UPDATE jobs
+            SET status = ?, result = ?, error = ?, updated_at = CURRENT_TIMESTAMP
             WHERE job_id = ?
             """,
             (status, result, error, job_id)
@@ -81,5 +88,3 @@ def cancel_job(job_id: str) -> bool:
         )
         conn.commit()
         return cursor.rowcount > 0
-
-

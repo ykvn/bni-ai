@@ -31,6 +31,8 @@ def health_check():
 def ask_ai(payload: QueryRequest):
     """
     Proxies user query to Standalone CrewAI Microservice over HTTP with CML Authentication.
+    The `type` field ("sql" or "rag") determines which agent runs, based on the page
+    the question was submitted from.
     """
     user_question = payload.question.strip() if payload.question else ""
     if not user_question:
@@ -38,7 +40,10 @@ def ask_ai(payload: QueryRequest):
 
     try:
         with _get_httpx_client() as client:
-            resp = client.post(f"{CREWAI_SERVICE_URL}/process", json={"question": user_question})
+            resp = client.post(
+                f"{CREWAI_SERVICE_URL}/process",
+                json={"question": user_question, "type": payload.type}
+            )
             if resp.status_code != 200:
                 raise HTTPException(status_code=resp.status_code, detail=f"CrewAI Service error: {resp.text}")
             return resp.json()

@@ -1,6 +1,7 @@
 import uuid
 import json
 import asyncio
+from typing import Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from crewai_service.app.core import job_db
@@ -10,6 +11,7 @@ app = FastAPI(title="CrewAI Agent Microservice Engine")
 
 class ProcessRequest(BaseModel):
     question: str
+    type: Literal["sql", "rag"] = "sql"
 
 @app.on_event("startup")
 async def startup_event():
@@ -29,7 +31,7 @@ def process_task(payload: ProcessRequest):
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
     job_id = str(uuid.uuid4())
-    job_info = job_db.create_job(job_id=job_id, question=user_question)
+    job_info = job_db.create_job(job_id=job_id, question=user_question, qtype=payload.type)
 
     return {
         "job_id": job_id,
