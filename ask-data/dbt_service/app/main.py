@@ -71,7 +71,7 @@ def ensure_dbt_profile_exists():
     impala_db = os.environ.get("DB_NAME", "test")
     impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
     impala_user = os.environ.get("CDP_USER", "")
-    impala_password = os.environ.get("CDP_PASSWORD", "")
+    impala_password = os.environ.get("CDP_PASS", "")
 
     profile_content = f"""
 default:
@@ -208,7 +208,7 @@ def execute_metric_query(payload: MetricQueryRequest):
         impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
         auth_mech = os.environ.get("IMPALA_AUTH_MECHANISM", "LDAP") 
         impala_user = os.environ.get("CDP_USER", "")
-        impala_password = os.environ.get("CDP_PASSWORD", "")
+        impala_password = os.environ.get("CDP_PASS", "")
 
         conn = connect(
             host=impala_host, 
