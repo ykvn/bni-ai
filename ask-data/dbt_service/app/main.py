@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import yaml
 import re
+import threading
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -35,9 +36,10 @@ MANIFEST_PATH = DBT_PROJECT_DIR / "target" / "semantic_manifest.json"
 DBT_PROFILES_DIR = Path.home() / ".dbt"
 PROFILE_FILE = DBT_PROFILES_DIR / "profiles.yml"
 
-# Global in-memory engine cache
-_ENGINE_CACHE = None
+# Global in-memory engine cache & thread lock
+_GLOBAL_CACHED_CONFIG = None
 _LAST_YAML_MTIME = 0
+_MF_LOCK = threading.Lock()
 
 
 class MetricQueryRequest(BaseModel):
@@ -129,21 +131,21 @@ def ensure_manifest_ready():
             MANIFEST_PATH.write_text(patched_manifest, encoding="utf-8")
 
 
-def get_cached_engine():
+def cache_and_monkeypatch_cli():
     """
-    Loads the MetricFlow Engine into RAM once using dynamic class inspection.
-    Rebuilds only if bni_dbt_schema.yaml has been modified.
+    Loads the MetricFlow Engine into RAM once, then monkeypatches the CLI configuration 
+    class so that all subsequent CLI calls instantly return this pre-warmed instance.
     """
-    global _ENGINE_CACHE, _LAST_YAML_MTIME
+    global _GLOBAL_CACHED_CONFIG, _LAST_YAML_MTIME
 
     current_mtime = SCHEMA_YAML_PATH.stat().st_mtime if SCHEMA_YAML_PATH.exists() else 0
 
-    if _ENGINE_CACHE is None or current_mtime > _LAST_YAML_MTIME:
+    if _GLOBAL_CACHED_CONFIG is None or current_mtime > _LAST_YAML_MTIME:
         ensure_compiler_profile()
         ensure_metricflow_dummy_adapter()
         ensure_manifest_ready()
 
-        print("⚡ Loading MetricFlow Engine into RAM...")
+        print("⚡ Warming up MetricFlow Engine into RAM...")
         old_cwd = os.getcwd()
         try:
             os.chdir(str(DBT_PROJECT_DIR))
@@ -151,7 +153,7 @@ def get_cached_engine():
             
             import dbt_metricflow.cli.cli_configuration as cli_config_mod
 
-            # Dynamically locate the configuration class regardless of exact class name
+            # Dynamically locate the configuration class
             config_cls = (
                 getattr(cli_config_mod, "dbtMetricFlowCliConfiguration", None)
                 or getattr(cli_config_mod, "MetricFlowCliConfiguration", None)
@@ -169,41 +171,38 @@ def get_cached_engine():
             if config_cls is None:
                 raise ImportError("Could not find configuration class inside dbt_metricflow.cli.cli_configuration")
 
+            # Restore original __new__ if we are rebuilding the cache
+            if hasattr(config_cls, "_original_new"):
+                config_cls.__new__ = config_cls._original_new
+
+            # 1. Instantiate the heavy configuration object
             cfg = config_cls()
+            
+            # 2. Run the expensive setup logic ONCE
             if hasattr(cfg, "setup"):
                 cfg.setup()
+                # Neuter the setup method so the CLI can't trigger it again
+                cfg.setup = lambda *args, **kwargs: None
             
-            _ENGINE_CACHE = cfg.mf
+            # Trigger the engine graph build (cached property)
+            _ = cfg.mf 
+            
+            # 3. Monkeypatch Python to return this exact instance whenever the CLI asks for it
+            _original_new = config_cls.__new__
+            def _cached_new(cls, *args, **kwargs):
+                return cfg
+            
+            config_cls._original_new = _original_new
+            config_cls.__new__ = staticmethod(_cached_new)
+            
+            # Also mock __init__ to prevent it resetting any states on the singleton
+            config_cls.__init__ = lambda self, *args, **kwargs: None
+            
+            _GLOBAL_CACHED_CONFIG = cfg
             _LAST_YAML_MTIME = current_mtime
-            print("✅ MetricFlow Engine cached in memory!")
+            print("✅ MetricFlow CLI successfully monkeypatched into memory!")
         finally:
             os.chdir(old_cwd)
-
-    return _ENGINE_CACHE
-
-
-def _get_query_request_class():
-    """
-    Dynamically scans memory to find the MetricFlowQueryRequest class 
-    regardless of where dbt has moved it in their internal directory structure.
-    """
-    # Ensure CLI is loaded so all modules populate in memory
-    import dbt_metricflow.cli.main
-    
-    # 1. Search for explicit MetricFlowQueryRequest class
-    for mod_name, mod in list(sys.modules.items()):
-        if mod and hasattr(mod, "MetricFlowQueryRequest"):
-            return getattr(mod, "MetricFlowQueryRequest")
-            
-    # 2. Fallback: Search for any class that has the "create_with_string_inputs" factory method
-    for mod_name, mod in list(sys.modules.items()):
-        if mod and mod_name.startswith("metricflow"):
-            for attr_name in dir(mod):
-                attr = getattr(mod, attr_name)
-                if isinstance(attr, type) and hasattr(attr, "create_with_string_inputs"):
-                    return attr
-                    
-    raise ImportError("Could not dynamically locate MetricFlowQueryRequest object in memory.")
 
 
 def load_dbt_catalog() -> Dict[str, Any]:
@@ -217,11 +216,11 @@ def load_dbt_catalog() -> Dict[str, Any]:
 
 @app.on_event("startup")
 def startup_event():
-    """Bootstraps environment and pre-loads MetricFlow Engine into RAM on startup."""
+    """Bootstraps environment and patches the CLI Engine into RAM on startup."""
     print("🚀 Bootstrapping in-memory dbt environment...")
     os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
     try:
-        get_cached_engine()
+        cache_and_monkeypatch_cli()
     except Exception as e:
         print(f"⚠️ Pre-load warning on startup: {str(e)}")
 
@@ -257,35 +256,41 @@ def get_semantic_catalog():
 
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
 def execute_metric_query(payload: MetricQueryRequest):
-    """Compiles dynamic MetricFlow metrics into Impala SQL directly in RAM (Sub-100ms response time)."""
+    """Compiles dynamic MetricFlow metrics using the official CLI (Monkeypatched to run in ~30ms)."""
     try:
-        engine = get_cached_engine()
-
-        # Dynamically locate the class in memory to avoid ImportErrors
-        QueryRequestClass = _get_query_request_class()
+        # Ensure cache is fresh
+        cache_and_monkeypatch_cli()
         
-        where_constraints = [payload.where] if payload.where else None
+        args = ["query", "--metrics", ",".join(payload.metrics)]
+        if payload.group_by:
+            args.extend(["--group-by", ",".join(payload.group_by)])
+        if payload.where:
+            args.extend(["--where", payload.where])
+        args.append("--explain")
 
-        mf_request = QueryRequestClass.create_with_string_inputs(
-            metric_names=payload.metrics,
-            group_by_names=payload.group_by or [],
-            where_constraint_strings=where_constraints,
-        )
-
-        explain_result = engine.explain(mf_request=mf_request)
-
-        # Extract rendered SQL
-        if hasattr(explain_result, "rendered_sql") and explain_result.rendered_sql:
-            compiled_sql = explain_result.rendered_sql
-        elif hasattr(explain_result, "sql") and explain_result.sql:
-            compiled_sql = explain_result.sql
-        else:
-            compiled_sql = str(explain_result)
+        output_text = ""
+        
+        with _MF_LOCK:
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(str(DBT_PROJECT_DIR))
+                from dbt_metricflow.cli.main import mf
+                from click.testing import CliRunner
+                
+                # Execute the CLI natively. Because of our Monkeypatch, it thinks it's 
+                # initializing a new config but instantly gets our pre-warmed singleton cache!
+                runner = CliRunner()
+                result = runner.invoke(mf, args)
+                
+                if result.exit_code != 0:
+                    raise Exception(result.output or str(result.exception))
+                output_text = result.output
+            finally:
+                os.chdir(old_cwd)
 
         # Extract SQL query if preamble logs exist
-        match = re.search(r'(?im)^(WITH|SELECT)\b', compiled_sql)
-        if match:
-            compiled_sql = compiled_sql[match.start():]
+        match = re.search(r'(?im)^(WITH|SELECT)\b', output_text)
+        compiled_sql = output_text[match.start():] if match else output_text
 
         # Format Postgres SQL to Impala Syntax
         compiled_sql = compiled_sql.replace('"', '`')
