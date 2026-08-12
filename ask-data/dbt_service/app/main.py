@@ -30,6 +30,7 @@ app = FastAPI(
 # Paths
 DBT_PROJECT_DIR = _SERVICE_DIR / "dbt_project"
 SCHEMA_YAML_PATH = DBT_PROJECT_DIR / "models" / "bni_dbt_schema.yaml"
+DBT_PROFILES_DIR = Path.home() / ".dbt"
 
 
 # --- Request/Response Models ---
@@ -62,7 +63,35 @@ def resolve_mf_command() -> List[str]:
     return [sys.executable, "-m", "metricflow.cli.main"]
 
 
-# --- Helper to load dbt Catalog ---
+def ensure_dbt_profile_exists():
+    """Ensures ~/.dbt/profiles.yml exists with the 'default' profile configuration."""
+    DBT_PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+    profile_file = DBT_PROFILES_DIR / "profiles.yml"
+
+    if not profile_file.exists():
+        impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
+        impala_port = os.environ.get("IMPALA_PORT", "443")
+        impala_db = os.environ.get("DB_NAME", "test")
+        impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
+
+        profile_content = f"""
+default:
+  target: dev
+  targets:
+    dev:
+      type: impala
+      host: {impala_host}
+      port: {impala_port}
+      schema: {impala_db}
+      auth_type: LDAP
+      use_http_transport: true
+      http_path: {impala_http_path}
+      use_ssl: true
+      threads: 1
+"""
+        profile_file.write_text(profile_content.strip())
+
+
 def load_dbt_catalog() -> Dict[str, Any]:
     """Loads and parses the dbt bni_dbt_schema.yaml file."""
     if not SCHEMA_YAML_PATH.exists():
@@ -117,19 +146,25 @@ def execute_metric_query(payload: MetricQueryRequest):
     try:
         from impala.dbapi import connect
 
-        # 1. Resolve executable command
+        # 1. Ensure profile exists
+        ensure_dbt_profile_exists()
+
+        # 2. Build sub-process execution environment
+        env = os.environ.copy()
+        env["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
+
         mf_base_cmd = resolve_mf_command()
         
-        # Build command using --explain to generate SQL without running it directly via MetricFlow
         cmd = mf_base_cmd + ["query", "--metrics", ",".join(payload.metrics)]
         if payload.group_by:
             cmd.extend(["--group-by", ",".join(payload.group_by)])
-        cmd.append("--explain")  # FIXED: Changed from --compile to --explain
+        cmd.append("--explain")
 
-        # 2. Execute compilation
+        # 3. Execute MetricFlow compilation
         process = subprocess.run(
             cmd,
             cwd=str(DBT_PROJECT_DIR),
+            env=env,
             capture_output=True,
             text=True
         )
@@ -140,7 +175,7 @@ def execute_metric_query(payload: MetricQueryRequest):
 
         output_text = process.stdout.strip()
 
-        # Extract clean SQL statement starting from WITH or SELECT
+        # Extract SQL block from output
         sql_start = -1
         for keyword in ["WITH ", "SELECT "]:
             pos = output_text.upper().find(keyword)
@@ -149,8 +184,8 @@ def execute_metric_query(payload: MetricQueryRequest):
 
         compiled_sql = output_text[sql_start:] if sql_start != -1 else output_text
 
-        # 3. Execute compiled SQL on CDW Impala over port 443
-        impala_host = os.environ.get("IMPALA_HOST", "localhost")
+        # 4. Execute compiled SQL on CDW Impala over port 443
+        impala_host = os.environ.get("IMPALA_HOST", "coordinator-impala-vw-cai.apps.dataservices.bni.co.id")
         impala_port = int(os.environ.get("IMPALA_PORT", 443))
         impala_db = os.environ.get("DB_NAME", "test")
         impala_http_path = os.environ.get("IMPALA_HTTP_PATH", "cliservice")
