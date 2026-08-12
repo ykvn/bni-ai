@@ -170,11 +170,8 @@ def get_cached_engine():
                 raise ImportError("Could not find configuration class inside dbt_metricflow.cli.cli_configuration")
 
             cfg = config_cls()
-            
-            # --- THE FIX: Initialize the configuration before accessing .mf ---
             if hasattr(cfg, "setup"):
                 cfg.setup()
-            # ----------------------------------------------------------------
             
             _ENGINE_CACHE = cfg.mf
             _LAST_YAML_MTIME = current_mtime
@@ -183,6 +180,30 @@ def get_cached_engine():
             os.chdir(old_cwd)
 
     return _ENGINE_CACHE
+
+
+def _get_query_request_class():
+    """
+    Dynamically scans memory to find the MetricFlowQueryRequest class 
+    regardless of where dbt has moved it in their internal directory structure.
+    """
+    # Ensure CLI is loaded so all modules populate in memory
+    import dbt_metricflow.cli.main
+    
+    # 1. Search for explicit MetricFlowQueryRequest class
+    for mod_name, mod in list(sys.modules.items()):
+        if mod and hasattr(mod, "MetricFlowQueryRequest"):
+            return getattr(mod, "MetricFlowQueryRequest")
+            
+    # 2. Fallback: Search for any class that has the "create_with_string_inputs" factory method
+    for mod_name, mod in list(sys.modules.items()):
+        if mod and mod_name.startswith("metricflow"):
+            for attr_name in dir(mod):
+                attr = getattr(mod, attr_name)
+                if isinstance(attr, type) and hasattr(attr, "create_with_string_inputs"):
+                    return attr
+                    
+    raise ImportError("Could not dynamically locate MetricFlowQueryRequest object in memory.")
 
 
 def load_dbt_catalog() -> Dict[str, Any]:
@@ -240,11 +261,12 @@ def execute_metric_query(payload: MetricQueryRequest):
     try:
         engine = get_cached_engine()
 
-        from metricflow.protocols.query_param_protocol import MetricFlowQueryRequest
+        # Dynamically locate the class in memory to avoid ImportErrors
+        QueryRequestClass = _get_query_request_class()
         
         where_constraints = [payload.where] if payload.where else None
 
-        mf_request = MetricFlowQueryRequest.create_with_string_inputs(
+        mf_request = QueryRequestClass.create_with_string_inputs(
             metric_names=payload.metrics,
             group_by_names=payload.group_by or [],
             where_constraint_strings=where_constraints,
