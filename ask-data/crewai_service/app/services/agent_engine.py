@@ -87,11 +87,19 @@ async def mcp_search_policy_documents(query: str) -> str:
 
 @tool("search_mf_catalog")
 async def mcp_search_mf_catalog(user_question: str) -> str:
+    """
+    Searches the dbt MetricFlow semantic catalog for relevant metrics and dimensions based on the user's question.
+    ALWAYS use this before drafting a MetricFlow JSON payload to retrieve the exact metric names and dimension paths.
+    """
     log_ts(f"🛠️ Tool Invoked: 'search_mf_catalog'")
     return await call_mcp("search_mf_catalog", {"user_question": user_question})
 
 @tool("compile_mf_sql")
 async def mcp_compile_mf_sql(json_payload: str) -> str:
+    """
+    Sends a JSON query payload to the dbt MetricFlow API to generate and execute SQL.
+    The payload MUST be a valid JSON string containing "metrics" and "group_by" arrays.
+    """
     log_ts(f"🛠️ Tool Invoked: 'compile_mf_sql'")
     return await call_mcp("compile_mf_sql", {"json_payload": json_payload})
 
