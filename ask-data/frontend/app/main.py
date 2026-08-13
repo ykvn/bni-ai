@@ -296,7 +296,7 @@ def build_ui() -> object:
 
         # ---------------- SQL Question tab ----------------
         with gr.Tab("SQL Question"):
-            gr.Markdown("### 🧮 Zero SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to SQL and executed against the data warehouse.")
+            gr.Markdown("### 🧮 Zero SQL Assistant\nAsk for bank data. The question is converted to SQL and executed against the data warehouse.")
             sql_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
             sql_type = gr.State("sql")
 
