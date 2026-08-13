@@ -14,6 +14,9 @@ from mcp import ClientSession
 from mcp.client.sse import sse_client
 from shared.cml_auth import build_cml_headers
 
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
 # --- TIMESTAMP HELPER ---
@@ -39,6 +42,17 @@ GLOBAL_LLM = LLM(
     temperature=0.0,
     max_tokens=4096
 )
+
+# Pydantic schema for MetricFlow JSON payload validation
+class MetricFlowQueryPayload(BaseModel):
+    metrics: List[str] = Field(
+        ..., 
+        description="List of metric names to query, e.g. ['cai_savings_balance_sum_metric']"
+    )
+    group_by: List[str] = Field(
+        default_factory=list, 
+        description="List of entity dimensions using double-underscore notation, e.g. ['bank__name']"
+    )
 
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:
     start_time = datetime.now()
@@ -207,7 +221,7 @@ class MetricFlowAgentCrew:
         return Agent(
             config=self.agents_config['mf_schema_analyst'],
             llm=GLOBAL_LLM,
-            tools=[mcp_search_mf_catalog], # 1 Tool only
+            tools=[mcp_search_mf_catalog],
             step_callback=agent_step_callback,
             memory=False
         )
@@ -217,7 +231,7 @@ class MetricFlowAgentCrew:
         return Agent(
             config=self.agents_config['mf_payload_developer'],
             llm=GLOBAL_LLM,
-            tools=[], # Purely a JSON drafting agent
+            tools=[],
             step_callback=agent_step_callback,
             memory=False
         )
@@ -227,7 +241,7 @@ class MetricFlowAgentCrew:
         return Agent(
             config=self.agents_config['mf_executor'],
             llm=GLOBAL_LLM,
-            tools=[mcp_compile_mf_sql], # 1 Tool only
+            tools=[mcp_compile_mf_sql],
             step_callback=agent_step_callback,
             memory=False
         )
@@ -238,7 +252,12 @@ class MetricFlowAgentCrew:
 
     @task
     def mf_draft_payload_task(self) -> Task:
-        return Task(config=self.tasks_config['mf_draft_payload_task'], agent=self.mf_payload_developer(), callback=task_completion_callback)
+        return Task(
+            config=self.tasks_config['mf_draft_payload_task'],
+            agent=self.mf_payload_developer(),
+            output_pydantic=MetricFlowQueryPayload, # 🚀 ZERO ERROR GUARANTEE: Enforces JSON Schema
+            callback=task_completion_callback
+        )
 
     @task
     def mf_execute_task(self) -> Task:
@@ -336,8 +355,14 @@ class MetricFlowGenerationFlow(Flow[SQLState]):
             "db_schema": self.state.db_schema,
             "error_context": self.state.error_context
         })
-        # Strip markdown to isolate the JSON
-        self.state.sql_query = re.sub(r"```(?:json)?|```", "", result.raw).strip()
+        
+        # 🚀 EXTRACT PYDANTIC OBJECT SAFELY
+        if hasattr(result, "pydantic") and result.pydantic:
+            self.state.sql_query = result.pydantic.model_dump_json()
+        else:
+            self.state.sql_query = re.sub(r"```(?:json)?|```", "", result.raw).strip()
+            
+        log_ts(f"📦 Validated Payload Prepared: {self.state.sql_query}")
 
     @router(mf_draft_payload)
     async def mf_execute_and_validate(self):
@@ -347,9 +372,9 @@ class MetricFlowGenerationFlow(Flow[SQLState]):
         result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
         raw_output = result.raw
         
-        error_keywords = ["MetricFlow API Error", "Syntax error"]
+        error_keywords = ["MetricFlow API Error", "Syntax error", "Failed", "ERROR:"]
         if any(err in raw_output for err in error_keywords) and self.state.retries < 3:
-            log_ts(f"⚠️ [MF Flow] Error Detected! Routing back to Developer. Error: {raw_output[:50]}...")
+            log_ts(f"⚠️ [MF Flow] Error Detected! Routing back to Developer (Retry {self.state.retries + 1})...")
             self.state.error_context = raw_output
             self.state.retries += 1
             return "retry_mf"

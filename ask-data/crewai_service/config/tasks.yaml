@@ -58,13 +58,12 @@ mf_draft_payload_task:
     {error_context}
 
     INSTRUCTIONS:
-    Create a JSON object with two arrays: "metrics" and "group_by".
-    Use ONLY the exact names provided in the catalog above.
-    
-    Example Output:
-    {{"metrics": ["cai_savings_balance_sum_metric"], "group_by": ["customer_id__bank_name"]}}
+    1. Fill out the "metrics" and "group_by" fields accurately based on the catalog provided above.
+    2. CRITICAL RULE FOR DIMENSIONS: MetricFlow dimension keys inside "group_by" MUST use double underscores (__) between the entity and the dimension name.
+       - NEVER use dot notation (e.g. 'bank.dimensions.name' is WRONG).
+       - ALWAYS convert dot notation to double underscores (e.g. convert 'bank.dimensions.name' to 'bank__name' or 'customer__bank_name').
   expected_output: >
-    Output ONLY valid JSON. No markdown code blocks, no SQL, no conversational text.
+    A structured MetricFlowQueryPayload containing metrics and group_by arrays.
 
 mf_execute_task:
   description: >
