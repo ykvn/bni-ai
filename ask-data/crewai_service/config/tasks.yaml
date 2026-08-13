@@ -72,7 +72,7 @@ mf_draft_payload_task:
 mf_execute_task:
   description: >
     /no_think
-    Execute the MetricFlow API tool using this JSON payload:
+    Execute the MetricFlow `compile_mf_sql` tool using this JSON payload:
     {sql_query}
 
     INSTRUCTION:
