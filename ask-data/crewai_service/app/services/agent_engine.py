@@ -33,6 +33,9 @@ def agent_step_callback(agent_action):
     if hasattr(agent_action, 'tool'):
         log_ts(f"🤖 AGENT ACTION: Triggering Tool '{agent_action.tool}'")
 
+os.environ["OPENAI_API_KEY"] = os.environ.get("CML_TOKEN") or os.environ.get("LITELLM_API_KEY", "sk-default")
+os.environ["OPENAI_API_BASE"] = os.environ.get("LITELLM_PROXY_URL") or os.environ.get("LITELLM_APP_URL", "")
+os.environ["OPENAI_MODEL_NAME"] = f"openai/{os.environ.get('CML_MODEL_NAME', '')}"
 
 # --- 1. GLOBAL SETUP ---
 GLOBAL_LLM = LLM(
