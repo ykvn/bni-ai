@@ -44,7 +44,7 @@ async def _process_single_job(job: dict):
                 "data": [],
                 "response": agent_response
             }
-        elif job_type == "metricflow":
+        elif job_type == "semantic":
             # 🚀 NEW: MetricFlow Routing
             flow_state = await run_metricflow_agent(user_question)
             if _is_cancelled(job_id):

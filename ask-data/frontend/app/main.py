@@ -356,4 +356,37 @@ def build_ui() -> object:
                 show_progress="hidden"
             )
 
+        # ---------------- Semantic SQL Question tab ----------------
+        with gr.Tab("SQL Question (Semantic)"):
+            gr.Markdown("### 🧠 Semantic SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to a JSON payload and executed against the MetricFlow Semantic Layer.")
+            semantic_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
+            
+            # You requested the type to be "semantic"
+            semantic_type = gr.State("semantic")
+
+            with gr.Row():
+                semantic_submit_btn = gr.Button("Ask")
+                semantic_cancel_btn = gr.Button("Cancel", visible=False)
+
+            semantic_job_info_box = gr.Markdown(visible=False)
+            semantic_output_text = gr.Markdown(label="Answer & JSON", visible=False) # Hides answer box by default
+            semantic_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
+
+            semantic_ask, semantic_cancel = make_tab_handlers()
+
+            semantic_submit_btn.click(
+                fn=semantic_ask,
+                inputs=[semantic_question, semantic_type],
+                outputs=[semantic_job_info_box, semantic_output_text, semantic_output_table, semantic_submit_btn, semantic_cancel_btn],
+                concurrency_limit=None,
+                show_progress="hidden"
+            )
+            semantic_cancel_btn.click(
+                fn=semantic_cancel,
+                inputs=None,
+                outputs=[semantic_job_info_box, semantic_output_text, semantic_output_table, semantic_submit_btn, semantic_cancel_btn],
+                concurrency_limit=None,
+                show_progress="hidden"
+            )
+
     return demo
