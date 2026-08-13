@@ -106,14 +106,14 @@ async def mcp_compile_mf_sql(json_payload: str) -> str:
         payload_dict = json.loads(json_payload)
         
         # Use the URL from your .env, fallback to localhost
-        base_url = os.getenv("DBT_METRICFLOW_URL", "http://127.0.0.1:8092").rstrip("/")
+        base_url = os.getenv("DBT_METRICFLOW_URL").rstrip("/")
         endpoint = f"{base_url}/api/v1/load"
         
         # Attach Cloudera Gateway headers
         cml_token = os.getenv("CML_TOKEN") or os.getenv("CDP_TOKEN")
         headers = build_cml_headers(cml_token) if cml_token else {}
         
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=False) as client:
             response = await client.post(
                 endpoint,
                 json=payload_dict,
