@@ -41,7 +41,7 @@ def parse_payload_to_ui(payload: dict):
     # 2. Formatted SQL Code Block (Replaces single-line SQL with multi-line formatted SQL)
     if payload.get("predicted_sql"):
         formatted_sql = format_sql(payload["predicted_sql"])
-        text_parts.append(f"🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
+        text_parts.append(f"###🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
 
     # 3. True Tabular DataFrame Parsing
     if "data" in payload and payload["data"] is not None:
