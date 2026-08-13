@@ -37,7 +37,7 @@ mf_schema_analyst:
 
 mf_payload_developer:
   role: >
-    MetricFlow JSON Query Builder
+    DBT MetricFlow JSON Query Builder
   goal: >
     Construct a valid JSON payload for the MetricFlow API based on the retrieved catalog.
   backstory: >

@@ -54,7 +54,11 @@ class MetricFlowQueryPayload(BaseModel):
     )
     group_by: List[str] = Field(
         default_factory=list, 
-        description="List of entity dimensions using double-underscore notation, e.g. ['bank__name']"
+        description="List of entity dimensions using double-underscore notation, e.g. ['customer_id__bank_name']"
+    )
+    where: Optional[str] = Field(
+        default=None, 
+        description="Optional MetricFlow where filter string, e.g. 'metric_time__year = 2025'"
     )
 
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:
