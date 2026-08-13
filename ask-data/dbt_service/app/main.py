@@ -42,8 +42,7 @@ signal.signal = _safe_signal
 # Prevents repeated "Initiating query..." Braille frame entries in non-interactive CML Application Logs
 try:
     import rich.console
-    import rich.status
-    
+
     # Force rich consoles to render in non-interactive/non-terminal mode
     rich.console.Console.is_terminal = False
     rich.console.Console.is_interactive = False
@@ -63,13 +62,8 @@ except Exception:
     pass
 # --------------------------------------------------------
 
-# Ensure ask-data/ root and service directory are in path
+# Resolve service directory (used for dbt project paths)
 _SERVICE_DIR = Path(__file__).resolve().parent.parent
-_ASK_DATA_ROOT = _SERVICE_DIR.parent
-if str(_ASK_DATA_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ASK_DATA_ROOT))
-if str(_SERVICE_DIR) not in sys.path:
-    sys.path.insert(0, str(_SERVICE_DIR))
 
 app = FastAPI(
     title="dbt MetricFlow Semantic Layer API",
@@ -84,8 +78,8 @@ MANIFEST_PATH = DBT_PROJECT_DIR / "target" / "semantic_manifest.json"
 DBT_PROFILES_DIR = Path.home() / ".dbt"
 PROFILE_FILE = DBT_PROFILES_DIR / "profiles.yml"
 
-# Global in-memory engine cache & thread lock
-_GLOBAL_CACHED_CONFIG = None
+# Global in-memory engine cache flag & thread lock
+_CACHE_WARMED = False
 _LAST_YAML_MTIME = 0
 _MF_LOCK = threading.Lock()
 
@@ -184,11 +178,11 @@ def cache_and_monkeypatch_cli():
     Loads the MetricFlow Engine into RAM once, then monkeypatches the CLI configuration 
     class so that all subsequent CLI calls instantly return this pre-warmed instance.
     """
-    global _GLOBAL_CACHED_CONFIG, _LAST_YAML_MTIME
+    global _CACHE_WARMED, _LAST_YAML_MTIME
 
     current_mtime = SCHEMA_YAML_PATH.stat().st_mtime if SCHEMA_YAML_PATH.exists() else 0
 
-    if _GLOBAL_CACHED_CONFIG is None or current_mtime > _LAST_YAML_MTIME:
+    if not _CACHE_WARMED or current_mtime > _LAST_YAML_MTIME:
         ensure_compiler_profile()
         ensure_metricflow_dummy_adapter()
         ensure_manifest_ready()
@@ -243,7 +237,7 @@ def cache_and_monkeypatch_cli():
             config_cls.__new__ = staticmethod(_cached_new)
             config_cls.__init__ = lambda self, *args, **kwargs: None
             
-            _GLOBAL_CACHED_CONFIG = cfg
+            _CACHE_WARMED = True
             _LAST_YAML_MTIME = current_mtime
             print("✅ MetricFlow CLI successfully cached in memory!")
         finally:
@@ -265,10 +259,8 @@ def startup_event():
     print("🚀 Bootstrapping in-memory dbt environment...")
     os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
     try:
-        ensure_compiler_profile()
-        ensure_metricflow_dummy_adapter()
         ensure_manifest_ready(force=True)  # Forces dbt parse on every service restart
-        cache_and_monkeypatch_cli()
+        cache_and_monkeypatch_cli()  # ensure_compiler_profile/adapter/manifest handled inside
     except Exception as e:
         print(f"⚠️ Pre-load warning on startup: {str(e)}")
 
@@ -315,8 +307,6 @@ def execute_metric_query(payload: MetricQueryRequest):
             args.extend(["--where", payload.where])
         args.append("--explain")
 
-        output_text = ""
-        
         with _MF_LOCK:
             old_cwd = os.getcwd()
             try:
