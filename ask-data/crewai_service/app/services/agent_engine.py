@@ -301,8 +301,7 @@ class SQLGenerationFlow(Flow[SQLState]):
         self.state.db_schema = result.raw
         # No return string needed; CrewAI automatically moves to the next listener
 
-    @listen(fetch_schema)     # Listens for Step 1 to finish
-    @listen("retry_sql")      # Listens for the Router to send it back here
+    @listen(or_(fetch_schema, "retry_sql"))
     async def draft_sql(self):
         log_ts(f"🌊 [Flow] Step 2: Drafting SQL (Retry: {self.state.retries})...")
         crew_instance = SQLAgentCrew()
