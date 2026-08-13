@@ -19,6 +19,7 @@ from app.tools.get_database_schema import get_database_schema
 from app.tools.search_golden_queries import search_golden_queries
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 from app.tools.search_mf_catalog import search_mf_catalog
+from app.tools.compile_mf_sql import compile_mf_sql
 import anyio
 
 # 1. Initialize central FastMCP application state
@@ -99,48 +100,10 @@ async def mcp_search_mf_catalog(user_question: str) -> str:
 @mcp.tool(name="compile_mf_sql")
 async def mcp_compile_mf_sql(json_payload: str) -> str:
     """
-    Sends a JSON query payload to the dbt MetricFlow API to generate and execute SQL.
-    The payload MUST be a valid JSON string containing "metrics" and "group_by" arrays.
+    Sends a JSON payload to the dbt MetricFlow API to compile into SQL.
+    Returns the SQL string. It DOES NOT execute the query.
     """
-    try:
-        # 1. Parse JSON safely
-        if isinstance(json_payload, str):
-            payload_dict = json.loads(json_payload)
-        else:
-            payload_dict = json_payload
-            
-        print(f"📦 [compile_mf_sql] Sending Payload to dbt: {json.dumps(payload_dict)}", flush=True)
-
-        base_url = os.getenv("DBT_METRICFLOW_URL", "http://127.0.0.1:8092").rstrip("/")
-        endpoint = f"{base_url}/api/v1/load"
-
-        cml_token = os.getenv("CML_TOKEN") or os.getenv("CDP_TOKEN")
-        headers = build_cml_headers(cml_token) if cml_token else {}
-
-        async with httpx.AsyncClient(verify=False) as client:
-            response = await client.post(
-                endpoint,
-                json=payload_dict,
-                headers=headers,
-                timeout=30.0
-            )
-            
-            # Print response if dbt throws a 500 so we can see the exact error
-            if response.status_code != 200:
-                print(f"❌ [compile_mf_sql] dbt API Error ({response.status_code}): {response.text}", flush=True)
-                return f"MetricFlow API Error ({response.status_code}): {response.text}"
-                
-            result_data = response.json()
-
-            sql_to_run = result_data.get("sql")
-            if sql_to_run:
-                from app.tools.execute_banking_query import execute_banking_query
-                return execute_banking_query(sql_to_run)
-            return json.dumps(result_data)
-
-    except Exception as e:
-        print(f"❌ [compile_mf_sql] Tool Exception: {str(e)}", flush=True)
-        return f"MetricFlow API Error: {str(e)}"
+    return await compile_mf_sql(json_payload)
 
 
 # =====================================================================

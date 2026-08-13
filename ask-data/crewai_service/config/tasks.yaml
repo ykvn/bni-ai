@@ -72,13 +72,14 @@ mf_draft_payload_task:
 mf_execute_task:
   description: >
     /no_think
-    Execute the MetricFlow `compile_mf_sql` tool using this JSON payload:
+    Compile the MetricFlow JSON payload into raw Impala SQL:
     {sql_query}
 
     INSTRUCTION:
-    You MUST Call the `compile_mf_sql` tool immediately.
+    You MUST Call the `compile_mf_sql` tool immediately. It will return a raw Impala SQL string.
+    Return that exact SQL string. Do not hallucinate or execute the query.
   expected_output: >
-    The exact execution output returned by the `compile_mf_sql` tool.
+    The exact raw Impala SQL string returned by the `compile_mf_sql` tool.
 
 evaluate_policy_task:
   description: >

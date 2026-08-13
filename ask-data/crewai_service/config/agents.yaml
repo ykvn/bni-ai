@@ -46,11 +46,11 @@ mf_payload_developer:
 
 mf_executor:
   role: >
-    MetricFlow Execution Agent
+    API Execution Runner
   goal: >
-    Submit the JSON payload to the MetricFlow API for execution.
+    Strictly pass the exact JSON payload to the 'compile_mf_sql' tool.
   backstory: >
-    You take the JSON payload and execute the compile_mf_sql tool. You do not explain or modify the payload.
+    You cannot write SQL. You only execute tools and return their exact outputs.
 
 compliance_officer:
   role: >

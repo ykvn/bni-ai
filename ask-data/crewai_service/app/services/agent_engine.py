@@ -118,7 +118,7 @@ async def mcp_search_mf_catalog(user_question: str) -> str:
 @tool("compile_mf_sql")
 async def mcp_compile_mf_sql(json_payload: str) -> str:
     """
-    Sends a JSON query payload to the dbt MetricFlow API to generate and execute SQL.
+    Sends a JSON query payload to the dbt MetricFlow API to compile into SQL.
     The payload MUST be a valid JSON string containing "metrics" and "group_by" arrays.
     """
     log_ts(f"🛠️ Tool Invoked: 'compile_mf_sql'")
@@ -184,7 +184,6 @@ class SQLAgentCrew:
 
     @crew
     def crew(self) -> Crew:
-        # Not used natively by the Flow, but kept for structural integrity
         return Crew(
             agents=[self.schema_analyst(), self.sql_developer(), self.sql_executor()],
             tasks=[self.fetch_schema_task(), self.draft_sql_task(), self.execute_sql_task()],
@@ -262,7 +261,7 @@ class MetricFlowAgentCrew:
         return Task(
             config=self.tasks_config['mf_draft_payload_task'],
             agent=self.mf_payload_developer(),
-            output_pydantic=MetricFlowQueryPayload, # 🚀 ZERO ERROR GUARANTEE: Enforces JSON Schema
+            output_pydantic=MetricFlowQueryPayload,
             callback=task_completion_callback
         )
 
@@ -283,6 +282,7 @@ class SQLState(BaseModel):
     user_question: str = ""
     db_schema: str = ""
     sql_query: str = ""
+    compiled_mf_sql: str = "" # Stores intermediate compiled SQL
     error_context: str = ""
     final_data: str = ""
     retries: int = 0
@@ -299,7 +299,6 @@ class SQLGenerationFlow(Flow[SQLState]):
         )
         result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
         self.state.db_schema = result.raw
-        # No return string needed; CrewAI automatically moves to the next listener
 
     @listen(or_(fetch_schema, "retry_sql"))
     async def draft_sql(self):
@@ -318,7 +317,7 @@ class SQLGenerationFlow(Flow[SQLState]):
         import re
         self.state.sql_query = re.sub(r"```sql|```", "", result.raw).strip()
 
-    @router(draft_sql)        # Runs immediately after Step 2 and acts as a traffic cop
+    @router(draft_sql)
     async def execute_and_validate(self):
         log_ts("🌊 [Flow] Step 3: Executing SQL against Impala...")
         crew_instance = SQLAgentCrew()
@@ -330,16 +329,15 @@ class SQLGenerationFlow(Flow[SQLState]):
         result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
         raw_output = result.raw
         
-        # CONDITIONAL ROUTING: Route back if Impala throws a syntax error
         error_keywords = ["Engine Error", "AnalysisException", "Syntax error", "ParseException"]
         if any(err in raw_output for err in error_keywords) and self.state.retries < 3:
             log_ts(f"⚠️ [Flow] Impala Error Detected! Routing back to Agent 2. Error: {raw_output[:50]}...")
             self.state.error_context = raw_output
             self.state.retries += 1
-            return "retry_sql"  # 🔁 Sends execution BACK to Step 2
+            return "retry_sql"
             
         self.state.final_data = raw_output
-        return "complete"       # Finishes the flow
+        return "complete"
 
 class MetricFlowGenerationFlow(Flow[SQLState]):
     @start()
@@ -361,7 +359,6 @@ class MetricFlowGenerationFlow(Flow[SQLState]):
             "error_context": self.state.error_context
         })
         
-        # 🚀 EXTRACT PYDANTIC OBJECT SAFELY
         if hasattr(result, "pydantic") and result.pydantic:
             self.state.sql_query = result.pydantic.model_dump_json()
         else:
@@ -370,22 +367,38 @@ class MetricFlowGenerationFlow(Flow[SQLState]):
         log_ts(f"📦 Validated Payload Prepared: {self.state.sql_query}")
 
     @router(mf_draft_payload)
-    async def mf_execute_and_validate(self):
-        log_ts("🌊 [MF Flow] Step 3: Executing JSON against MetricFlow API...")
+    async def mf_compile_sql(self):
+        log_ts("🌊 [MF Flow] Step 3: Compiling JSON into Impala SQL...")
         crew_inst = MetricFlowAgentCrew()
         crew = Crew(agents=[crew_inst.mf_executor()], tasks=[crew_inst.mf_execute_task()], verbose=True)
         result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
         raw_output = result.raw
         
+        # 🔁 Retry mechanism intact for compilation failures
         error_keywords = ["MetricFlow API Error", "Syntax error", "Failed", "ERROR:"]
         if any(err in raw_output for err in error_keywords) and self.state.retries < 3:
-            log_ts(f"⚠️ [MF Flow] Error Detected! Routing back to Developer (Retry {self.state.retries + 1})...")
+            log_ts(f"⚠️ [MF Flow] Compilation Error Detected! Routing back to Developer (Retry {self.state.retries + 1})...")
             self.state.error_context = raw_output
             self.state.retries += 1
             return "retry_mf"
             
-        self.state.final_data = raw_output
-        return "complete"
+        self.state.compiled_mf_sql = raw_output
+        return "execute_impala"
+
+    @listen("execute_impala")
+    async def mf_execute_impala(self):
+        log_ts("🌊 [MF Flow] Step 4: Executing Compiled SQL against Impala...")
+        
+        # 🚀 REUSING THE STANDARD SQL EXECUTOR AGENT
+        sql_crew_inst = SQLAgentCrew()
+        crew = Crew(
+            agents=[sql_crew_inst.sql_executor()], 
+            tasks=[sql_crew_inst.execute_sql_task()], 
+            verbose=True
+        )
+        
+        result = await crew.kickoff_async(inputs={"sql_query": self.state.compiled_mf_sql})
+        self.state.final_data = result.raw
 
 # --- 5. EXPOSED ASYNC WORKFLOWS ---
 async def run_sql_agent(user_question: str):
