@@ -196,6 +196,8 @@ class RAGAgentCrew:
     def crew(self) -> Crew:
         return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
 
+
+@CrewBase
 class MetricFlowAgentCrew:
     agents_config = str(_CONFIG_DIR / "agents.yaml")
     tasks_config = str(_CONFIG_DIR / "tasks.yaml")
