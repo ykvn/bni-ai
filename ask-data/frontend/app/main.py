@@ -41,7 +41,7 @@ def parse_payload_to_ui(payload: dict):
     # 2. Formatted SQL Code Block (Replaces single-line SQL with multi-line formatted SQL)
     if payload.get("predicted_sql"):
         formatted_sql = format_sql(payload["predicted_sql"])
-        text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
+        text_parts.append(f"🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
 
     # 3. True Tabular DataFrame Parsing
     if "data" in payload and payload["data"] is not None:
@@ -131,7 +131,7 @@ def build_ui() -> object:
                 f"- **Job ID:** `Submitting...`\n"
                 f"- **Status:** ⏳ ENQUEUEING\n"
                 f"- **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n\n"
-                f"**⏳ Submitting question to CrewAI Engine...**"
+                f"⏳ Submitting question to CrewAI Engine..."
             )
             yield (
                 gr.update(visible=True, value=initial_job_box),
@@ -236,7 +236,7 @@ def build_ui() -> object:
 
                         else:
                             job_box_running = format_job_info(job_id, status, start_time, is_final=False)
-                            job_box_running += "\n**⏳ CrewAI is currently executing your request...**"
+                            job_box_running += "\n⏳ CrewAI is currently executing your request..."
                             yield (
                                 gr.update(visible=True, value=job_box_running),
                                 "",
@@ -277,7 +277,7 @@ def build_ui() -> object:
                 except Exception as e:
                     print(f"Cancel request error: {e}", flush=True)
             return (
-                gr.update(visible=True, value="### Job Execution Information\n**⏳ Cancelling request...**"),
+                gr.update(visible=True, value="### Job Execution Information\n⏳ Cancelling request..."),
                 "",
                 gr.update(visible=False),
                 gr.update(interactive=True),
