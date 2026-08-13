@@ -9,7 +9,6 @@ import gradio as gr
 
 from shared.cml_auth import build_cml_headers
 
-
 def format_sql(raw_sql: str) -> str:
     """Formats a raw single-line SQL string into clean multi-line SQL."""
     if not raw_sql or not raw_sql.strip():
