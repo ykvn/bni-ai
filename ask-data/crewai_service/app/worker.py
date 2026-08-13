@@ -52,31 +52,36 @@ async def _process_single_job(job: dict):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
 
             raw_data = flow_state.final_data
-            try:
-                clean_json = re.sub(r"```json|```", "", raw_data).strip()
-                records = json.loads(clean_json)
-                if not isinstance(records, list):
-                    records = [records]
+            predicted_payload = flow_state.sql_query  # The JSON query drafted by the agent
 
-                payload = {
-                    "question": user_question,
-                    "status": "Success",
-                    "type": "MetricFlow",
-                    "predicted_sql": flow_state.sql_query, # Contains the JSON Payload
-                    "row_count": len(records),
-                    "data": records,
-                    "response": None
-                }
+            records = []
+            agent_response = None
+
+            try:
+                clean_json = re.sub(r"```(?:json)?|```", "", raw_data).strip()
+                parsed = json.loads(clean_json)
+
+                if isinstance(parsed, list):
+                    records = parsed
+                elif isinstance(parsed, dict):
+                    # If the tool output returned tabular rows inside a key (e.g., {"data": [...]})
+                    if "data" in parsed and isinstance(parsed["data"], list):
+                        records = parsed["data"]
+                    else:
+                        records = [parsed]
             except json.JSONDecodeError:
-                payload = {
-                    "question": user_question,
-                    "status": "Success",
-                    "type": "Conversational",
-                    "predicted_sql": flow_state.sql_query,
-                    "row_count": 0,
-                    "data": [],
-                    "response": raw_data
-                }
+                # If raw_data is natural language or a direct text status message
+                agent_response = raw_data
+
+            payload = {
+                "question": user_question,
+                "status": "Success",
+                "type": "MetricFlow",
+                "predicted_sql": predicted_payload,  # Renders the JSON payload in the "Generated SQL" UI code block
+                "row_count": len(records),
+                "data": records if records else None,
+                "response": agent_response  # Displays the text answer if no table rows exist
+            }
         else:
             # \U0001f680 Extracts properties directly from the Flow State object
             flow_state = await run_sql_agent(user_question)
