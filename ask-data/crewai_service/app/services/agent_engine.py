@@ -9,7 +9,7 @@ from crewai import Agent, Crew, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
 from crewai.process import Process
 from crewai.tools import tool
-from crewai.flow.flow import Flow, listen, start, router
+from crewai.flow.flow import Flow, listen, start, router, or_
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from shared.cml_auth import build_cml_headers
@@ -347,8 +347,7 @@ class MetricFlowGenerationFlow(Flow[SQLState]):
         result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
         self.state.db_schema = result.raw
 
-    @listen(mf_fetch_schema)
-    @listen("retry_mf")
+    @listen(or_(mf_fetch_schema, "retry_mf"))
     async def mf_draft_payload(self):
         log_ts(f"🌊 [MF Flow] Step 2: Drafting JSON Payload (Retry: {self.state.retries})...")
         crew_inst = MetricFlowAgentCrew()
