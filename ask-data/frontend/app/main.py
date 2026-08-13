@@ -41,7 +41,7 @@ def parse_payload_to_ui(payload: dict):
     # 2. Formatted SQL Code Block (Replaces single-line SQL with multi-line formatted SQL)
     if payload.get("predicted_sql"):
         formatted_sql = format_sql(payload["predicted_sql"])
-        text_parts.append(f"### \U0001f916 Generated SQL:\n```sql\n{formatted_sql}\n```")
+        text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
 
     # 3. True Tabular DataFrame Parsing
     if "data" in payload and payload["data"] is not None:
@@ -60,7 +60,7 @@ def parse_payload_to_ui(payload: dict):
             except Exception as e:
                 text_parts.append(f"*(Could not render table: {e})*")
         elif isinstance(data, list) and len(data) == 0 and payload.get("type") == "SQL":
-            text_parts.append("### \U0001f4ca Query Results:\n*Query executed successfully, but returned 0 rows.*")
+            text_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
 
     # Fallback if entirely unrecognized
     if not text_parts and df_update["visible"] is False:
@@ -84,13 +84,13 @@ def build_ui() -> object:
 
         status_upper = status.upper()
         if status_upper in ("COMPLETED", "SUCCESS"):
-            badge = "\u2705 SUCCESS"
+            badge = "✅ SUCCESS"
         elif status_upper == "FAILED":
-            badge = "\u274c FAILED"
+            badge = "❌ FAILED"
         elif status_upper == "CANCELLED":
-            badge = "\U0001f6ab CANCELLED"
+            badge = "🚫 CANCELLED"
         else:
-            badge = f"\u23f3 {status_upper}"
+            badge = f"⏳ {status_upper}"
 
         time_label = "Completed Time" if is_final else "Current Time"
 
@@ -129,12 +129,13 @@ def build_ui() -> object:
             initial_job_box = (
                 f"### Job Execution Information\n"
                 f"- **Job ID:** `Submitting...`\n"
-                f"- **Status:** \u23f3 ENQUEUEING\n"
-                f"- **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
+                f"- **Status:** ⏳ ENQUEUEING\n"
+                f"- **Current Time:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n\n"
+                f"**⏳ Submitting question to CrewAI Engine...**"
             )
             yield (
                 gr.update(visible=True, value=initial_job_box),
-                "Submitting question to CrewAI Engine...",
+                "",
                 gr.update(visible=False),
                 gr.update(interactive=False),
                 gr.update(visible=True, interactive=True)
@@ -165,7 +166,7 @@ def build_ui() -> object:
                             job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_cancelled),
-                                "\u274c Request was cancelled by user.",
+                                "❌ Request was cancelled by user.",
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -215,7 +216,7 @@ def build_ui() -> object:
                             job_box_failed = format_job_info(job_id, "FAILED", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_failed),
-                                f"\u274c Task Failed:\n{error_msg}",
+                                f"❌ Task Failed:\n{error_msg}",
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -226,7 +227,7 @@ def build_ui() -> object:
                             job_box_cancelled = format_job_info(job_id, "CANCELLED", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_cancelled),
-                                "\u274c Request was cancelled.",
+                                "❌ Request was cancelled.",
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -235,9 +236,10 @@ def build_ui() -> object:
 
                         else:
                             job_box_running = format_job_info(job_id, status, start_time, is_final=False)
+                            job_box_running += "\n**⏳ CrewAI is currently executing your request...**"
                             yield (
                                 gr.update(visible=True, value=job_box_running),
-                                "\u23f3 CrewAI is currently executing your request...",
+                                "",
                                 gr.update(visible=False),
                                 gr.update(interactive=False),
                                 gr.update(visible=True, interactive=True)
@@ -258,7 +260,7 @@ def build_ui() -> object:
                 job_box_err = format_job_info("ERROR", "FAILED", start_time, is_final=True)
                 yield (
                     gr.update(visible=True, value=job_box_err),
-                    f"\u274c Exception Error:\n{error_details}",
+                    f"❌ Exception Error:\n{error_details}",
                     gr.update(visible=False),
                     gr.update(interactive=True),
                     gr.update(visible=False, interactive=False)
@@ -275,8 +277,8 @@ def build_ui() -> object:
                 except Exception as e:
                     print(f"Cancel request error: {e}", flush=True)
             return (
-                gr.update(visible=True, value="### \u23f3 Cancellation requested..."),
-                "Cancelling request...",
+                gr.update(visible=True, value="### Job Execution Information\n**⏳ Cancelling request...**"),
+                "",
                 gr.update(visible=False),
                 gr.update(interactive=True),
                 gr.update(visible=False, interactive=False)
@@ -290,7 +292,7 @@ def build_ui() -> object:
 
         # ---------------- SQL Question tab ----------------
         with gr.Tab("SQL Question"):
-            gr.Markdown("### \U0001f9ee Zero SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to SQL and executed against the data warehouse.")
+            gr.Markdown("### 🧮 Zero SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to SQL and executed against the data warehouse.")
             sql_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
             sql_type = gr.State("sql")
 
@@ -321,7 +323,7 @@ def build_ui() -> object:
 
         # ---------------- RAG Question tab ----------------
         with gr.Tab("RAG Question"):
-            gr.Markdown("### \U0001f4c4 Policy & Knowledge Retrieval Assistant\nAsk about manuals, SOPs, criteria, and regulations. Answers are retrieved from enterprise documents.")
+            gr.Markdown("### 📄 Policy & Knowledge Retrieval Assistant\nAsk about manuals, SOPs, criteria, and regulations. Answers are retrieved from enterprise documents.")
             rag_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Apa saja kriteria yang harus dipenuhi untuk persetujuan kredit?")
             rag_type = gr.State("rag")
 

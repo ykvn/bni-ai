@@ -18,6 +18,8 @@ from app.tools.execute_banking_query import execute_banking_query
 from app.tools.get_database_schema import get_database_schema
 from app.tools.search_golden_queries import search_golden_queries
 from app.tools.rag_search import search_policy_documents as perform_rag_search
+from app.tools.search_mf_catalog import search_mf_catalog
+import anyio
 
 # 1. Initialize central FastMCP application state
 mcp = FastMCP("Bank Negara Indonesia Modular MCP Server")
@@ -91,7 +93,7 @@ async def mcp_search_mf_catalog(user_question: str) -> str:
     ALWAYS use this before writing a MetricFlow JSON query to get the exact metric names.
     """
     raw_catalog = await anyio.to_thread.run_sync(search_mf_catalog, user_question)
-    return clean_schema_yaml(raw_catalog)
+    return raw_catalog
 
 
 @mcp.tool(name="compile_mf_sql")
