@@ -45,8 +45,8 @@ class DynamicCDPAuthHandler(CustomLogger):
         if not isinstance(data, dict):
             return None
 
-        #fresh_token = get_cdp_token() or os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN")
-        fresh_token = os.getenv("CML_TOKEN")
+        fresh_token = get_cdp_token() or os.getenv("CDP_TOKEN") or os.getenv("CML_TOKEN")
+        #fresh_token = os.getenv("CML_TOKEN")
         if fresh_token:
             extra_headers = data.get("extra_headers") or {}
             extra_headers.update(build_cml_headers(fresh_token))
