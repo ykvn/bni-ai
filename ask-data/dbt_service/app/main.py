@@ -271,8 +271,9 @@ def health_check():
 
 
 @app.get("/api/v1/meta")
-def get_semantic_catalog():
+def get_semantic_catalog(query: str = None):
     catalog = load_dbt_catalog()
+    
     available_metrics = [
         {
             "name": m.get("name"),
@@ -281,17 +282,48 @@ def get_semantic_catalog():
             "synonyms": m.get("meta", {}).get("synonyms", [])
         } for m in catalog.get("metrics", [])
     ]
+    
     available_dimensions = []
+    available_entities = [] # 👈 1. Add entities list
+    
     for model in catalog.get("semantic_models", []):
         model_name = model.get("name")
+        
+        # Extract Dimensions
         for dim in model.get("dimensions", []):
             available_dimensions.append({
                 "name": f"{model_name}__{dim.get('name')}",
                 "description": dim.get("description", ""),
                 "meta": dim.get("meta", {})
             })
+            
+        # 2. Extract Entities (primary, foreign, etc.)
+        for entity in model.get("entities", []):
+            available_entities.append({
+                "name": entity.get("name"),
+                "type": entity.get("type"), # 'primary', 'foreign', etc.
+                "semantic_model": model_name,
+                "expr": entity.get("expr")
+            })
 
-    return {"metrics": available_metrics, "dimensions": available_dimensions}
+    # Apply text filter if query parameter is passed
+    if query:
+        search_terms = query.lower().split()
+        
+        def is_match(item):
+            text_to_search = f"{item.get('name', '')} {item.get('description', '')} {item.get('label', '')}".lower()
+            return any(term in text_to_search for term in search_terms)
+
+        available_metrics = [m for m in available_metrics if is_match(m)]
+        available_dimensions = [d for d in available_dimensions if is_match(d)]
+        available_entities = [e for e in available_entities if is_match(e)]
+
+    # 3. Include "entities" in the JSON response
+    return {
+        "metrics": available_metrics, 
+        "dimensions": available_dimensions,
+        "entities": available_entities
+    }
 
 
 @app.post("/api/v1/load", response_model=MetricQueryResponse)
