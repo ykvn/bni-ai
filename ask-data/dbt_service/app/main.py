@@ -147,9 +147,9 @@ default:
     PROFILE_FILE.write_text(profile_content.strip())
 
 
-def ensure_manifest_ready():
-    """Parses project only if the YAML file changed. Builds a native Postgres semantic manifest."""
-    needs_parse = False
+def ensure_manifest_ready(force: bool = False):
+    """Parses project to build a native Postgres semantic manifest."""
+    needs_parse = force
     if not MANIFEST_PATH.exists():
         needs_parse = True
     elif SCHEMA_YAML_PATH.exists() and SCHEMA_YAML_PATH.stat().st_mtime > MANIFEST_PATH.stat().st_mtime:
@@ -261,10 +261,13 @@ def load_dbt_catalog() -> Dict[str, Any]:
 
 @app.on_event("startup")
 def startup_event():
-    """Bootstraps environment and patches the CLI Engine into RAM on startup."""
+    """Bootstraps environment, forces dbt parse, and patches the CLI Engine into RAM on startup."""
     print("🚀 Bootstrapping in-memory dbt environment...")
     os.environ["DBT_PROFILES_DIR"] = str(DBT_PROFILES_DIR)
     try:
+        ensure_compiler_profile()
+        ensure_metricflow_dummy_adapter()
+        ensure_manifest_ready(force=True)  # Forces dbt parse on every service restart
         cache_and_monkeypatch_cli()
     except Exception as e:
         print(f"⚠️ Pre-load warning on startup: {str(e)}")
