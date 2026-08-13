@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 from crewai_service.app.core import job_db
 from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent
+from crewai_service.app.services.agent_engine import run_sql_agent, run_rag_agent, run_metricflow_agent
 
 _active_tasks: dict[str, asyncio.Task] = {}
 
@@ -43,6 +44,38 @@ async def _process_single_job(job: dict):
                 "data": [],
                 "response": agent_response
             }
+        elif job_type == "metricflow":
+            # 🚀 NEW: MetricFlow Routing
+            flow_state = await run_metricflow_agent(user_question)
+            if _is_cancelled(job_id):
+                raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
+
+            raw_data = flow_state.final_data
+            try:
+                clean_json = re.sub(r"```json|```", "", raw_data).strip()
+                records = json.loads(clean_json)
+                if not isinstance(records, list):
+                    records = [records]
+
+                payload = {
+                    "question": user_question,
+                    "status": "Success",
+                    "type": "MetricFlow",
+                    "predicted_sql": flow_state.sql_query, # Contains the JSON Payload
+                    "row_count": len(records),
+                    "data": records,
+                    "response": None
+                }
+            except json.JSONDecodeError:
+                payload = {
+                    "question": user_question,
+                    "status": "Success",
+                    "type": "Conversational",
+                    "predicted_sql": flow_state.sql_query,
+                    "row_count": 0,
+                    "data": [],
+                    "response": raw_data
+                }
         else:
             # \U0001f680 Extracts properties directly from the Flow State object
             flow_state = await run_sql_agent(user_question)

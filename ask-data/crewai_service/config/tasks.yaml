@@ -40,6 +40,42 @@ execute_sql_task:
   expected_output: >
     The exact raw JSON output or error string returned by the `execute_banking_query` tool.
 
+mf_fetch_schema_task:
+  description: >
+    Find the relevant MetricFlow metrics and dimensions to answer this question: '{user_question}'
+    Use the search_mf_catalog tool.
+  expected_output: >
+    A list of exact metric names and dimension names returned by the catalog search.
+
+mf_draft_payload_task:
+  description: >
+    Draft a MetricFlow JSON query payload for the user question: '{user_question}'
+
+    AVAILABLE CATALOG METRICS AND DIMENSIONS:
+    {db_schema}
+
+    PREVIOUS ERROR (If any):
+    {error_context}
+
+    INSTRUCTIONS:
+    Create a JSON object with two arrays: "metrics" and "group_by".
+    Use ONLY the exact names provided in the catalog above.
+    
+    Example Output:
+    {{"metrics": ["cai_savings_balance_sum_metric"], "group_by": ["customer_id__bank_name"]}}
+  expected_output: >
+    Output ONLY valid JSON. No markdown code blocks, no SQL, no conversational text.
+
+mf_execute_task:
+  description: >
+    Execute the MetricFlow API tool using this JSON payload:
+    {sql_query}
+
+    INSTRUCTION:
+    Call the compile_mf_sql tool immediately.
+  expected_output: >
+    The exact execution output returned by the compile_mf_sql tool.
+
 evaluate_policy_task:
   description: >
     Answer the following corporate policy question: '{user_question}'

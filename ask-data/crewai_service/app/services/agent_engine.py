@@ -85,6 +85,16 @@ async def mcp_search_policy_documents(query: str) -> str:
     log_ts(f"🛠️ Tool Invoked: 'search_policy_documents'")
     return await call_mcp("search_policy_documents", {"query": query})
 
+@tool("search_mf_catalog")
+async def mcp_search_mf_catalog(user_question: str) -> str:
+    log_ts(f"🛠️ Tool Invoked: 'search_mf_catalog'")
+    return await call_mcp("search_mf_catalog", {"user_question": user_question})
+
+@tool("compile_mf_sql")
+async def mcp_compile_mf_sql(json_payload: str) -> str:
+    log_ts(f"🛠️ Tool Invoked: 'compile_mf_sql'")
+    return await call_mcp("compile_mf_sql", {"json_payload": json_payload})
+
 
 # --- 3. CREWBASE CLASSES ---
 @CrewBase
@@ -178,6 +188,59 @@ class RAGAgentCrew:
     def crew(self) -> Crew:
         return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
 
+class MetricFlowAgentCrew:
+    agents_config = str(_CONFIG_DIR / "agents.yaml")
+    tasks_config = str(_CONFIG_DIR / "tasks.yaml")
+
+    @agent
+    def mf_schema_analyst(self) -> Agent:
+        return Agent(
+            config=self.agents_config['mf_schema_analyst'],
+            llm=GLOBAL_LLM,
+            tools=[mcp_search_mf_catalog], # 1 Tool only
+            step_callback=agent_step_callback,
+            memory=False
+        )
+
+    @agent
+    def mf_payload_developer(self) -> Agent:
+        return Agent(
+            config=self.agents_config['mf_payload_developer'],
+            llm=GLOBAL_LLM,
+            tools=[], # Purely a JSON drafting agent
+            step_callback=agent_step_callback,
+            memory=False
+        )
+
+    @agent
+    def mf_executor(self) -> Agent:
+        return Agent(
+            config=self.agents_config['mf_executor'],
+            llm=GLOBAL_LLM,
+            tools=[mcp_compile_mf_sql], # 1 Tool only
+            step_callback=agent_step_callback,
+            memory=False
+        )
+
+    @task
+    def mf_fetch_schema_task(self) -> Task:
+        return Task(config=self.tasks_config['mf_fetch_schema_task'], agent=self.mf_schema_analyst(), callback=task_completion_callback)
+
+    @task
+    def mf_draft_payload_task(self) -> Task:
+        return Task(config=self.tasks_config['mf_draft_payload_task'], agent=self.mf_payload_developer(), callback=task_completion_callback)
+
+    @task
+    def mf_execute_task(self) -> Task:
+        return Task(config=self.tasks_config['mf_execute_task'], agent=self.mf_executor(), callback=task_completion_callback)
+
+    @crew
+    def crew(self) -> Crew:
+        return Crew(
+            agents=[self.mf_schema_analyst(), self.mf_payload_developer(), self.mf_executor()],
+            tasks=[self.mf_fetch_schema_task(), self.mf_draft_payload_task(), self.mf_execute_task()],
+            process=Process.sequential, verbose=True
+        )
 
 # --- 4. STATE AND FLOW ---
 class SQLState(BaseModel):
@@ -189,7 +252,6 @@ class SQLState(BaseModel):
     retries: int = 0
 
 class SQLGenerationFlow(Flow[SQLState]):
-    
     @start()
     async def fetch_schema(self):
         log_ts("🌊 [Flow] Step 1: Fetching Schema...")
@@ -244,6 +306,46 @@ class SQLGenerationFlow(Flow[SQLState]):
         self.state.final_data = raw_output
         return "complete"       # Finishes the flow
 
+class MetricFlowGenerationFlow(Flow[SQLState]):
+    @start()
+    async def mf_fetch_schema(self):
+        log_ts("🌊 [MF Flow] Step 1: Fetching MetricFlow Catalog...")
+        crew_inst = MetricFlowAgentCrew()
+        crew = Crew(agents=[crew_inst.mf_schema_analyst()], tasks=[crew_inst.mf_fetch_schema_task()], verbose=True)
+        result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
+        self.state.db_schema = result.raw
+
+    @listen(mf_fetch_schema)
+    @listen("retry_mf")
+    async def mf_draft_payload(self):
+        log_ts(f"🌊 [MF Flow] Step 2: Drafting JSON Payload (Retry: {self.state.retries})...")
+        crew_inst = MetricFlowAgentCrew()
+        crew = Crew(agents=[crew_inst.mf_payload_developer()], tasks=[crew_inst.mf_draft_payload_task()], verbose=True)
+        result = await crew.kickoff_async(inputs={
+            "user_question": self.state.user_question,
+            "db_schema": self.state.db_schema,
+            "error_context": self.state.error_context
+        })
+        # Strip markdown to isolate the JSON
+        self.state.sql_query = re.sub(r"```(?:json)?|```", "", result.raw).strip()
+
+    @router(mf_draft_payload)
+    async def mf_execute_and_validate(self):
+        log_ts("🌊 [MF Flow] Step 3: Executing JSON against MetricFlow API...")
+        crew_inst = MetricFlowAgentCrew()
+        crew = Crew(agents=[crew_inst.mf_executor()], tasks=[crew_inst.mf_execute_task()], verbose=True)
+        result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
+        raw_output = result.raw
+        
+        error_keywords = ["MetricFlow API Error", "Syntax error"]
+        if any(err in raw_output for err in error_keywords) and self.state.retries < 3:
+            log_ts(f"⚠️ [MF Flow] Error Detected! Routing back to Developer. Error: {raw_output[:50]}...")
+            self.state.error_context = raw_output
+            self.state.retries += 1
+            return "retry_mf"
+            
+        self.state.final_data = raw_output
+        return "complete"
 
 # --- 5. EXPOSED ASYNC WORKFLOWS ---
 async def run_sql_agent(user_question: str):
@@ -260,3 +362,11 @@ async def run_rag_agent(user_question: str) -> str:
     result = await RAGAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
     log_ts("🎉 RAGAgentCrew Execution Finished")
     return str(result)
+
+async def run_metricflow_agent(user_question: str):
+    log_ts("🚀 MetricFlowGenerationFlow Execution Initiated")
+    flow = MetricFlowGenerationFlow()
+    flow.state.user_question = user_question
+    await flow.kickoff_async()
+    log_ts("🎉 MetricFlowGenerationFlow Execution Finished")
+    return flow.state

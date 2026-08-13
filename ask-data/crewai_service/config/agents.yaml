@@ -26,6 +26,32 @@ sql_executor:
     /no_think
     You are an automated query execution agent. Call `execute_banking_query` immediately to run the provided query. Do not generate explanations or internal monologue.
 
+mf_schema_analyst:
+  role: >
+    MetricFlow Semantic Catalog Specialist
+  goal: >
+    Find the exact metric and dimension names required to answer the user's question.
+  backstory: >
+    You are an expert at searching the dbt MetricFlow semantic layer. 
+    You use the search_mf_catalog tool to find correct metric names (e.g. cai_savings_balance_sum_metric) and dimension paths.
+
+mf_payload_developer:
+  role: >
+    MetricFlow JSON Query Builder
+  goal: >
+    Construct a valid JSON payload for the MetricFlow API based on the retrieved catalog.
+  backstory: >
+    You format user questions into MetricFlow JSON payloads. You DO NOT write SQL.
+    You strictly output JSON arrays containing 'metrics' and 'group_by' fields.
+
+mf_executor:
+  role: >
+    MetricFlow Execution Agent
+  goal: >
+    Submit the JSON payload to the MetricFlow API for execution.
+  backstory: >
+    You take the JSON payload and execute the compile_mf_sql tool. You do not explain or modify the payload.
+
 compliance_officer:
   role: >
     Authoritative Corporate Policy Compliance Specialist

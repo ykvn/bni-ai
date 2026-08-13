@@ -3,6 +3,9 @@ import sys
 import json
 import yaml
 import anyio
+import httpx
+from shared.cml_auth import build_cml_headers
+from app.tools.search_mf_catalog import search_mf_catalog
 
 from fastapi import FastAPI, Request
 from starlette.routing import Mount
@@ -79,6 +82,54 @@ async def mcp_search_policy_documents(query: str) -> str:
     Use this when answering non-SQL questions regarding business rules, limits, or procedures.
     """
     return await anyio.to_thread.run_sync(perform_rag_search, query, 3)
+
+
+@mcp.tool(name="search_mf_catalog")
+async def mcp_search_mf_catalog(user_question: str) -> str:
+    """
+    Searches the MetricFlow semantic catalog for relevant metrics and dimensions.
+    ALWAYS use this before writing a MetricFlow JSON query to get the exact metric names.
+    """
+    raw_catalog = await anyio.to_thread.run_sync(search_mf_catalog, user_question)
+    return clean_schema_yaml(raw_catalog)
+
+
+@mcp.tool(name="compile_mf_sql")
+async def mcp_compile_mf_sql(json_payload: str) -> str:
+    """
+    Sends a JSON query payload to the dbt MetricFlow API to generate and execute SQL.
+    The payload MUST be a valid JSON string like: {"metrics": ["cai_savings_balance_sum_metric"], "group_by": ["customer_id__bank_name"]}
+    """
+    try:
+        payload_dict = json.loads(json_payload)
+        
+        # 1. Fetch the Base URL from .env (fallback to localhost)
+        base_url = os.getenv("DBT_METRICFLOW_URL", "http://127.0.0.1:8092").rstrip("/")
+        endpoint = f"{base_url}/api/v1/load"
+        
+        # 2. Build Authentication Headers for the Cloudera Gateway
+        cml_token = os.getenv("CML_TOKEN") or os.getenv("CDP_TOKEN")
+        headers = build_cml_headers(cml_token) if cml_token else {}
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                endpoint,
+                json=payload_dict,
+                headers=headers,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            result_data = response.json()
+            
+            # Execute the generated SQL against Impala using your existing tool
+            sql_to_run = result_data.get("sql")
+            if sql_to_run:
+                from app.tools.execute_banking_query import execute_banking_query
+                return execute_banking_query(sql_to_run)
+            return json.dumps(result_data)
+            
+    except Exception as e:
+        return f"MetricFlow API Error: {str(e)}"
 
 
 # =====================================================================
