@@ -8,26 +8,26 @@ fetch_schema_task:
   expected_output: >
     The exact, raw tool response string returned by `get_database_schema`.
 
-draft_payload_task:
+draft_sql_task:
   description: >
-    Draft a MetricFlow JSON query payload for the user question: '{user_question}'
+    Process the user query: '{user_question}'
 
-    AVAILABLE CATALOG METRICS AND DIMENSIONS:
+    DATABASE SCHEMA:
     {db_schema}
 
-    PREVIOUS ERROR (If any):
+    PREVIOUS ERROR TO FIX (If Empty, ignore):
     {error_context}
 
     INSTRUCTIONS:
-    1. Fill out "metrics", "group_by", and "where" based on the catalog provided above.
-    2. CRITICAL RULE FOR JOINED DIMENSIONS:
-       - When grouping metrics by a dimension from a joined table, prefix the dimension with the entity name connecting them.
-       - Example: To group savings balance by bank_name (which joins via customer_id), use 'customer_id__bank_name', NOT 'bank__name'.
-    3. CRITICAL RULE FOR TIME/DATES:
-       - MetricFlow's default time dimension is usually 'metric_time'. 
-       - To filter by year (e.g., 2025), use the "where" field like this: "metric_time__year = 2025".
+    Write a valid Cloudera Impala SELECT query based on the schema above.
+    If PREVIOUS ERROR TO FIX contains an Impala error, correct your SQL syntax (e.g., use JOINs instead of subquery UNIONs).
+    
+    OPERATIONAL GUARDRAILS:
+    - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context. DO NOT invent generic table names outside the retrieved schema context.
+    - NO FAKE ALIASING (CRITICAL): If the user asks for a specific metric, concept, or column that DOES NOT explicitly exist in the provided schema, DO NOT use 'AS' to alias an unrelated column to pretend it exists.
+    - READ ONLY: Only write SELECT statements.
   expected_output: >
-    A structured MetricFlowQueryPayload containing metrics, group_by, and optional where fields.
+    Output ONLY the raw Cloudera Impala SELECT statement. Do not wrap it in markdown code blocks (```sql), do not use JSON, and do not include conversational commentary.
 
 execute_sql_task:
   description: >
@@ -49,7 +49,7 @@ mf_fetch_schema_task:
 
 mf_draft_payload_task:
   description: >
-    Draft a MetricFlow JSON query payload for the user question: '{user_question}'
+    Draft a DBT MetricFlow JSON query payload for the user question: '{user_question}'
 
     AVAILABLE CATALOG METRICS AND DIMENSIONS:
     {db_schema}
@@ -58,12 +58,15 @@ mf_draft_payload_task:
     {error_context}
 
     INSTRUCTIONS:
-    1. Fill out "metrics" and "group_by" based on the catalog provided above.
+    1. Fill out "metrics", "group_by", and "where" based on the catalog provided above.
     2. CRITICAL RULE FOR JOINED DIMENSIONS:
        - When grouping metrics by a dimension from a joined table, prefix the dimension with the entity name connecting them.
        - Example: To group savings balance by bank_name (which joins via customer_id), use 'customer_id__bank_name', NOT 'bank__name'.
+    3. CRITICAL RULE FOR TIME/DATES:
+       - MetricFlow's default time dimension is usually 'metric_time'. 
+       - To filter by year (e.g., 2025), use the "where" field like this: "metric_time__year = 2025".
   expected_output: >
-    A structured MetricFlowQueryPayload containing metrics and group_by arrays.
+    A structured MetricFlowQueryPayload containing metrics, group_by, and optional where fields.
 
 mf_execute_task:
   description: >
