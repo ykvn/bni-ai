@@ -11,7 +11,7 @@ app = FastAPI(title="CrewAI Agent Microservice Engine")
 
 class ProcessRequest(BaseModel):
     question: str
-    type: Literal["sql", "rag"] = "sql"
+    type: Literal["sql", "rag", "semantic"] = "sql"
 
 @app.on_event("startup")
 async def startup_event():

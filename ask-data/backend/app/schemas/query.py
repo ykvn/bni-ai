@@ -5,4 +5,4 @@ from pydantic import BaseModel
 class QueryRequest(BaseModel):
     """Defines the strict data structure for incoming user questions"""
     question: str
-    type: Literal["sql", "rag"] = "sql"
+    type: Literal["sql", "rag", "semantic"] = "sql"

@@ -31,6 +31,7 @@ async def _process_single_job(job: dict):
         log_ts(f"\u26a1 [Worker Engine] Starting Job {job_id} ({job_type}): '{user_question[:50]}...'")
 
         if job_type == "rag":
+            # RAG Routing
             agent_response = await run_rag_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")
@@ -45,7 +46,7 @@ async def _process_single_job(job: dict):
                 "response": agent_response
             }
         elif job_type == "semantic":
-            # 🚀 NEW: MetricFlow Routing
+            # MetricFlow Routing
             flow_state = await run_metricflow_agent(user_question)
             if _is_cancelled(job_id):
                 raise asyncio.CancelledError(f"Job {job_id} was cancelled by user.")

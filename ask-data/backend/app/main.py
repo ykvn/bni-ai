@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from app.schemas.query import QueryRequest
 from shared.cml_auth import build_cml_headers
 
-app = FastAPI(title="Bank ABC NL-to-SQL Core API Gateway")
+app = FastAPI(title="Backend Core API Gateway")
 
 CREWAI_SERVICE_URL = os.getenv("CREWAI_SERVICE_URL", "").rstrip("/")
 
