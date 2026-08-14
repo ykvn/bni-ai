@@ -38,8 +38,8 @@ os.environ["OPENAI_API_BASE"] = os.environ.get("LITELLM_PROXY_URL") or os.enviro
 os.environ["OPENAI_MODEL_NAME"] = f"openai/{os.environ.get('CML_MODEL_NAME', '')}"
 
 # --- 1. GLOBAL SETUP ---
-# LLM_GLOBAL: Fast execution profile with thinking disabled (Ideal for schema lookups & query execution)
-LLM_GLOBAL = LLM(
+# GLOBAL_LLM: Fast execution profile with thinking disabled (Ideal for schema lookups & query execution)
+GLOBAL_LLM = LLM(
     model=f"openai/{os.getenv('CML_MODEL_NAME')}",
     base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
     api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
@@ -50,8 +50,8 @@ LLM_GLOBAL = LLM(
     }
 )
 
-# LLM_REASONING: Profile with thinking enabled (Ideal for complex SQL drafting & reasoning)
-LLM_REASONING = LLM(
+# REASONING_LLM: Profile with thinking enabled (Ideal for complex SQL drafting & reasoning)
+REASONING_LLM = LLM(
     model=f"openai/{os.getenv('CML_MODEL_NAME')}",
     base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
     api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
@@ -157,7 +157,7 @@ class SQLAgentCrew:
     def sql_developer(self) -> Agent:
         return Agent(
             config=self.agents_config['sql_developer'],
-            llm=LLM_REASONING,
+            llm=REASONING_LLM,
             tools=[],
             step_callback=agent_step_callback
         )
