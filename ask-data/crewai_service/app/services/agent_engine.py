@@ -214,7 +214,7 @@ class RAGAgentCrew:
     def compliance_officer(self) -> Agent:
         return Agent(
             config=self.agents_config['compliance_officer'],
-            llm=GLOBAL_LLM,
+            llm=REASONING_LLM,
             tools=[mcp_search_policy_documents]
         )
 
@@ -249,7 +249,7 @@ class MetricFlowAgentCrew:
     def mf_payload_developer(self) -> Agent:
         return Agent(
             config=self.agents_config['mf_payload_developer'],
-            llm=GLOBAL_LLM,
+            llm=REASONING_LLM,
             tools=[],
             step_callback=agent_step_callback,
             memory=False
