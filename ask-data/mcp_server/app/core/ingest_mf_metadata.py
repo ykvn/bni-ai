@@ -2,7 +2,8 @@
 MetricFlow (mf) metadata ingestion from REST API endpoint.
 
 Fetches metadata from DBT_METRICFLOW_URL + '/api/v1/meta',
-parses metrics, dimensions, and entities, and indexes them into Qdrant vector database.
+parses metrics, dimensions, and entities, maps entity join keys,
+and indexes them into the Qdrant vector database.
 """
 import os
 import json
@@ -13,6 +14,7 @@ from app.core.ingest_common import bootstrap_env, reset_and_index
 
 # Standardized project-root bootstrap (loads .env)
 bootstrap_env()
+
 
 def get_default_api_url() -> str:
     base_url = os.getenv("DBT_METRICFLOW_URL", "https://dbt.cai.apps.dataservices.bni.co.id")
@@ -55,41 +57,74 @@ def ingest_mf_schema(
     collection_name: str = None,
     cml_token: str = None,
 ):
+    """Parses MetricFlow API metadata (metrics, dimensions, entities) and indexes it into Vector DB."""
+    if not api_url:
+        api_url = get_default_api_url()
+
     schema = fetch_mf_metadata(api_url, cml_token)
     if not schema or not isinstance(schema, dict):
+        print("⚠️ Invalid or empty metadata retrieved from API. Aborting ingestion.", flush=True)
         return
+
+    # Extract top-level components explicitly
+    metrics = schema.get("metrics", [])
+    dimensions = schema.get("dimensions", [])
+    entities = schema.get("entities", [])
+
+    # Build a lookup map of semantic_model -> primary_entity_name
+    # Example: "cai_customers" -> "customer_id", "cai_savings" -> "savings_id"
+    model_to_primary_entity = {}
+    for entity in entities:
+        if entity.get("type") == "primary":
+            model_to_primary_entity[entity.get("semantic_model")] = entity.get("name")
 
     catalog_texts = []
     metadatas = []
 
-    # 1. Build a lookup map of semantic_model -> primary_entity_name
-    # Example: "cai_customers" -> "customer_id", "cai_savings" -> "savings_id"
-    model_to_primary_entity = {}
-    for entity in schema.get("entities", []):
-        if entity.get("type") == "primary":
-            model_to_primary_entity[entity.get("semantic_model")] = entity.get("name")
+    # 1. Process Metrics
+    for m in metrics:
+        m_name = m.get("name", "unknown")
+        m_label = m.get("label", m_name)
+        m_desc = m.get("description", "No description provided.")
+        m_syns = m.get("synonyms", [])
 
-    # 2. Process Metrics
-    for m in schema.get("metrics", []):
-        # ... (Metric processing remains unchanged)
-        pass
+        searchable_text = (
+            f"Metric Name: {m_name}\n"
+            f"Label: {m_label}\n"
+            f"Description: {m_desc}\n"
+            f"Synonyms: {', '.join(m_syns) if m_syns else 'None'}"
+        )
 
-    # 3. Process Dimensions & Compute Valid Group-By Paths
-    for d in schema.get("dimensions", []):
+        structured_payload = {
+            "item_type": "metric",
+            "name": m_name,
+            "label": m_label,
+            "description": m_desc,
+            "synonyms": m_syns
+        }
+
+        catalog_texts.append(searchable_text)
+        metadatas.append({
+            "item_type": "metric",
+            "name": m_name,
+            "raw_json": json.dumps(structured_payload, indent=2),
+        })
+
+    # 2. Process Dimensions & Map Valid Entity Join Paths
+    for d in dimensions:
         d_name = d.get("name", "unknown")  # e.g., "cai_customers__bank_name"
         d_desc = d.get("description", "No description provided.")
         d_meta = d.get("meta", {})
 
-        # Extract semantic model name and column name
+        # Transform 'cai_customers__bank_name' -> 'customer_id__bank_name'
         group_by_path = d_name
         if "__" in d_name:
             parts = d_name.split("__", 1)
             model_prefix, col_name = parts[0], parts[1]
             
-            # If the model has a primary entity, create the valid MetricFlow join path
             if model_prefix in model_to_primary_entity:
                 primary_entity = model_to_primary_entity[model_prefix]
-                group_by_path = f"{primary_entity}__{col_name}"  # e.g., "customer_id__bank_name"
+                group_by_path = f"{primary_entity}__{col_name}"
 
         searchable_text = (
             f"Dimension Path (Group By): {group_by_path}\n"
@@ -99,7 +134,7 @@ def ingest_mf_schema(
 
         structured_payload = {
             "item_type": "dimension",
-            "name": group_by_path,  # Now provides 'customer_id__bank_name' directly to the LLM
+            "name": group_by_path,  # Exposes 'customer_id__bank_name' directly to LLM
             "raw_name": d_name,
             "description": d_desc,
             "meta": d_meta
@@ -112,34 +147,7 @@ def ingest_mf_schema(
             "raw_json": json.dumps(structured_payload, indent=2),
         })
 
-    # 2. Process Dimensions
-    dimensions = schema.get("dimensions", [])
-    for d in dimensions:
-        d_name = d.get("name", "unknown")
-        d_desc = d.get("description", "No description provided.")
-        d_meta = d.get("meta", {})
-
-        searchable_text = (
-            f"Dimension Path (Group By): {d_name}\n"
-            f"Description: {d_desc}"
-        )
-
-        structured_payload = {
-            "item_type": "dimension",
-            "name": d_name,
-            "description": d_desc,
-            "meta": d_meta
-        }
-
-        catalog_texts.append(searchable_text)
-        metadatas.append({
-            "item_type": "dimension",
-            "name": d_name,
-            "raw_json": json.dumps(structured_payload, indent=2),
-        })
-
     # 3. Process Entities
-    entities = schema.get("entities", [])
     for e in entities:
         e_name = e.get("name", "unknown")
         e_type = e.get("type", "unknown")
