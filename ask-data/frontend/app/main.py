@@ -38,29 +38,47 @@ def parse_payload_to_ui(payload: dict):
     if payload.get("response"):
         text_parts.append(payload["response"])
 
-    # 2. Check if this payload is from the MetricFlow Semantic Flow
-    is_semantic = "compiled_mf_sql" in payload or payload.get("type") == "semantic"
+    # Extract all possible key names returned by backend workers
+    json_payload_str = payload.get("json_payload") or payload.get("sql_query") or ""
+    predicted_sql_str = payload.get("predicted_sql") or ""
+    compiled_sql_str = payload.get("compiled_mf_sql") or payload.get("compiled_sql") or ""
+    data = payload.get("final_data") if "final_data" in payload else payload.get("data")
+
+    # 💡 DETECT SEMANTIC PAYLOAD: If predicted_sql actually holds the JSON payload string
+    if not json_payload_str and predicted_sql_str and ("metrics" in predicted_sql_str or "group_by" in predicted_sql_str):
+        json_payload_str = predicted_sql_str
+        predicted_sql_str = ""
+
+    is_semantic = (
+        payload.get("type") == "semantic" or
+        bool(compiled_sql_str) or
+        ("metrics" in json_payload_str if isinstance(json_payload_str, str) else False)
+    )
 
     if is_semantic:
-        # --- COMPONENT 1: Generated MetricFlow JSON Payload ---
-        raw_json_payload = payload.get("sql_query") or payload.get("json_payload") or ""
-        if raw_json_payload:
+        # =================================================================
+        # COMPONENT 1: Generated MetricFlow JSON Payload
+        # =================================================================
+        if json_payload_str:
             try:
-                # Pretty-print JSON string
-                parsed_json = json.loads(raw_json_payload) if isinstance(raw_json_payload, str) else raw_json_payload
+                parsed_json = json.loads(json_payload_str) if isinstance(json_payload_str, str) else json_payload_str
                 pretty_json = json.dumps(parsed_json, indent=2)
             except Exception:
-                pretty_json = str(raw_json_payload)
+                pretty_json = str(json_payload_str)
             text_parts.append(f"### 📦 Generated MetricFlow JSON Payload:\n```json\n{pretty_json}\n```")
 
-        # --- COMPONENT 2: Compiled Impala SQL ---
-        compiled_sql = payload.get("compiled_mf_sql") or ""
-        if compiled_sql:
-            formatted_sql = format_sql(compiled_sql)
+        # =================================================================
+        # COMPONENT 2: Compiled Impala SQL
+        # =================================================================
+        if compiled_sql_str:
+            formatted_sql = format_sql(compiled_sql_str)
             text_parts.append(f"### 🤖 Compiled Impala SQL:\n```sql\n{formatted_sql}\n```")
+        else:
+            text_parts.append("### 🤖 Compiled Impala SQL:\n*(No SQL compiled)*")
 
-        # --- COMPONENT 3: Query Execution Results ---
-        data = payload.get("final_data") if "final_data" in payload else payload.get("data")
+        # =================================================================
+        # COMPONENT 3: Query Execution Results
+        # =================================================================
         if isinstance(data, str):
             try:
                 data = json.loads(data)
@@ -81,11 +99,10 @@ def parse_payload_to_ui(payload: dict):
 
     else:
         # Standard SQL Question Flow
-        if payload.get("predicted_sql"):
-            formatted_sql = format_sql(payload["predicted_sql"])
+        if predicted_sql_str:
+            formatted_sql = format_sql(predicted_sql_str)
             text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
 
-        data = payload.get("data") if "data" in payload else payload.get("final_data")
         if data is not None:
             if isinstance(data, str):
                 try:
