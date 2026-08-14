@@ -28,21 +28,9 @@ mcp = FastMCP("Bank Negara Indonesia Modular MCP Server")
 # 2. Configure SSE message transport
 sse = SseServerTransport("/messages")
 
-
-# --- CLEAN SCHEMA FOR AGENTIC FLOW ---
-def clean_schema_yaml(raw_yaml_str: str) -> str:
-    """Strips internal reranking score fields so the LLM receives clean YAML schema without confusion."""
-    try:
-        data = yaml.safe_load(raw_yaml_str)
-        if isinstance(data, dict) and "tables" in data:
-            for table in data["tables"]:
-                table.pop("score", None)
-                for col in table.get("columns", []):
-                    col.pop("score", None)
-        return yaml.dump(data, sort_keys=False, default_flow_style=False)
-    except Exception:
-        return raw_yaml_str
-
+# =====================================================================
+# 🛠️ AGENTIC MCP TOOLS
+# =====================================================================
 
 # =====================================================================
 # 🛠️ AGENTIC MCP TOOLS
@@ -52,11 +40,9 @@ def clean_schema_yaml(raw_yaml_str: str) -> str:
 async def mcp_get_database_schema(user_question: str) -> str:
     """
     CRITICAL FIRST STEP FOR SQL: Dynamically retrieves table names, column layouts, 
-    data types, and descriptions relevant to the user's question. Always call this tool 
-    BEFORE writing any SQL query to ensure exact table and column matches.
+    data types, descriptions, and matching golden queries relevant to the user's question.
     """
-    raw_schema = await anyio.to_thread.run_sync(get_database_schema, user_question)
-    return clean_schema_yaml(raw_schema)
+    return await anyio.to_thread.run_sync(get_database_schema, user_question)
 
 
 @mcp.tool(name="search_golden_queries")

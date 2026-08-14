@@ -13,7 +13,7 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
         clean_col = {}
         if "name" in col:
             clean_col["name"] = col["name"]
-        if "score" in col:  # 🚀 NEW: Preserve column score
+        if "score" in col:  # Preserve column score
             clean_col["score"] = col["score"]
         if "type" in col:
             clean_col["type"] = col["type"]
@@ -28,7 +28,7 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
     clean_table = {
         "name": table.get("name")
     }
-    if "score" in table:  # 🚀 NEW: Preserve table score
+    if "score" in table:  # Preserve table score
         clean_table["score"] = table["score"]
 
     clean_table["description"] = table.get("description")
