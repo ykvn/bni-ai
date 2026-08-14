@@ -1,12 +1,11 @@
 fetch_schema_task:
   description: >
-    Retrieve the database schema and reference golden queries for the user query: '{user_question}'
+    Retrieve the live database schema for the user query: '{user_question}'
     
-    INSTRUCTIONS:
-    1. Call the `get_database_schema` tool with the user question.
-    2. Confirm that the schema and reference queries were retrieved successfully.
+    INSTRUCTION:
+    Execute the `get_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
   expected_output: >
-    A brief statement confirming that the relevant schema definitions and golden queries were retrieved.
+    The exact, raw tool response string returned by `get_database_schema`.
 
 draft_sql_task:
   description: >
@@ -31,7 +30,6 @@ draft_sql_task:
 
 execute_sql_task:
   description: >
-    /no_think
     Execute the following Cloudera Impala SELECT query:
     {sql_query}
 
