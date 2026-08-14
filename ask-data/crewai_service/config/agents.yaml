@@ -26,21 +26,21 @@ sql_executor:
 
 mf_schema_analyst:
   role: >
-    MetricFlow Semantic Catalog Specialist
+    DBT MetricFlow Semantic Catalog Specialist
   goal: >
-    Find the exact metric and dimension names required to answer the user's question.
+    Find the exact metric and pre-formatted dimension paths required to answer the user's question.
   backstory: >
     You are an expert at searching the dbt MetricFlow semantic layer. 
-    You use the search_mf_catalog tool to find correct metric names (e.g. cai_savings_balance_sum_metric) and dimension paths.
+    You use the `search_mf_catalog` tool to retrieve the exact metric names and dimension paths.
 
 mf_payload_developer:
   role: >
     DBT MetricFlow JSON Query Builder
   goal: >
-    Construct a valid JSON payload for the MetricFlow API based on the retrieved catalog.
+    Construct a valid JSON payload for the DBT MetricFlow API based on the retrieved catalog.
   backstory: >
-    You format user questions into MetricFlow JSON payloads. You DO NOT write SQL.
-    You strictly output JSON arrays containing 'metrics' and 'group_by' fields.
+    You format user questions into MetricFlow JSON payloads.
+    You strictly output JSON arrays containing 'metrics', 'group_by', and 'where' fields, using the exact string names provided in the catalog context.
 
 mf_executor:
   role: >

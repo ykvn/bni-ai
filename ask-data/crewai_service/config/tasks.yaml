@@ -40,10 +40,13 @@ execute_sql_task:
 
 mf_fetch_schema_task:
   description: >
-    Find the relevant MetricFlow metrics and dimensions to answer this question: '{user_question}'
-    You MUST use the `search_mf_catalog` tool.
+    Find the relevant MetricFlow metrics, dimensions, and entities to answer this question: '{user_question}'
+    
+    INSTRUCTIONS:
+    1. Call the `search_mf_catalog` tool with the user question.
+    2. Confirm that the catalog items were retrieved successfully.
   expected_output: >
-    A list of exact metric names and dimension names returned by the catalog search.
+    A brief statement confirming that the relevant metrics and dimensions were retrieved.
 
 mf_draft_payload_task:
   description: >
@@ -56,13 +59,9 @@ mf_draft_payload_task:
     {error_context}
 
     INSTRUCTIONS:
-    1. Fill out "metrics", "group_by", and "where" based on the catalog provided above.
-    2. CRITICAL RULE FOR JOINED DIMENSIONS:
-       - When grouping metrics by a dimension from a joined table, prefix the dimension with the entity name connecting them.
-       - Example: To group savings balance by bank_name (which joins via customer_id), use 'customer_id__bank_name', NOT 'bank__name'.
-    3. CRITICAL RULE FOR TIME/DATES:
-       - MetricFlow's default time dimension is usually 'metric_time'. 
-       - To filter by year (e.g., 2025), use the "where" field like this: "metric_time__year = 2025".
+    1. Fill out "metrics", "group_by", and "where" fields based strictly on the catalog provided above.
+    2. USE EXACT NAMES (CRITICAL): You must copy the exact Metric Name and Dimension Path (e.g., 'cai_customers__bank_name') exactly as they appear in the catalog context. Do not alter, prefix, or restructure the dimension names yourself.
+    3. TIME/DATE FILTERING: MetricFlow's default time dimension is usually 'metric_time'. To filter by year (e.g., 2025), use the "where" field like this: "metric_time__year = 2025".
   expected_output: >
     A structured MetricFlowQueryPayload containing metrics, group_by, and optional where fields.
 
