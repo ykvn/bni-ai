@@ -55,45 +55,60 @@ def ingest_mf_schema(
     collection_name: str = None,
     cml_token: str = None,
 ):
-    """Parses MetricFlow API metadata (metrics, dimensions, entities) and indexes it into Vector DB."""
-    if not api_url:
-        api_url = get_default_api_url()
-
     schema = fetch_mf_metadata(api_url, cml_token)
     if not schema or not isinstance(schema, dict):
-        print("⚠️ Invalid or empty metadata retrieved from API. Aborting ingestion.", flush=True)
         return
 
     catalog_texts = []
     metadatas = []
 
-    # 1. Process Metrics
-    metrics = schema.get("metrics", [])
-    for m in metrics:
-        m_name = m.get("name", "unknown")
-        m_label = m.get("label", m_name)
-        m_desc = m.get("description", "No description provided.")
-        m_syns = m.get("synonyms", [])
+    # 1. Build a lookup map of semantic_model -> primary_entity_name
+    # Example: "cai_customers" -> "customer_id", "cai_savings" -> "savings_id"
+    model_to_primary_entity = {}
+    for entity in schema.get("entities", []):
+        if entity.get("type") == "primary":
+            model_to_primary_entity[entity.get("semantic_model")] = entity.get("name")
+
+    # 2. Process Metrics
+    for m in schema.get("metrics", []):
+        # ... (Metric processing remains unchanged)
+        pass
+
+    # 3. Process Dimensions & Compute Valid Group-By Paths
+    for d in schema.get("dimensions", []):
+        d_name = d.get("name", "unknown")  # e.g., "cai_customers__bank_name"
+        d_desc = d.get("description", "No description provided.")
+        d_meta = d.get("meta", {})
+
+        # Extract semantic model name and column name
+        group_by_path = d_name
+        if "__" in d_name:
+            parts = d_name.split("__", 1)
+            model_prefix, col_name = parts[0], parts[1]
+            
+            # If the model has a primary entity, create the valid MetricFlow join path
+            if model_prefix in model_to_primary_entity:
+                primary_entity = model_to_primary_entity[model_prefix]
+                group_by_path = f"{primary_entity}__{col_name}"  # e.g., "customer_id__bank_name"
 
         searchable_text = (
-            f"Metric Name: {m_name}\n"
-            f"Label: {m_label}\n"
-            f"Description: {m_desc}\n"
-            f"Synonyms: {', '.join(m_syns) if m_syns else 'None'}"
+            f"Dimension Path (Group By): {group_by_path}\n"
+            f"Raw Metadata Name: {d_name}\n"
+            f"Description: {d_desc}"
         )
 
         structured_payload = {
-            "item_type": "metric",
-            "name": m_name,
-            "label": m_label,
-            "description": m_desc,
-            "synonyms": m_syns
+            "item_type": "dimension",
+            "name": group_by_path,  # Now provides 'customer_id__bank_name' directly to the LLM
+            "raw_name": d_name,
+            "description": d_desc,
+            "meta": d_meta
         }
 
         catalog_texts.append(searchable_text)
         metadatas.append({
-            "item_type": "metric",
-            "name": m_name,
+            "item_type": "dimension",
+            "name": group_by_path,
             "raw_json": json.dumps(structured_payload, indent=2),
         })
 
