@@ -34,19 +34,33 @@ def parse_payload_to_ui(payload: dict):
     if not isinstance(payload, dict):
         return str(payload), df_update
 
-    # 1. Natural Language Response
+    # 1. Natural Language Response (e.g. for RAG)
     if payload.get("response"):
         text_parts.append(payload["response"])
 
-    # 2. Formatted SQL Code Block (Replaces single-line SQL with multi-line formatted SQL)
-    if payload.get("predicted_sql"):
-        formatted_sql = format_sql(payload["predicted_sql"])
-        text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
+    # 2. Check if this payload is from the MetricFlow Semantic Flow
+    is_semantic = "compiled_mf_sql" in payload or payload.get("type") == "semantic"
 
-    # 3. True Tabular DataFrame Parsing
-    if "data" in payload and payload["data"] is not None:
-        data = payload["data"]
+    if is_semantic:
+        # --- COMPONENT 1: Generated MetricFlow JSON Payload ---
+        raw_json_payload = payload.get("sql_query") or payload.get("json_payload") or ""
+        if raw_json_payload:
+            try:
+                # Pretty-print JSON string
+                parsed_json = json.loads(raw_json_payload) if isinstance(raw_json_payload, str) else raw_json_payload
+                pretty_json = json.dumps(parsed_json, indent=2)
+            except Exception:
+                pretty_json = str(raw_json_payload)
+            text_parts.append(f"### 📦 Generated MetricFlow JSON Payload:\n```json\n{pretty_json}\n```")
 
+        # --- COMPONENT 2: Compiled Impala SQL ---
+        compiled_sql = payload.get("compiled_mf_sql") or ""
+        if compiled_sql:
+            formatted_sql = format_sql(compiled_sql)
+            text_parts.append(f"### 🤖 Compiled Impala SQL:\n```sql\n{formatted_sql}\n```")
+
+        # --- COMPONENT 3: Query Execution Results ---
+        data = payload.get("final_data") if "final_data" in payload else payload.get("data")
         if isinstance(data, str):
             try:
                 data = json.loads(data)
@@ -57,10 +71,37 @@ def parse_payload_to_ui(payload: dict):
             try:
                 df = pd.DataFrame(data)
                 df_update = gr.update(visible=True, value=df)
+                text_parts.append("### 📊 Query Results:")
             except Exception as e:
                 text_parts.append(f"*(Could not render table: {e})*")
-        elif isinstance(data, list) and len(data) == 0 and payload.get("type") == "SQL":
+        elif (isinstance(data, list) and len(data) == 0) or data == "[]" or not data:
             text_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
+        elif isinstance(data, str) and ("Error" in data or "Exception" in data or "FAILED" in data):
+            text_parts.append(f"### 📊 Execution Error:\n```\n{data}\n```")
+
+    else:
+        # Standard SQL Question Flow
+        if payload.get("predicted_sql"):
+            formatted_sql = format_sql(payload["predicted_sql"])
+            text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
+
+        data = payload.get("data") if "data" in payload else payload.get("final_data")
+        if data is not None:
+            if isinstance(data, str):
+                try:
+                    data = json.loads(data)
+                except Exception:
+                    pass
+
+            if isinstance(data, list) and len(data) > 0:
+                try:
+                    df = pd.DataFrame(data)
+                    df_update = gr.update(visible=True, value=df)
+                    text_parts.append("### 📊 Query Results:")
+                except Exception as e:
+                    text_parts.append(f"*(Could not render table: {e})*")
+            elif isinstance(data, list) and len(data) == 0:
+                text_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
 
     # Fallback if entirely unrecognized
     if not text_parts and df_update["visible"] is False:
@@ -94,7 +135,6 @@ def build_ui() -> object:
 
         time_label = "Completed Time" if is_final else "Current Time"
 
-        # Formatted vertically using Markdown bullets
         return (
             f"### Job Execution Information\n"
             f"- **Job ID:** `{job_id}`\n"
@@ -105,8 +145,6 @@ def build_ui() -> object:
     def make_tab_handlers():
         """
         Builds an isolated pair (ask/cancel) of handler generators for a single tab.
-        Each tab gets its own job_id / cancel-flag state so switching tabs or
-        cancelling one tab never affects the other tab's running job.
         """
         state = {"job_id": None, "cancel": False}
 
@@ -116,7 +154,7 @@ def build_ui() -> object:
             if not question.strip():
                 yield (
                     gr.update(visible=True, value="⚠️ **Please enter a valid question.**"),
-                    gr.update(visible=False, value=""), # Hide answer box
+                    gr.update(visible=False, value=""),
                     gr.update(visible=False),
                     gr.update(interactive=True),
                     gr.update(visible=False, interactive=False)
@@ -125,7 +163,6 @@ def build_ui() -> object:
 
             start_time = time.time()
 
-            # Initial yield before network dispatch
             initial_job_box = (
                 f"### Job Execution Information\n"
                 f"- **Job ID:** `Submitting...`\n"
@@ -135,7 +172,7 @@ def build_ui() -> object:
             )
             yield (
                 gr.update(visible=True, value=initial_job_box),
-                gr.update(visible=False, value=""), # Hide answer box
+                gr.update(visible=False, value=""),
                 gr.update(visible=False),
                 gr.update(interactive=False),
                 gr.update(visible=True, interactive=True)
@@ -167,7 +204,7 @@ def build_ui() -> object:
                             job_box_cancelled += "\n\n❌ Request was cancelled by user."
                             yield (
                                 gr.update(visible=True, value=job_box_cancelled),
-                                gr.update(visible=False, value=""), # Hide answer box
+                                gr.update(visible=False, value=""),
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -198,14 +235,13 @@ def build_ui() -> object:
                                     final_payload = job_data["result"]
 
                             elif "data" in job_data and isinstance(job_data["data"], dict):
-                                if "predicted_sql" in job_data["data"]:
-                                    final_payload = job_data["data"]
+                                final_payload = job_data["data"]
 
                             text_out, df_out = parse_payload_to_ui(final_payload)
                             job_box_completed = format_job_info(job_id, "SUCCESS", start_time, is_final=True)
                             yield (
                                 gr.update(visible=True, value=job_box_completed),
-                                gr.update(visible=True, value=text_out), # Show answer box ONLY when success
+                                gr.update(visible=True, value=text_out),
                                 df_out,
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -218,7 +254,7 @@ def build_ui() -> object:
                             job_box_failed += f"\n\n❌ Task Failed:\n{error_msg}"
                             yield (
                                 gr.update(visible=True, value=job_box_failed),
-                                gr.update(visible=False, value=""), # Hide answer box
+                                gr.update(visible=False, value=""),
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -230,7 +266,7 @@ def build_ui() -> object:
                             job_box_cancelled += "\n\n❌ Request was cancelled."
                             yield (
                                 gr.update(visible=True, value=job_box_cancelled),
-                                gr.update(visible=False, value=""), # Hide answer box
+                                gr.update(visible=False, value=""),
                                 gr.update(visible=False),
                                 gr.update(interactive=True),
                                 gr.update(visible=False, interactive=False)
@@ -242,7 +278,7 @@ def build_ui() -> object:
                             job_box_running += "\n⏳ CrewAI is currently executing your request..."
                             yield (
                                 gr.update(visible=True, value=job_box_running),
-                                gr.update(visible=False, value=""), # Hide answer box
+                                gr.update(visible=False, value=""),
                                 gr.update(visible=False),
                                 gr.update(interactive=False),
                                 gr.update(visible=True, interactive=True)
@@ -252,7 +288,7 @@ def build_ui() -> object:
                     job_box_direct = format_job_info("N/A (Direct)", "SUCCESS", start_time, is_final=True)
                     yield (
                         gr.update(visible=True, value=job_box_direct),
-                        gr.update(visible=True, value=text_out), # Show answer box ONLY when success
+                        gr.update(visible=True, value=text_out),
                         df_out,
                         gr.update(interactive=True),
                         gr.update(visible=False, interactive=False)
@@ -264,7 +300,7 @@ def build_ui() -> object:
                 job_box_err += f"\n\n❌ Exception Error:\n{error_details}"
                 yield (
                     gr.update(visible=True, value=job_box_err),
-                    gr.update(visible=False, value=""), # Hide answer box
+                    gr.update(visible=False, value=""),
                     gr.update(visible=False),
                     gr.update(interactive=True),
                     gr.update(visible=False, interactive=False)
@@ -282,7 +318,7 @@ def build_ui() -> object:
                     print(f"Cancel request error: {e}", flush=True)
             return (
                 gr.update(visible=True, value="Job Execution Information\n⏳ Cancelling request..."),
-                gr.update(visible=False, value=""), # Hide answer box
+                gr.update(visible=False, value=""),
                 gr.update(visible=False),
                 gr.update(interactive=True),
                 gr.update(visible=False, interactive=False)
@@ -305,7 +341,7 @@ def build_ui() -> object:
                 sql_cancel_btn = gr.Button("Cancel", visible=False)
 
             sql_job_info_box = gr.Markdown(visible=False)
-            sql_output_text = gr.Markdown(label="Answer & SQL", visible=False) # Hides answer box by default
+            sql_output_text = gr.Markdown(label="Answer & SQL", visible=False)
             sql_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
             sql_ask, sql_cancel = make_tab_handlers()
@@ -336,7 +372,7 @@ def build_ui() -> object:
                 rag_cancel_btn = gr.Button("Cancel", visible=False)
 
             rag_job_info_box = gr.Markdown(visible=False)
-            rag_output_text = gr.Textbox(label="Answer", lines=12, interactive=False, visible=False) # Hides answer box by default
+            rag_output_text = gr.Textbox(label="Answer", lines=12, interactive=False, visible=False)
             rag_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
             rag_ask, rag_cancel = make_tab_handlers()
@@ -360,8 +396,6 @@ def build_ui() -> object:
         with gr.Tab("SQL Question (Semantic)"):
             gr.Markdown("### 🧠 Semantic SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to a JSON payload and executed against the MetricFlow Semantic Layer.")
             semantic_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
-            
-            # You requested the type to be "semantic"
             semantic_type = gr.State("semantic")
 
             with gr.Row():
@@ -369,7 +403,7 @@ def build_ui() -> object:
                 semantic_cancel_btn = gr.Button("Cancel", visible=False)
 
             semantic_job_info_box = gr.Markdown(visible=False)
-            semantic_output_text = gr.Markdown(label="Answer & JSON", visible=False) # Hides answer box by default
+            semantic_output_text = gr.Markdown(label="Answer & JSON", visible=False)
             semantic_output_table = gr.Dataframe(label="Query Results", visible=False, interactive=False)
 
             semantic_ask, semantic_cancel = make_tab_handlers()
