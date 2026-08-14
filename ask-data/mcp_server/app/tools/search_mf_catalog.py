@@ -5,7 +5,7 @@ from shared.embed_client import get_embedding_vector, rerank_documents
 from shared.qdrant_client import QdrantClient
 from shared.cml_auth import get_cml_token
 
-def search_mf_catalog(user_query: str, top_k: int = 25, top_n: int = 10) -> str:
+def search_mf_catalog(user_query: str, top_k: int = 50, top_n: int = 20) -> str:
     """
     Searches Qdrant for MetricFlow metrics, dimensions, and entities based on user intent,
     and applies Cross-Encoder reranking to return the most accurate items.

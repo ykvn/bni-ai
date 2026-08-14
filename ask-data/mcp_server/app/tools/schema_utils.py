@@ -39,7 +39,7 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
 
 def get_smart_schema_context(
     user_query: str,
-    top_tables: int = 4,
+    top_tables: int = 5,
     top_columns: int = 20,
     threshold: float = 0.0
 ) -> str:

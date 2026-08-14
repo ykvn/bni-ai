@@ -1,7 +1,7 @@
 import os
 from app.tools.qdrant_client import search_documents, rerank_documents
 
-def search_golden_queries(user_question: str, top_k: int = 5, top_n: int = 2) -> str:
+def search_golden_queries(user_question: str, top_k: int = 5, top_n: int = 3) -> str:
     """
     Searches the Golden Queries vector database for verified SQL templates matching the user's intent.
     Uses Cross-Encoder reranking to ensure high relevance.
