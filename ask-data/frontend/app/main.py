@@ -38,10 +38,19 @@ def parse_payload_to_ui(payload: dict):
     if payload.get("response"):
         text_parts.append(payload["response"])
 
-    # Extract all possible key names returned by backend workers
+    # Extract all possible key names for MetricFlow payload & compiled SQL
     json_payload_str = payload.get("json_payload") or payload.get("sql_query") or ""
     predicted_sql_str = payload.get("predicted_sql") or ""
-    compiled_sql_str = payload.get("compiled_mf_sql") or payload.get("compiled_sql") or ""
+    
+    # Check all key aliases for the compiled Impala SQL string
+    compiled_sql_str = (
+        payload.get("compiled_mf_sql") or 
+        payload.get("compiled_sql") or 
+        payload.get("impala_sql") or 
+        payload.get("raw_sql") or 
+        ""
+    )
+    
     data = payload.get("final_data") if "final_data" in payload else payload.get("data")
 
     # 💡 DETECT SEMANTIC PAYLOAD: If predicted_sql actually holds the JSON payload string

@@ -53,6 +53,7 @@ async def _process_single_job(job: dict):
 
             raw_data = flow_state.final_data
             predicted_payload = flow_state.sql_query  # The JSON query drafted by the agent
+            compiled_sql = flow_state.compiled_mf_sql  # 👈 1. EXTRACT COMPILED SQL FROM FLOW STATE
 
             records = []
             agent_response = None
@@ -77,10 +78,11 @@ async def _process_single_job(job: dict):
                 "question": user_question,
                 "status": "Success",
                 "type": "MetricFlow",
-                "predicted_sql": predicted_payload,  # Renders the JSON payload in the "Generated SQL" UI code block
+                "predicted_sql": predicted_payload,  # Renders the JSON payload
+                "compiled_mf_sql": compiled_sql,      # 👈 2. ADD THIS FIELD TO THE PAYLOAD!
                 "row_count": len(records),
                 "data": records if records else None,
-                "response": agent_response  # Displays the text answer if no table rows exist
+                "response": agent_response
             }
         else:
             # \U0001f680 Extracts properties directly from the Flow State object
