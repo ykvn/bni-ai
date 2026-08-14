@@ -35,6 +35,8 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
         )
         from app.core.ingest_knowledge import build_ingest_config, run_auto_ingest
         from app.core.ingest_sql_metadata import ingest_golden_queries, ingest_schema
+        # Import the new MetricFlow ingestor
+        from app.core.ingest_mf_metadata import ingest_mf_schema
 
         config = build_ingest_config(backend_dir=mcp_dir, env=env)
 
@@ -70,25 +72,18 @@ def trigger_rag_auto_ingest(mcp_dir: Path, env: dict | None = None) -> None:
             collection_name=golden_collection,
             cml_token=config.get("cml_token")
         )
+        
+        # --- 3. INGEST METRICFLOW CATALOG ---
+        mf_catalog_collection = env.get("MF_CATALOG_COLLECTION", "mf_catalog")
+        dbt_base_url = env.get("DBT_METRICFLOW_URL", "https://dbt.cai.apps.dataservices.bni.co.id")
+        mf_api_url = f"{dbt_base_url.rstrip('/')}/api/v1/meta"
 
-        # --- 3. INGEST CUBE CATALOG & VALUE MAPPINGS ---
-        cube_catalog_collection = env.get("CUBE_CATALOG_COLLECTION", "bni_cube_catalog")
-        cube_value_mappings_collection = env.get("CUBE_VALUE_MAPPINGS_COLLECTION", "bni_cube_value_mappings")
-
-        print("🔄 Running Cube Catalog and Value Mappings Ingestion...")
-        ingest_cube_catalog(
-            yaml_path=CUBE_YAML_PATH,
+        print(f"🔄 Running MetricFlow Catalog Ingestion from {mf_api_url}...")
+        ingest_mf_schema(
+            api_url=mf_api_url,
             vectordb_server_url=config["qdrant_server_url"],
             embed_rerank_url=config["embed_rerank_url"],
-            collection_name=cube_catalog_collection,
-            cml_token=config.get("cml_token")
-        )
-
-        ingest_value_mappings(
-            json_path=CUBE_VALUE_MAPPINGS_JSON_PATH,
-            vectordb_server_url=config["qdrant_server_url"],
-            embed_rerank_url=config["embed_rerank_url"],
-            collection_name=cube_value_mappings_collection,
+            collection_name=mf_catalog_collection,
             cml_token=config.get("cml_token")
         )
 
