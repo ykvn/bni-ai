@@ -1,81 +1,165 @@
 """
-MetricFlow (mf) metadata ingestion.
+MetricFlow (mf) metadata ingestion from REST API endpoint.
 
-Uses the shared ``ingest_common`` bootstrap and ``reset_and_index`` routine
+Fetches metadata from DBT_METRICFLOW_URL + '/api/v1/meta',
+parses metrics, dimensions, and entities, and indexes them into Qdrant vector database.
 """
 import os
-import yaml
+import json
+import httpx
 
+from shared.cml_auth import build_cml_headers
 from app.core.ingest_common import bootstrap_env, reset_and_index
 
-# Standardized project-root bootstrap
+# Standardized project-root bootstrap (loads .env)
 bootstrap_env()
 
-def ingest_mf_schema(
-    yaml_path: str,
-    vectordb_server_url: str,
-    embed_rerank_url: str,
-    collection_name: str,
-    cml_token: str,
-):
-    """Parses MetricFlow schema YAML and chunks it by models and metrics for vector search."""
-    if not os.path.exists(yaml_path):
-        print(f"⚠️ MetricFlow Schema file not found at {yaml_path}", flush=True)
-        return
+def get_default_api_url() -> str:
+    base_url = os.getenv("DBT_METRICFLOW_URL", "https://dbt.cai.apps.dataservices.bni.co.id")
+    return f"{base_url.rstrip('/')}/api/v1/meta"
 
-    print(f"📖 Reading MetricFlow Catalog from {yaml_path}...", flush=True)
-    with open(yaml_path, "r", encoding="utf-8") as f:
-        schema = yaml.safe_load(f)
+
+def fetch_mf_metadata(api_url: str = None, cml_token: str = None) -> dict:
+    """Fetches dbt MetricFlow metadata JSON from the REST API endpoint with Bearer authentication."""
+    if not api_url:
+        api_url = get_default_api_url()
+
+    print(f"🌐 Fetching MetricFlow metadata from API: {api_url}...", flush=True)
+    
+    # Build authentication headers using CML token or fallback to environment
+    token = cml_token or os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY")
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    
+    # Merge with standard CML headers if build_cml_headers exists
+    try:
+        headers.update(build_cml_headers(token))
+    except Exception:
+        pass
+
+    try:
+        with httpx.Client(verify=False, timeout=30.0) as client:
+            response = client.get(api_url, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        print(f"❌ Error fetching metadata from {api_url}: {e}", flush=True)
+        return {}
+
+
+def ingest_mf_schema(
+    api_url: str = None,
+    vectordb_server_url: str = None,
+    embed_rerank_url: str = None,
+    collection_name: str = None,
+    cml_token: str = None,
+):
+    """Parses MetricFlow API metadata (metrics, dimensions, entities) and indexes it into Vector DB."""
+    if not api_url:
+        api_url = get_default_api_url()
+
+    schema = fetch_mf_metadata(api_url, cml_token)
+    if not schema or not isinstance(schema, dict):
+        print("⚠️ Invalid or empty metadata retrieved from API. Aborting ingestion.", flush=True)
+        return
 
     catalog_texts = []
     metadatas = []
 
-    # 1. Chunk Semantic Models (Contains Entities and Dimensions)
-    for sm in schema.get("semantic_models", []):
-        model_name = sm.get("name", "unknown")
-        desc = sm.get("description", "")
-        
-        ent_details = [e.get("name", "") for e in sm.get("entities", [])]
-        dim_details = []
-        for d in sm.get("dimensions", []):
-            d_name = d.get("name", "")
-            d_desc = d.get("description", "")
-            dim_details.append(f"{d_name} ({d_desc})" if d_desc else d_name)
-            
-        searchable_text = (
-            f"Semantic Model: {model_name}\n"
-            f"Description: {desc}\n"
-            f"Entities (Keys): {', '.join(ent_details)}\n"
-            f"Dimensions (Group By): {', '.join(dim_details)}"
-        )
-        catalog_texts.append(searchable_text)
-        metadatas.append({
-            "item_type": "semantic_model",
-            "name": model_name,
-            "raw_yaml": yaml.dump(sm, sort_keys=False, default_flow_style=False),
-        })
-
-    # 2. Chunk Metrics
-    for m in schema.get("metrics", []):
+    # 1. Process Metrics
+    metrics = schema.get("metrics", [])
+    for m in metrics:
         m_name = m.get("name", "unknown")
-        m_label = m.get("label", "")
-        m_desc = m.get("description", "")
-        
+        m_label = m.get("label", m_name)
+        m_desc = m.get("description", "No description provided.")
+        m_syns = m.get("synonyms", [])
+
         searchable_text = (
-            f"Metric: {m_name}\n"
+            f"Metric Name: {m_name}\n"
             f"Label: {m_label}\n"
-            f"Description: {m_desc}"
+            f"Description: {m_desc}\n"
+            f"Synonyms: {', '.join(m_syns) if m_syns else 'None'}"
         )
+
+        structured_payload = {
+            "item_type": "metric",
+            "name": m_name,
+            "label": m_label,
+            "description": m_desc,
+            "synonyms": m_syns
+        }
+
         catalog_texts.append(searchable_text)
         metadatas.append({
             "item_type": "metric",
             "name": m_name,
-            "raw_yaml": yaml.dump(m, sort_keys=False, default_flow_style=False),
+            "raw_json": json.dumps(structured_payload, indent=2),
         })
 
+    # 2. Process Dimensions
+    dimensions = schema.get("dimensions", [])
+    for d in dimensions:
+        d_name = d.get("name", "unknown")
+        d_desc = d.get("description", "No description provided.")
+        d_meta = d.get("meta", {})
+
+        searchable_text = (
+            f"Dimension Path (Group By): {d_name}\n"
+            f"Description: {d_desc}"
+        )
+
+        structured_payload = {
+            "item_type": "dimension",
+            "name": d_name,
+            "description": d_desc,
+            "meta": d_meta
+        }
+
+        catalog_texts.append(searchable_text)
+        metadatas.append({
+            "item_type": "dimension",
+            "name": d_name,
+            "raw_json": json.dumps(structured_payload, indent=2),
+        })
+
+    # 3. Process Entities
+    entities = schema.get("entities", [])
+    for e in entities:
+        e_name = e.get("name", "unknown")
+        e_type = e.get("type", "unknown")
+        e_model = e.get("semantic_model", "unknown")
+        e_expr = e.get("expr", e_name)
+
+        searchable_text = (
+            f"Entity Key: {e_name}\n"
+            f"Key Type: {e_type}\n"
+            f"Semantic Model / Table: {e_model}\n"
+            f"Expression: {e_expr}"
+        )
+
+        structured_payload = {
+            "item_type": "entity",
+            "name": e_name,
+            "type": e_type,
+            "semantic_model": e_model,
+            "expr": e_expr
+        }
+
+        catalog_texts.append(searchable_text)
+        metadatas.append({
+            "item_type": "entity",
+            "name": e_name,
+            "raw_json": json.dumps(structured_payload, indent=2),
+        })
+
+    print(f"📊 Extracted Total Chunks: {len(metrics)} Metrics, {len(dimensions)} Dimensions, {len(entities)} Entities", flush=True)
+
     if not catalog_texts:
+        print("⚠️ No metadata items found to index.", flush=True)
         return
 
+    # 4. Index Chunks into Qdrant
     reset_and_index(
         collection_name=collection_name,
         documents=catalog_texts,
@@ -83,5 +167,5 @@ def ingest_mf_schema(
         vectordb_server_url=vectordb_server_url,
         embed_rerank_url=embed_rerank_url,
         cml_token=cml_token,
-        dataset_name="MetricFlow Catalog",
+        dataset_name="MetricFlow Catalog API",
     )

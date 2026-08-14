@@ -1,8 +1,7 @@
 """
-Re-index entry point for MetricFlow Catalog.
-
-Uses the shared ``ingest_common`` bootstrap, env resolution, and header printer
+Re-index entry point for MetricFlow Catalog from REST API.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -16,18 +15,18 @@ for _p in (str(_ASK_DATA_ROOT), str(_MCP_SERVER_DIR)):
 from app.core.ingest_common import (
     bootstrap_env,
     print_reindex_header,
-    resolve_data_path,
     resolve_reindex_config,
 )
 from app.core.ingest_mf_metadata import ingest_mf_schema
 
-# Standardized project-root bootstrap
+# Standardized project-root bootstrap (loads .env)
 bootstrap_env()
 
-# --- PATH CONFIGURATION ---
-MF_SCHEMA_YAML_PATH = resolve_data_path("dbt_service/dbt_project/models/bni_dbt_schema.yaml")
-
 def main() -> None:
+    # Resolve base URL from .env (DBT_METRICFLOW_URL)
+    dbt_base_url = os.getenv("DBT_METRICFLOW_URL", "https://dbt.cai.apps.dataservices.bni.co.id")
+    mf_api_url = f"{dbt_base_url.rstrip('/')}/api/v1/meta"
+
     # Validated shared env resolution
     config = resolve_reindex_config(
         collection_env_key="MF_CATALOG_COLLECTION",
@@ -35,14 +34,14 @@ def main() -> None:
     )
 
     print_reindex_header(
-        title="Re-indexing MetricFlow Catalog",
+        title="Re-indexing MetricFlow Catalog from API",
         config=config,
         collection_label="MF Catalog Collection",
     )
 
-    print(f"\n[1/1] Indexing MetricFlow Schema from {MF_SCHEMA_YAML_PATH}...", flush=True)
+    print(f"\n[1/1] Fetching & Indexing MetricFlow Schema from {mf_api_url}...", flush=True)
     ingest_mf_schema(
-        yaml_path=MF_SCHEMA_YAML_PATH,
+        api_url=mf_api_url,
         vectordb_server_url=config["vectordb_server_url"],
         embed_rerank_url=config["embed_rerank_url"],
         collection_name=config["collection_name"],
@@ -50,6 +49,7 @@ def main() -> None:
     )
 
     print("\n🎉 MetricFlow metadata re-indexing completed successfully!", flush=True)
+
 
 if __name__ == "__main__":
     main()
