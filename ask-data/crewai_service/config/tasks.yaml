@@ -50,7 +50,7 @@ mf_fetch_schema_task:
 
 mf_draft_payload_task:
   description: >
-    Draft a DBT MetricFlow JSON query payload for the user question: '{user_question}'
+    Draft a valid dbt MetricFlow JSON query payload for the user question: '{user_question}'
 
     AVAILABLE CATALOG METRICS AND DIMENSIONS:
     {db_schema}
@@ -59,9 +59,23 @@ mf_draft_payload_task:
     {error_context}
 
     INSTRUCTIONS:
-    1. Copy the exact 'name' strings provided under 'matched_dimensions' in the catalog context (e.g., 'customer_id__bank_name').
-    2. Do not alter, re-prefix, or shorten the dimension names.
-    3. TIME/DATE FILTERING: MetricFlow's default time dimension is usually 'metric_time'. To filter by year (e.g., 2025), use the "where" field like this: "metric_time__year = 2025".
+    1. EXACT CATALOG NAMES: Copy the exact metric and dimension names provided in the catalog. Do not alter, re-prefix, or shorten dimension paths (e.g., use 'customer_id__bank_name' or 'customer_id__join_date').
+    
+    2. TIME GRANULARITY MATCHING: If filtering by time in 'where' using a modifier (__year, __month, __day), you MUST include the exact same dimension and suffix in 'group_by'.
+       - BAD:  group_by: ["customer_id__join_date"], where: "customer_id__join_date__year = 2023"
+       - GOOD: group_by: ["customer_id__join_date__year"], where: "customer_id__join_date__year = '2023-01-01'"
+
+    3. QUOTED DATE VALUES: MetricFlow truncates time dimensions into timestamps. Always wrap date values in single quotes using start-of-period date strings:
+       - Year filter (e.g. 2023): Use 'YYYY-01-01' -> "customer_id__join_date__year = '2023-01-01'"
+       - Month filter (e.g. May 2023): Use 'YYYY-MM-01' -> "customer_id__join_date__month = '2023-05-01'"
+       - Day / Exact Date filter (e.g. May 15, 2023): Use 'YYYY-MM-DD' -> "customer_id__join_date__day = '2023-05-15'"
+
+    EXAMPLES:
+    - User: "What is the max loan balance for customers who joined in 2023?"
+      Payload: { "metrics": ["cai_loans_outstanding_balance_max_metric"], "group_by": ["customer_id__join_date__year"], "where": "customer_id__join_date__year = '2023-01-01'" }
+    - User: "Total savings balance per bank"
+      Payload: { "metrics": ["cai_savings_balance_sum_metric"], "group_by": ["customer_id__bank_name"], "where": null }
+
   expected_output: >
     A structured MetricFlowQueryPayload containing metrics, group_by, and optional where fields.
 
