@@ -1,12 +1,12 @@
 fetch_schema_task:
   description: >
-    /no_think
-    Retrieve the live database schema for the user query: '{user_question}'
+    Retrieve the database schema and reference golden queries for the user query: '{user_question}'
     
-    INSTRUCTION:
-    Execute the `get_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
+    INSTRUCTIONS:
+    1. Call the `get_database_schema` tool with the user question.
+    2. Confirm that the schema and reference queries were retrieved successfully.
   expected_output: >
-    The exact, raw tool response string returned by `get_database_schema`.
+    A brief statement confirming that the relevant schema definitions and golden queries were retrieved.
 
 draft_sql_task:
   description: >
