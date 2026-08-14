@@ -4,177 +4,3318 @@ database_type: "Cloudera Impala"
 database_name: "test"
 
 tables:
-  - name: cai_customers
-    description: "Contains core customer demographic profiles."
+  - name: customer_group
+    description: ""
     columns:
-      - name: customer_id
-        type: "INT"
-        primary_key: true
-        description: "Unique internal identity tracking number and primary key for each customer."
-      - name: first_name
+      - name: nama_principal
         type: "STRING"
-        description: "The customer's first name."
-      - name: last_name
+        description: "Nama Utama"
+      - name: tiering
         type: "STRING"
-        description: "The customer's last name or surname."
-      - name: email
+        description: "Tiering (Jenjang)"
+      - name: region_principal
         type: "STRING"
-        description: "The electronic email address of the account holder."
-      - name: birth_date
+        description: "Wilayah Principal"
+      - name: nama_group_client_tiering
+        type: "STRING"
+        description: "Nama Tiering Klien Grup"
+      - name: periode
         type: "DATE"
-        description: "Date of birth. Crucial for calculating age or identifying upcoming birthdays."
+        description: "Periode pelaporan data"
+      - name: nama_subholding
+        type: "STRING"
+        description: "Nama Subholding"
+      - name: flagging_diamond
+        type: "STRING"
+        description: "Flag Diamond"
+
+  - name: customer_performance
+    description: ""
+    columns:
+      - name: total_reksadana
+        type: "INT"
+        description: "Total Reksadana"
+      - name: saldo_dspa
+        type: "DECIMAL(22,3)"
+        description: "Saldo DSPA"
+      - name: register_wondr_flag
+        type: "VARCHAR(1)"
+        description: "Flag Register Wondr"
+      - name: total_agen46
+        type: "INT"
+        description: "Total Agen46"
+      - name: register_mbank_date
+        type: "DATE"
+        description: "Tanggal Register Mbank"
+      - name: npl
+        type: "VARCHAR(100)"
+        description: "NPL"
+      - name: register_bnidirect_date
+        type: "DATE"
+        description: "Tanggal Register BNI Direct"
+      - name: avg_balance_mtd_jf
+        type: "DECIMAL(22,3)"
+        description: "Saldo Rata-Rata MTD JF"
+      - name: total_bnidirect
+        type: "INT"
+        description: "Total BNI Direct"
+      - name: ending_balance_mcl
+        type: "DECIMAL(22,3)"
+        description: "Saldo Akhir MCL"
+      - name: register_smsbank_flag
+        type: "VARCHAR(1)"
+        description: "Flag Register SMS Bank"
+      - name: saldo_dsra
+        type: "DECIMAL(22,3)"
+        description: "Saldo DSRA"
+      - name: bansos_flag
+        type: "VARCHAR(100)"
+        description: "Flag Bansos"
+      - name: balance_reksadana
+        type: "DECIMAL(22,3)"
+        description: "Saldo Reksadana"
+      - name: ending_balance_jf
+        type: "DECIMAL(22,3)"
+        description: "Saldo Akhir JF"
+      - name: register_wondr_date
+        type: "DATE"
+        description: "Tanggal Register Wondr"
+      - name: ending_balance_dpk
+        type: "DECIMAL(22,3)"
+        description: "Saldo Akhir DPK"
+      - name: flag_profesi
+        type: "VARCHAR(100)"
+        description: "Flag Profesi"
+      - name: balance_saham
+        type: "DECIMAL(22,3)"
+        description: "Saldo Saham"
+      - name: total_debitcard
+        type: "INT"
+        description: "Total Debit Card"
+      - name: total_saham
+        type: "INT"
+        description: "Total Sahan"
+      - name: avg_balance_mtd_mcl
+        type: "DECIMAL(22,3)"
+        description: "Saldo Rata-Rata MTD MCL"
+      - name: avg_balance_mtd_griya
+        type: "DECIMAL(22,3)"
+        description: "Saldo Rata-Rata MTD Griya"
+      - name: balance_aum
+        type: "DECIMAL(22,3)"
+        description: "Saldo AUM"
+      - name: ending_balance_fleksi
+        type: "DECIMAL(22,3)"
+        description: "Saldo Akhir Fleksi"
+      - name: register_ibank_flag
+        type: "VARCHAR(1)"
+        description: "Flag Pendaftara IBank"
+      - name: total_smsbank
+        type: "INT"
+        description: "Total SMS Bank"
+      - name: avg_balance_dpk
+        type: "DECIMAL(22,3)"
+        description: "Saldo Rata-Rata DPK"
+      - name: register_bnidirect_flag
+        type: "VARCHAR(1)"
+        description: "Flag Register BNI Direct"
+      - name: payroll_flag
+        type: "VARCHAR(100)"
+        description: "Flag Payroll"
+      - name: pep_flag
+        type: "VARCHAR(100)"
+        description: "Flag Politically Exposed Person (PEP) yang selanjutnya disingkat sebagai PEP adalah orang yang memiliki atau pernah memiliki kewenangan publik diantaranya adalah penyelenggara negara sebagaimana dimaksud dalam peraturan perundangundangan yang mengatur tentang penyelenggara negara, dan/atau orang yang tercatat atau pernah tercatat sebagai anggora partai politik yang memiliki pengaruh terhadap kebijakan dan operasional partai politik, baik yang berkewarganegaraan Indonesia maupun yang berkewarganegaraan asing."
+      - name: segment_maverick
+        type: "VARCHAR(150)"
+        description: "Segmen Maverik"
+      - name: total_wondr
+        type: "INT"
+        description: "Total Wondr"
+      - name: total_dplk
+        type: "INT"
+        description: "Total DPLK"
+      - name: total_cc
+        type: "INT"
+        description: "Total CC"
+      - name: mdm_id
+        type: "VARCHAR(50)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: avg_balance_mtd_fleksi
+        type: "DECIMAL(22,3)"
+        description: "Saldo Rata-Rata MTD Fleksi"
+      - name: total_edc
+        type: "INT"
+        description: "Total EDC"
+      - name: register_mbank_flag
+        type: "VARCHAR(1)"
+        description: "Flag Register Mbank"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: ending_balance_griya
+        type: "DECIMAL(22,3)"
+        description: "Saldo Akhir Griya"
+      - name: register_agen46_flag
+        type: "VARCHAR(1)"
+        description: "Flag Pendaftaran Agen46"
+
+  - name: customer_beneficial_owner_individu
+    description: ""
+    columns:
+      - name: bo_id_type
+        type: "VARCHAR(20)"
+        description: "Pengidentifikasi unik (ID) bo jenis deskripsi yang menjadi kunci referensi data."
+      - name: bo_fund
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo dana dalam operasional perbankan."
+      - name: bo_marital_status
+        type: "STRING"
+        description: "Status bo status pernikahan yang menunjukkan kondisi atau tahapan terkini."
+      - name: bo_fund_year_own
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo dana tahun own dalam operasional perbankan."
+      - name: bo_id_number
+        type: "VARCHAR(20)"
+        description: "Pengidentifikasi unik (ID) bo nomor yang menjadi kunci referensi data."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: source
+        type: "STRING"
+        description: "Identifikasi sumber asal data"
+      - name: bo_id_type_desc
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) bo jenis deskripsi yang menjadi kunci referensi data."
+      - name: dom_tax_ln_flag
+        type: "VARCHAR(20)"
+        description: "Penanda/indikator bo dom tax ln yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: bo_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: seq_no
+        type: "TINYINT"
+        description: "Atribut yang mencatat informasi seq nomor dalam operasional perbankan."
+      - name: bo_tax_id
+        type: "VARCHAR(20)"
+        description: "Pengidentifikasi unik (ID) bo tax yang menjadi kunci referensi data."
+      - name: bo_description
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: bo_pep_flag
+        type: "VARCHAR(100)"
+        description: "Penanda/indikator bo PEP yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: bo_name
+        type: "VARCHAR(100)"
+        description: "Nama bo yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: bo_birth_place
+        type: "VARCHAR(30)"
+        description: "Atribut yang mencatat informasi bo kelahiran place dalam operasional perbankan."
+      - name: bo_dom_tax_ln_flag
+        type: "VARCHAR(100)"
+        description: "Penanda/indikator bo dom tax ln yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+
+  - name: customer_kplus
+    description: ""
+    columns:
+      - name: emailcc
+        type: "VARCHAR(100)"
+        description: "CC e-mail"
+      - name: type_of_relationship
+        type: "VARCHAR(100)"
+        description: "Kode atau flag yang menunjukkan sifat hubungan antara pihak terkait dan bank"
+      - name: counterparty_profile
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi counterparty profil dalam operasional perbankan."
+      - name: counterparty_type
+        type: "VARCHAR(100)"
+        description: "Jenis dari counterparty yang berisi Bank, Corporate, Individual, Governance, Private,  Others"
+      - name: is_resident
+        type: "VARCHAR(100)"
+        description: "Warga negara Peserta"
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: nationality
+        type: "VARCHAR(100)"
+        description: "Kewarganegaraan pihak lawan perorangan sesuai dengan dokumen identitas. Dimensi Nomor Identitas ini hanya diisi jika Golongan Pihak Lawan adalah Perorangan."
+      - name: countries_id
+        type: "INT"
+        description: "Pengidentifikasi unik (ID) countries yang menjadi kunci referensi data."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: cities_id
+        type: "INT"
+        description: "Pengidentifikasi unik (ID) cities yang menjadi kunci referensi data."
+      - name: counterparty_status
+        type: "VARCHAR(100)"
+        description: "Status counterparty yakni antara lain Bank Luar Negeri, Counterparty DN Dalam Negeri, Counterparty DN luar negeri, Counterparty LN"
+      - name: cust_tax_id
+        type: "VARCHAR(100)"
+        description: "NPWP adalah nomor pokok wajib pajak bagi perorangan maupun badan usaha yang\ndikeluarkan oleh Kantor Pelayanan Pajak."
+      - name: counterparty_id
+        type: "INT"
+        description: "Pengidentifikasi unik (ID) counterparty yang menjadi kunci referensi data."
+      - name: counterparty_name
+        type: "VARCHAR(100)"
+        description: "a. Jika pihak lawan adalah perorangan, maka diisi dengan nama lengkap sesuai dengan dokumen identitas. Jika nama sesuai dokumen identitas mengandung gelar maka gelar tersebut harus dihilangkan dalam pengisian data.\nContoh penulisan nama lengkap perorangan yang benar adalah ARIF NOOR RACHMAN.\nContoh penulisan nama lengkap perorangan yang salah, a.l: H. ARIF NOOR RACHMAN (“H” adalah gelar keagamaan), ARIF N. R. (“N” dan “R” tidak boleh disingkat), ARIF NOOR RACHMAN, SE., MM. (“SE” dan “MM” adalah gelar pendidikan).\nb. Jika pihak lawan adalah non perorangan, maka diisi sesuai dengan yang tercantum dalam dokumen akta badan usaha. Adapun kaidah penulisannya adalah tidak perlu mencantumkan bentuk badan usaha, tidak disingkat, serta tidak ada tanda baca.\nContoh penulisan nama badan usaha (non perorangan) yang benar adalah MAJU MAKMUR SEJAHTERA.\nContoh penulisan nama badan (non perorangan) yang salah, a.l: PT MAJU MAKMUR SEJAHTERA, MAJU MAKMUR SEJAHTERA, PT, MAJU MKMR SJHTRA.\nc. Jika Bank diisi sesuai dengan yang tercantum pada daftar nama yang ada Bank Indonesia sesuai dengan Laporan Bank Umum Terintegrasi"
+      - name: city_name
+        type: "VARCHAR(100)"
+        description: "Nama city yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: risksector_name
+        type: "VARCHAR(100)"
+        description: "Nama sektor ekonomi atau industri yang mencerminkan aktivitas utama bisnis pihak terkait."
+
+  - name: customer_icons
+    description: ""
+    columns:
+      - name: segment_maverick
+        type: "VARCHAR(100)"
+        description: "Segmen Maverik"
+      - name: corp_group_code
+        type: "VARCHAR(100)"
+        description: "Kode jenis golongan penjamin atau pengurus/pemilik SLIK bedasarkan kode golongan dari OJK"
+      - name: esg_flag
+        type: "VARCHAR(100)"
+        description: "Flag ESG digunakan untuk menandai apakah entitas tertentu telah memenuhi atau terkait dengan standar ESG. ESG mengacu pada Environmental (Lingkungan), Social (Sosial), dan Governance (Tata Kelola Perusahaan), yang merupakan indikator apakah suatu perusahaan atau individu terlibat dalam praktik bisnis yang berkelanjutan dan etis."
+      - name: source_data
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
+      - name: home_add_street
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi home add street KTP dalam operasional perbankan."
+      - name: relation_with_bank
+        type: "VARCHAR(100)"
+        description: "Hubungan Dengan Bank"
+      - name: bansos_flag
+        type: "VARCHAR(100)"
+        description: "Flag Bansos"
+      - name: legal_entity
+        type: "VARCHAR(100)"
+        description: "Bentuk Badan Hukum Perusahaan"
+      - name: cust_tax_id
+        type: "VARCHAR(100)"
+        description: "NPWP adalah nomor pokok wajib pajak bagi perorangan maupun badan usaha yang\ndikeluarkan oleh Kantor Pelayanan Pajak."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: sector_economi
+        type: "STRING"
+        description: "kategori atau bidang aktivitas ekonomi di mana suatu entitas beroperasi. Sektor ini digunakan untuk mengklasifikasikan jenis industri atau layanan dalam suatu sistem ekonomi berdasarkan jenis kegiatan utamanya."
+      - name: cust_other_income
+        type: "DECIMAL(22,3)"
+        description: "Jumlah sumber pendapatan tambahan selain pendapatan utama."
+      - name: home_add_kelurahan
+        type: "VARCHAR(100)"
+        description: "Nama Kelurahan tempat tinggal berdasarkan bukti identitas atau dokumen legalitas yang berlaku"
+      - name: terrorism_related_flag
+        type: "VARCHAR(100)"
+        description: "Menandakan apakah entitas memiliki keterkaitan dengan aktivitas atau individu yang terkait dengan terorisme."
+      - name: cust_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: home_add_kecamatan
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi home add kecamatan KTP dalam operasional perbankan."
+      - name: xpora_location
+        type: "VARCHAR(100)"
+        description: "Lokasi Xpora"
+      - name: cust_id_issue_place
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) issue place yang menjadi kunci referensi data."
+      - name: campaign_flag
+        type: "VARCHAR(100)"
+        description: "Flag Kampanye"
+      - name: home_add_rtrw
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi home add rtrw KTP dalam operasional perbankan."
+      - name: share_data_flag
+        type: "VARCHAR(100)"
+        description: "Flag Berbagi Data"
+      - name: cust_rental_income
+        type: "DECIMAL(22,3)"
+        description: "Jumlah pendapatan yang diperoleh dari menyewakan properti atau aset lainnya."
+      - name: hp_no_wondr
+        type: "VARCHAR(100)"
+        description: "Nomor HP adalah nomor telepon selular (mobile) sesuai dengan yang terdaftar pada wondr"
+      - name: pep_flag
+        type: "VARCHAR(100)"
+        description: "Flag Politically Exposed Person (PEP) yang selanjutnya disingkat sebagai PEP adalah orang yang memiliki atau pernah memiliki kewenangan publik diantaranya adalah penyelenggara negara sebagaimana dimaksud dalam peraturan perundangundangan yang mengatur tentang penyelenggara negara, dan/atau orang yang tercatat atau pernah tercatat sebagai anggora partai politik yang memiliki pengaruh terhadap kebijakan dan operasional partai politik, baik yang berkewarganegaraan Indonesia maupun yang berkewarganegaraan asing."
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: exporter_type
+        type: "VARCHAR(100)"
+        description: "Jenis Pengekspor"
+
+  - name: customer_beneficial_owner
+    description: ""
+    columns:
+      - name: bo_id_type_desc
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) bo jenis deskripsi yang menjadi kunci referensi data."
+      - name: bo_pep_flag
+        type: "STRING"
+        description: "Penanda/indikator bo PEP yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: bo_dom_tax_ln_flag
+        type: "STRING"
+        description: "Penanda/indikator bo dom tax ln yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: bo_id_type
+        type: "VARCHAR(2)"
+        description: "Pengidentifikasi unik (ID) bo jenis deskripsi yang menjadi kunci referensi data."
+      - name: bo_tax_id
+        type: "VARCHAR(25)"
+        description: "Pengidentifikasi unik (ID) bo tax yang menjadi kunci referensi data."
+      - name: bo_marital_status
+        type: "STRING"
+        description: "Status bo status pernikahan yang menunjukkan kondisi atau tahapan terkini."
+      - name: bo_description
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: bo_fund_year_own
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo dana tahun own dalam operasional perbankan."
+      - name: bo_fund
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo dana dalam operasional perbankan."
+      - name: bo_name
+        type: "VARCHAR(50)"
+        description: "Nama bo yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: seq_no
+        type: "VARCHAR(2)"
+        description: "Atribut yang mencatat informasi seq nomor dalam operasional perbankan."
+      - name: bo_birth_place
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi bo kelahiran place dalam operasional perbankan."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: bo_id_number
+        type: "VARCHAR(20)"
+        description: "Pengidentifikasi unik (ID) bo nomor yang menjadi kunci referensi data."
+      - name: bo_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+
+  - name: customer_dplk
+    description: ""
+    columns:
+      - name: home_add_rtrw_ktp
+        type: "VARCHAR(200)"
+        description: "Atribut yang mencatat informasi home add rtrw KTP dalam operasional perbankan."
+      - name: ben_phone_number
+        type: "VARCHAR(200)"
+        description: "Telepon (Pemberi Dana)"
+      - name: home_postcode_dom
+        type: "VARCHAR(200)"
+        description: "Kode Pos Rumah Terkini"
+      - name: ben_birth_place
+        type: "VARCHAR(200)"
+        description: "Tempat Lahir Pemberi Dana"
+      - name: home_add_rtrw_dom
+        type: "VARCHAR(200)"
+        description: "Atribut yang mencatat informasi home add rtrw KTP dalam operasional perbankan."
+      - name: open_region_code
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: open_region
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: outlet_code
+        type: "VARCHAR(100)"
+        description: "Kode Outlet"
+      - name: ben_id_number
+        type: "VARCHAR(200)"
+        description: "Nomor Identitas Pemberi Dana"
+      - name: mdm_id
+        type: "VARCHAR(50)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: cust_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: verification_date
+        type: "DATE"
+        description: "Tanggal Verifikasi"
+      - name: ben_name
+        type: "VARCHAR(200)"
+        description: "Nama Pemberi Dana"
+      - name: cust_tax_id
+        type: "VARCHAR(150)"
+        description: "NPWP adalah nomor pokok wajib pajak bagi perorangan maupun badan usaha yang\ndikeluarkan oleh Kantor Pelayanan Pajak."
+      - name: ben_relationship
+        type: "VARCHAR(200)"
+        description: "Hubungan (Pemberi Dana)"
+      - name: office_postcode_ktp
+        type: "VARCHAR(200)"
+        description: "Kode Pos Kantor"
+
+  - name: customer_creditcard
+    description: ""
+    columns:
+      - name: cr_var_na_length_1
+        type: "DECIMAL(5,0)"
+        description: ""
+      - name: cr_eu_title_1
+        type: "VARCHAR(5)"
+        description: "Gelar kehormatan atau sapaan formal yang digunakan sebagai awalan nama individu untuk menunjukkan jenis kelamin, status pernikahan, atau bentuk kesopanan dalam konteks administratif dan komunikasi resmi"
+      - name: cr_addl_usage_5
+        type: "VARCHAR(1)"
+        description: "Direct Mail"
+      - name: cr_eu_per_occpn
+        type: "DECIMAL(5,0)"
+        description: "Lama Masa Kerja"
+      - name: cust_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: cr_co_tax_id_nmbr
+        type: "VARCHAR(15)"
+        description: "Nomor Identitas"
+      - name: filler_2
+        type: "VARCHAR(5)"
+        description: ""
+      - name: cr_eu_guarantor
+        type: "VARCHAR(1)"
+        description: "Guarantor"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: cr_crlimit_temp_expdte
+        type: "DATE"
+        description: "Tanggal berakhir limit sementara"
+      - name: cr_addl_info_tag
+        type: "VARCHAR(1)"
+        description: ""
+      - name: cr_addl_usage_11
+        type: "VARCHAR(1)"
+        description: "Kolom yang belum digunakan"
+      - name: cust_tax_id
+        type: "VARCHAR(17)"
+        description: "NPWP adalah nomor pokok wajib pajak bagi perorangan maupun badan usaha yang\ndikeluarkan oleh Kantor Pelayanan Pajak."
+      - name: cr_avail_instl
+        type: "DECIMAL(10,0)"
+        description: "Available Installment"
+      - name: cr_crt_liable_flag
+        type: "VARCHAR(1)"
+        description: ""
+      - name: cr_eu_acorn_code
+        type: "VARCHAR(5)"
+        description: "Tipe perumahan / lingkungan tempat tinggal"
+      - name: cr_addl_usage_4
+        type: "VARCHAR(1)"
+        description: "Collection"
+      - name: cr_eu_jnt_ownership
+        type: "VARCHAR(1)"
+        description: ""
+      - name: cr_eu_behav_score
+        type: "DECIMAL(5,0)"
+        description: "Behaviour Score"
+      - name: cr_eu_direct_mail
+        type: "DECIMAL(5,0)"
+        description: "Direct Mail"
+      - name: cr_eu_nbrof_deps
+        type: "DECIMAL(5,0)"
+        description: "Jumlah Tanggungan"
+      - name: cr_eu_employer_code
+        type: "VARCHAR(5)"
+        description: "Employer Code"
+      - name: rf_cra_use_def_1
+        type: "VARCHAR(5)"
+        description: "UC 1 ?"
+      - name: cr_eu_perof_res
+        type: "DECIMAL(5,0)"
+        description: "Lama tempat tinggal"
+      - name: short_name
+        type: "VARCHAR(100)"
+        description: "Nama Pendek"
+      - name: cr_phone_flag
+        type: "VARCHAR(1)"
+        description: "0 =  Dapat dihubungi di kantor\n1 = Tidak dapat dihubungi di kantor"
+      - name: cr_addl_usage_12
+        type: "VARCHAR(1)"
+        description: "Kolom yang belum digunakan"
+      - name: cr_eu_typeof_res
+        type: "VARCHAR(5)"
+        description: "Kategori Kepemilikan Rumah\nM : Milik Sendiri\nK : Milik Keluarga\nL : Lainnya\nS : Sewa\nO : Kost\nP : Milik Perusahaan"
+      - name: cr_eu_bank_acct_ind
+        type: "VARCHAR(5)"
+        description: "Bank Account"
+      - name: filler_4
+        type: "VARCHAR(6)"
+        description: ""
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: cr_crlimit_temp_eff_dte
+        type: "DATE"
+        description: "Effective Date Temporary"
+      - name: cr_eu_inits
+        type: "VARCHAR(5)"
+        description: "Inisial"
+      - name: cr_eu_lez_code
+        type: "VARCHAR(5)"
+        description: "Klasifikasi pengeluaran berdasarkan area geografis tempat tinggal"
+      - name: cr_crlimit_temp
+        type: "DECIMAL(10,0)"
+        description: "Tanggal berakhir limit sementara"
+      - name: cr_co_tax_id_type_1
+        type: "DECIMAL(5,0)"
+        description: "Jenis Identitas"
+
+  - name: customer_identification
+    description: ""
+    columns:
+      - name: id_issue_date
+        type: "DATE"
+        description: "Tanggal ID issue yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: id_issue_place
+        type: "VARCHAR(31)"
+        description: "Pengidentifikasi unik (ID) issue place yang menjadi kunci referensi data."
+      - name: id_type
+        type: "VARCHAR(4)"
+        description: "Pengidentifikasi unik (ID) jenis yang menjadi kunci referensi data."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: customer_business_management
+    description: ""
+    columns:
+      - name: bm_tax_id
+        type: "VARCHAR(25)"
+        description: "Pengidentifikasi unik (ID) bm tax yang menjadi kunci referensi data."
+      - name: bm_id_type
+        type: "VARCHAR(2)"
+        description: "Pengidentifikasi unik (ID) bm jenis yang menjadi kunci referensi data."
+      - name: seq_no
+        type: "VARCHAR(2)"
+        description: "Atribut yang mencatat informasi seq nomor dalam operasional perbankan."
+      - name: bm_id_type_desc
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) bm jenis deskripsi yang menjadi kunci referensi data."
+      - name: bm_name
+        type: "VARCHAR(40)"
+        description: "Nama bm yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: bm_tax_dom_flag
+        type: "STRING"
+        description: "Penanda/indikator bm tax dom yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: bm_id_number
+        type: "VARCHAR(20)"
+        description: "Pengidentifikasi unik (ID) bm nomor yang menjadi kunci referensi data."
+      - name: bm_position
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi bm posisi dalam operasional perbankan."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: customer_performance_pms3d
+    description: ""
+    columns:
+      - name: amount_ftp_scmr_ytd_dpk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: bansos_flag
+        type: "VARCHAR(100)"
+        description: "Flag Bansos"
+      - name: avg_balance_mtd_idr_dpk
+        type: "DECIMAL(18,2)"
+        description: "Saldo Rata-Rata MTD DPK"
+      - name: amount_ftp_ytd_a
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: amount_ftp_ytd_b
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: avg_balance_mtd_idr_fnk
+        type: "DECIMAL(18,2)"
+        description: "Saldo Rata-Rata MTD FNK"
+      - name: amount_ftp_scmr_mtd_b
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: amount_ftp_mtd_a
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: amount_ftp_scmr_ytd_a
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: amount_ftp_scmr_mtd_dpk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: amount_ftp_mtd_fnk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: amount_ftp_mtd_b
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: amount_ftp_ytd_fnk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: amount_ftp_ytd_dpk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: amount_ftp_scmr_ytd_b
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: amount_ftp_scmr_ytd_fnk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: amount_ftp_scmr_mtd_fnk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: amount_ftp_scmr_mtd_a
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: amount_ftp_mtd_dpk
+        type: "DECIMAL(18,2)"
+        description: "Jumlah Uang Tunai di MTD"
+
+  - name: connect_monitoring_leads
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: area
+        type: "VARCHAR(3)"
+        description: "Area"
+
+  - name: digisales_monitoring_leads_valuechain
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: assigned_by_npp
+        type: "VARCHAR(50)"
+        description: "Unknown"
+      - name: provinsi
+        type: "VARCHAR(150)"
+        description: "Diisi dengan nama provinsi"
+      - name: alasanfollowup
+        type: "VARCHAR(250)"
+        description: "Alasan followup"
+      - name: area
+        type: "VARCHAR(3)"
+        description: "Area"
+      - name: alasanbatal
+        type: "VARCHAR(250)"
+        description: "Alasan dibatalkan"
+
+  - name: customer_wms
+    description: ""
+    columns:
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: sid_mutual_fund
+        type: "VARCHAR(100)"
+        description: "Single Investor Identification untuk Reksa Dana (Mutual Fund)"
+      - name: pic_1_name
+        type: "VARCHAR(250)"
+        description: "Nama PIC 1"
+      - name: flag
+        type: "VARCHAR(150)"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: open_region_code
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: open_region
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: audit_date_time
+        type: "DATE"
+        description: "Tanggal Waktu Audit"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: business_type
+        type: "VARCHAR(150)"
+        description: "Jenis Bisnis"
+      - name: cust_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: pic_2_name
+        type: "VARCHAR(250)"
+        description: "Nama PIC 2"
+      - name: sid_mutual_fund_created_date
+        type: "DATE"
+        description: "Tanggal Pembuatan SID Reksadana (Mutual Fund)"
+      - name: cust_tax_id
+        type: "VARCHAR(100)"
+        description: "NPWP adalah nomor pokok wajib pajak bagi perorangan maupun badan usaha yang\ndikeluarkan oleh Kantor Pelayanan Pajak."
+
+  - name: xref_customer
+    description: ""
+    columns:
+      - name: source_data
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+
+  - name: digisales_monitoring_leads
+    description: ""
+    columns:
+      - name: alasanfollowup
+        type: "VARCHAR(250)"
+        description: "Alasan followup"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: customer_performance_transaction
+    description: ""
+    columns:
+      - name: register_smsbank_date
+        type: "DATE"
+        description: "Tanggal Register SMS Bank"
+      - name: active_mbank_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif Mbank"
+      - name: active_edc_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif EDC"
+      - name: register_mbank_flag
+        type: "VARCHAR(100)"
+        description: "Flag Register Mbank"
+      - name: active_bnidirect_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif BNI Direct"
+      - name: register_ibank_date
+        type: "DATE"
+        description: "Tanggal Register Ibank"
+      - name: active_ibank_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif Ibank"
+      - name: active_tradeonline_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif Perdagangan Online"
+      - name: register_bnidirect_flag
+        type: "VARCHAR(100)"
+        description: "Flag Register BNI Direct"
+      - name: amount_cash_in_ytd
+        type: "DECIMAL(22,2)"
+        description: "Jumlah Uang Tunai di YTD"
+      - name: segment_maverick
+        type: "VARCHAR(100)"
+        description: "Segmen Maverik"
+      - name: register_wondr_flag
+        type: "VARCHAR(100)"
+        description: "Flag Register Wondr"
+      - name: active_gbuc_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif GBUC"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: active_otr_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif OTR"
+      - name: amount_cash_out_ytd
+        type: "DECIMAL(22,2)"
+        description: "Jumlah Penarikan Tunai YTD"
+      - name: register_bnidirect_date
+        type: "DATE"
+        description: "Tanggal Register BNI Direct"
+      - name: active_smsbank_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif SMS Bank"
+      - name: active_gbonline_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif GB Online"
+      - name: amount_cash_out_mtd
+        type: "DECIMAL(22,2)"
+        description: "Jumlah Penarikan Tunai MTD"
+      - name: active_tradefinance_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif Keuangan Perdagangan"
+      - name: active_bankgaransi_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif Bank Garansi"
+      - name: active_scf_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif SCF"
+      - name: register_mbank_date
+        type: "DATE"
+        description: "Tanggal Register Mbank"
+      - name: active_wondr_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif Wondr"
+      - name: active_agent46_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif Agen 46"
+      - name: active_itr_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif ITR"
+      - name: active_debit_ecommerce_flag
+        type: "VARCHAR(100)"
+        description: "Flag Aktif E-Commerce Debit"
+      - name: register_wondr_date
+        type: "DATE"
+        description: "Tanggal Register Wondr"
+      - name: amount_cash_in_mtd
+        type: "DECIMAL(22,2)"
+        description: "Jumlah Uang Tunai di MTD"
+      - name: register_ibank_flag
+        type: "VARCHAR(100)"
+        description: "Flag Register Ibank"
+      - name: register_smsbank_flag
+        type: "VARCHAR(100)"
+        description: "Flag  Register SMS Bank"
+
+  - name: bnimove_monitoring_leads
+    description: ""
+    columns:
+      - name: sektor_ekonomi_cd
+        type: "VARCHAR(10)"
+        description: "Kode sektor ekonomi (6 digit) bidang usaha yang dibiayai, sesuai referensi kode sektor ekonomi. Kolom mandatory."
+      - name: area
+        type: "VARCHAR(3)"
+        description: "Area"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: rmtools_funding
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: rmtools_lending_retail
+    description: ""
+    columns:
+      - name: marital_status
+        type: "STRING"
+        description: "Status bo status pernikahan yang menunjukkan kondisi atau tahapan terkini."
+      - name: 3d_response
+        type: "VARCHAR(256)"
+        description: "Unknown"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: 3d
+        type: "STRING"
+        description: "Unknown"
+
+  - name: rmtools_lending_corporate
+    description: ""
+    columns:
+      - name: 3d
+        type: "STRING"
+        description: "Unknown"
+      - name: 3d_response
+        type: "VARCHAR(256)"
+        description: "Unknown"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: bin_card
+    description: ""
+    columns:
       - name: bank_name
-        type: "STRING"
-        description: "The banking institution name (e.g., 'ABC', 'BNI'). Filter by this when queries specify a particular bank's customers."
-      - name: join_date
+        type: "VARCHAR(1000)"
+        description: "Nama Bank"
+
+  - name: card
+    description: ""
+    columns:
+      - name: subbranch_name
+        type: "VARCHAR(50)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: flag
+        type: "VARCHAR(50)"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: as_of_date
         type: "DATE"
-        description: "The exact date the customer first registered an account with the bank."
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
-  - name: cai_savings
-    description: "Liquid savings account data including current balances and interest rates. Status values are 'ACTIVE' or 'DORMANT'."
+  - name: performance_creditcard_new
+    description: ""
     columns:
-      - name: savings_id
-        type: "INT"
-        primary_key: true
-        description: "Unique identity primary key for the savings record."
-      - name: customer_id
-        type: "INT"
-        references: "cai_customers.customer_id"
-        description: "Foreign key linking this account back to cai_customers.customer_id."
-      - name: account_number
-        type: "STRING"
-        description: "The unique public-facing alphanumeric bank account identifier number."
-      - name: balance
-        type: "DECIMAL(15,2)"
-        description: "Current liquid money available. Use this for 'total savings' or 'wealthiest customers' metrics."
-      - name: interest_rate
-        type: "DECIMAL(4,2)"
-        description: "The annual percentage yield interest tracking rate assigned to this savings account."
-      - name: status
-        type: "STRING"
-        description: "Account state. Expected values are 'ACTIVE' or 'DORMANT'."
-
-  - name: cai_deposits
-    description: "Time deposits / fixed-term investment accounts with specific lock-in periods."
-    columns:
-      - name: deposit_id
-        type: "INT"
-        primary_key: true
-        description: "Unique primary key for the fixed deposit record."
-      - name: customer_id
-        type: "INT"
-        references: "cai_customers.customer_id"
-        description: "Foreign key mapping back to cai_customers.customer_id."
-      - name: account_number
-        type: "STRING"
-        description: "The unique account number identifier for this deposit facility."
-      - name: principal_amount
-        type: "DECIMAL(15,2)"
-        description: "The initial locked investment asset amount."
-      - name: maturity_date
-        type: "DATE"
-        description: "The date when the fixed deposit expires and pays out. Check this for 'approaching maturity' questions."
-      - name: interest_rate
-        type: "DECIMAL(4,2)"
-        description: "The fixed contract interest rate paid out at maturity."
-      - name: status
-        type: "STRING"
-        description: "The current status state of the investment term (e.g., 'ACTIVE')."
-
-  - name: cai_loans
-    description: "Credit facilities and borrowing data extended to customers."
-    columns:
-      - name: loan_id
-        type: "INT"
-        primary_key: true
-        description: "Unique identity primary key for the loan entry."
-      - name: customer_id
-        type: "INT"
-        references: "cai_customers.customer_id"
-        description: "Foreign key mapping back to cai_customers.customer_id."
-      - name: loan_type
-        type: "STRING"
-        description: "Type of loan facility (e.g., 'Home', 'Auto', 'Personal')."
-      - name: principal_amount
-        type: "DECIMAL(15,2)"
-        description: "The original total borrowed credit capital sum."
-      - name: outstanding_balance
-        type: "DECIMAL(15,2)"
-        description: "The remaining debt balance amount the customer still owes the bank."
-      - name: maturity_date
-        type: "DATE"
-        description: "The final payoff deadline date for the loan obligation."
-      - name: status
-        type: "STRING"
-        description: "Operational loan indicator flag status state (e.g., 'ACTIVE')."
-
-  - name: cai_credit_cards
-    description: "Credit card account statements, revolving limits, and balances extended to customers."
-    columns:
-      - name: card_id
-        type: "INT"
-        primary_key: true
-        description: "Unique primary key for the card instance."
-      - name: customer_id
-        type: "INT"
-        references: "cai_customers.customer_id"
-        description: "Foreign key tracking customer ownership in cai_customers.customer_id."
-      - name: card_number
-        type: "STRING"
-        description: "The unique plastic card PAN number format identifier sequence."
-      - name: credit_limit
-        type: "DECIMAL(15,2)"
-        description: "The maximum revolving credit threshold limit extended to the customer."
-      - name: current_balance
-        type: "DECIMAL(15,2)"
-        description: "The active amount spent and currently owed on the credit card balance."
       - name: expiry_date
         type: "DATE"
-        description: "The operational expiration timeline date of the card."
-      - name: status
-        type: "STRING"
-        description: "Revolving line risk indicators. Expected values are 'ACTIVE' or 'WARNING'."
+        description: "Diisi dengan tanggal kedaluwarsa dokumen identitas."
+      - name: issue_date
+        type: "DATE"
+        description: "Diisi dengan tanggal penerbitan dokumen identitas."
+      - name: subbranch_name
+        type: "VARCHAR(300)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: mdm_id
+        type: "VARCHAR(30)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
-  - name: cai_transactions
-    description: "Tracks all financial ledger postings, operational deposits, cash extractions, and adjustments across accounts."
+  - name: performance_creditcard
+    description: ""
     columns:
-      - name: transaction_id
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: indopex
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: interest_expense_daily
+    description: ""
+    columns:
+      - name: gl_account_id_dpk
         type: "INT"
-        primary_key: true
-        description: "Unique internal tracking sequential ledger primary key."
-      - name: account_number
-        type: "STRING"
-        references: "cai_savings.account_number; cai_deposits.account_number"
-        description: "The account target number receiving or sending funds. Joins back to cai_savings or cai_deposits."
-      - name: amount
-        type: "DECIMAL(15,2)"
-        description: "The absolute numerical money value of the execution."
-      - name: transaction_type
-        type: "STRING"
-        description: "Accounting ledger category direction. Expected values are 'DEBIT' (withdrawals/charges) or 'CREDIT' (deposits/payroll)."
-      - name: transaction_timestamp
+        description: "Identifikasi akun GL untuk Dana Pihak Ketiga"
+      - name: flag_source
+        type: "VARCHAR(15)"
+        description: "Penanda sumber asal data"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: interest_expense_ytd
+    description: ""
+    columns:
+      - name: gl_account_id_dpk
+        type: "INT"
+        description: "Identifikasi akun GL untuk Dana Pihak Ketiga"
+      - name: flag_source
+        type: "VARCHAR(15)"
+        description: "Penanda sumber asal data"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: interest_income_daily
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: flag_source
+        type: "VARCHAR(15)"
+        description: "Penanda sumber asal data"
+
+  - name: interest_income_ytd
+    description: ""
+    columns:
+      - name: processing_time
         type: "TIMESTAMP"
-        description: "The complete system timestamp tracker of when the execution posted to the ledger."
-      - name: description
-        type: "STRING"
-        description: "The descriptive transaction text annotation (e.g., 'ATM Withdrawal', 'Payroll Transfer')."
+        description: "Durasi atau waktu pemrosesan data"
+      - name: tanggal
+        type: "DATE"
+        description: "Tanggal terkait data yang dilaporkan"
+      - name: primary_index
+        type: "VARCHAR(100)"
+        description: "Indeks utama yang digunakan sebagai acuan"
 
-  - name: cai_branch_performance
-    description: "Regional business analytics metrics and performance dashboards indicating growth metrics."
+  - name: ledger_statement
+    description: ""
     columns:
-      - name: branch_id
-        type: "INT"
-        primary_key: true
-        description: "Unique branch identifier primary key."
-      - name: branch_name
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: mart_jurnal_transaksi
+    description: ""
+    columns:
+      - name: entered_debit
+        type: "DECIMAL(27,6)"
+        description: "Atribut yang mencatat informasi entered debit dalam operasional perbankan."
+      - name: journal_name
         type: "STRING"
-        description: "The clean geographical or municipal name designation of the branch location."
-      - name: region
+        description: "Nama journal yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: creation_date
+        type: "DATE"
+        description: "Tanggal creation yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: accounted_debit
+        type: "DECIMAL(27,6)"
+        description: "Atribut yang mencatat informasi accounted debit dalam operasional perbankan."
+      - name: concatenated_segment
+        type: "VARCHAR(350)"
+        description: "Atribut yang mencatat informasi concatenated segmen dalam operasional perbankan."
+      - name: header_desciption
         type: "STRING"
-        description: "The broader provincial administrative territory area grouping (e.g., 'DKI Jakarta')."
-      - name: total_active_customers
+        description: "Atribut yang mencatat informasi header desciption dalam operasional perbankan."
+      - name: gl_date_per
+        type: "VARCHAR(5)"
+        description: "Tanggal gl per yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: periode_name
+        type: "VARCHAR(100)"
+        description: "Nama periode yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: line_number
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi line nomor dalam operasional perbankan."
+      - name: gl_date_year
+        type: "VARCHAR(10)"
+        description: "Tanggal gl tahun yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: category
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi kategori dalam operasional perbankan."
+      - name: market_segment
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi market segmen dalam operasional perbankan."
+      - name: je_header_id
+        type: "BIGINT"
+        description: "Pengidentifikasi unik (ID) je header yang menjadi kunci referensi data."
+      - name: gl_date
+        type: "DATE"
+        description: "Tanggal gl yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: source
+        type: "VARCHAR(100)"
+        description: "Identifikasi sumber asal data"
+
+  - name: mart_ledger_statement
+    description: ""
+    columns:
+      - name: subbranch_name
+        type: "VARCHAR(500)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: counterparty
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) counterparty yang menjadi kunci referensi data."
+
+  - name: opex
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: source
+        type: "STRING"
+        description: "Identifikasi sumber asal data"
+
+  - name: recovery
+    description: ""
+    columns:
+      - name: tahun
         type: "INT"
-        description: "Total client profile count actively assigned to this node."
-      - name: monthly_target_achieved
-        type: "DECIMAL(5,2)"
-        description: "Performance target milestone percentage index ranking tracker."
+        description: "Tahun pelaporan data"
+
+  - name: dpk_dn_daily
+    description: ""
+    columns:
+      - name: flag_rate
+        type: "VARCHAR(50)"
+        description: "Penanda terkait jenis atau status suku bunga"
+      - name: area
+        type: "VARCHAR(50)"
+        description: "Area"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: flag_kategori
+        type: "VARCHAR(100)"
+        description: "Penanda untuk pengelompokan kategori data"
+
+  - name: funding
+    description: ""
+    columns:
+      - name: acct_close_date
+        type: "DATE"
+        description: "Tanggal Penutupan"
+      - name: acct_renewal_date
+        type: "DATE"
+        description: "Tanggal Pembaruan Akun"
+      - name: source_data
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
+      - name: flag
+        type: "STRING"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: flag_rate
+        type: "STRING"
+        description: "Penanda terkait jenis atau status suku bunga"
+      - name: acct_close_reason
+        type: "VARCHAR(100)"
+        description: "Tanggal Penutupan"
+      - name: flag_kategori
+        type: "STRING"
+        description: "Penanda untuk pengelompokan kategori data"
+      - name: account_name
+        type: "STRING"
+        description: "Diisi dengan nama pengirim atau nama penerima."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: area
+        type: "VARCHAR(50)"
+        description: "Area"
+
+  - name: dpk_nrealtime
+    description: ""
+    columns:
+      - name: subbranch_name
+        type: "VARCHAR(100)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: flag_kategori
+        type: "STRING"
+        description: "Penanda untuk pengelompokan kategori data"
+
+  - name: funding_deposito
+    description: ""
+    columns:
+      - name: saldo_rate
+        type: "DECIMAL(38,3)"
+        description: "Saldo Rate"
+      - name: flag_rate
+        type: "VARCHAR(5)"
+        description: "Penanda terkait jenis atau status suku bunga"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: saldo_usd
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam Usd"
+      - name: acct_renewal_date
+        type: "DATE"
+        description: "Tanggal Pembaruan Akun"
+
+  - name: funding_cof
+    description: ""
+    columns:
+      - name: avg_r_ytd
+        type: "DECIMAL(38,3)"
+        description: "Rata-rata saldo reguler dari awal tahun sampai tanggal laporan"
+      - name: flag_rate
+        type: "STRING"
+        description: "Penanda terkait jenis atau status suku bunga"
+      - name: avg_sr_mtd
+        type: "DECIMAL(38,3)"
+        description: "Rata-rata saldo special rate dari awal bulan sampai tanggal laporan"
+      - name: avg_sr_ytd
+        type: "DECIMAL(38,3)"
+        description: "Rata-rata saldo special rate dari awal tahun sampai tanggal laporan"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: avg_r_mtd
+        type: "DECIMAL(38,3)"
+        description: "Rata-rata saldo reguler dari awal bulan sampai tanggal laporan"
+
+  - name: funding_giro
+    description: ""
+    columns:
+      - name: flag_rate
+        type: "VARCHAR(5)"
+        description: "Penanda terkait jenis atau status suku bunga"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: acct_renewal_date
+        type: "DATE"
+        description: "Tanggal Pembaruan Akun"
+      - name: saldo_rate
+        type: "DECIMAL(38,3)"
+        description: "Sado Rate"
+      - name: flag_bni_direct
+        type: "VARCHAR(5)"
+        description: "Flag BNI Direct"
+
+  - name: funding_tabungan
+    description: ""
+    columns:
+      - name: flag_rate
+        type: "VARCHAR(5)"
+        description: "Penanda terkait jenis atau status suku bunga"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: saldo_rate
+        type: "DECIMAL(38,3)"
+        description: "Saldo Rate"
+      - name: flag_mbank
+        type: "VARCHAR(5)"
+        description: "Flag Mbank"
+
+  - name: funding_movement
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: humanresource
+    description: ""
+    columns:
+      - name: email_pribadi
+        type: "VARCHAR(100)"
+        description: "Email Pribadi"
+      - name: unit_besaran
+        type: "STRING"
+        description: "Besaran Unit"
+      - name: tanggal_aktif
+        type: "DATE"
+        description: "Tanggal Aktif"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: job_sejak
+        type: "DATE"
+        description: "Bekerja Sejak"
+      - name: tingkat_pendidikan
+        type: "VARCHAR(100)"
+        description: "Tingkat Pendidikan"
+      - name: status_difabel
+        type: "VARCHAR(50)"
+        description: "Status Difabel"
+      - name: no_tlpn
+        type: "VARCHAR(100)"
+        description: "Nomor Telepon"
+      - name: tanggal_pensiun
+        type: "DATE"
+        description: "Tanggal Pensiun"
+      - name: agama
+        type: "VARCHAR(100)"
+        description: "Agama"
+      - name: nomor_rekening
+        type: "BIGINT"
+        description: "Nilai nominal dalam Rupiah pada bulan sebelumnya"
+      - name: lokasi
+        type: "STRING"
+        description: "Lokasi Kantor"
+      - name: jumlah_anak
+        type: "VARCHAR(50)"
+        description: "Jumlah Anak"
+      - name: kewarganegaraan
+        type: "VARCHAR(5)"
+        description: "Kewarganegaraan pihak lawan perorangan sesuai dengan Paspor"
+      - name: no_hp
+        type: "VARCHAR(100)"
+        description: "Nomor Handphone"
+      - name: marital_status
+        type: "STRING"
+        description: "Status bo status pernikahan yang menunjukkan kondisi atau tahapan terkini."
+      - name: suffix
+        type: "VARCHAR(100)"
+        description: "Gelar Pendidikan"
+      - name: flag
+        type: "VARCHAR(215)"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: tanggal_masuk
+        type: "DATE"
+        description: "Tanggal Masuk"
+      - name: tanggal_angkat
+        type: "DATE"
+        description: "Tanggal Mulai Bekerja sesuai dengan SK"
+      - name: jenis_kelamin
+        type: "VARCHAR(100)"
+        description: "Jenis kelamin pengurus dan/atau pemilik: L=Laki-laki, P=Perempuan, B=Pemilik berupa badan usaha, M=Pemilik berupa masyarakat (khusus Perusahaan Terbuka/Publik). Kolom mandatory."
+      - name: unit3
+        type: "VARCHAR(100)"
+        description: "Unit"
+
+  - name: teller
+    description: ""
+    columns:
+      - name: ca_desc
+        type: "VARCHAR(100)"
+        description: "Deskripsi CA"
+      - name: user_group
+        type: "VARCHAR(30)"
+        description: "Grup Pengguna"
+      - name: ca
+        type: "SMALLINT"
+        description: "CA"
+      - name: grup
+        type: "SMALLINT"
+        description: "Grup"
+      - name: user_desc
+        type: "VARCHAR(200)"
+        description: "Deskripsi Pengguna"
+      - name: user_type
+        type: "VARCHAR(2)"
+        description: "Jenis Pengguna"
+      - name: grup_desc
+        type: "VARCHAR(100)"
+        description: "Deskripsi Grup"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: account_dplk
+    description: ""
+    columns:
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: open_region_code
+        type: "STRING"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: acct_close_date
+        type: "TIMESTAMP"
+        description: "Tanggal Penutupan"
+      - name: open_region
+        type: "STRING"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+
+  - name: elo_incoming
+    description: ""
+    columns:
+      - name: jns_pendapatan
+        type: "VARCHAR(100)"
+        description: "Jenis Pendapatan"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: tgl_booked
+        type: "DATE"
+        description: "Tanggal pencatatatan secara resmi yang dimasukkan kedalam buku besar atau ke dalam sistem"
+      - name: tgl_bi_checking
+        type: "DATE"
+        description: "Posisi tanggal BI Checking"
+      - name: reject_cancel
+        type: "VARCHAR(20)"
+        description: "Keterangan atau flagging pengajuan yang ditolak atau dibatalkan"
+      - name: gaji_bersih
+        type: "DECIMAL(30,2)"
+        description: "Gaji Bersih"
+      - name: jangka_waktu
+        type: "VARCHAR(20)"
+        description: "Penanda apakah data telah dimodifikasi (kategori C)"
+      - name: applied_to_approved
+        type: "INT"
+        description: "Jumlah hari kalender antara tanggal pengajuan dan tanggal fasilitas yang telah disetujui"
+      - name: tgl_cetak_pk
+        type: "DATE"
+        description: "Tanggal pencetakkan PK"
+      - name: tgl_applied
+        type: "DATE"
+        description: "Tanggal pengajuan"
+      - name: applied_to_booked
+        type: "INT"
+        description: "Jumlah hari kalender antara tanggal pengajuan dan tanggal pembukuan atau pencatatan"
+      - name: skk_to_booked
+        type: "INT"
+        description: "Jumlah hari antara tanggal diterbitkannya SKK dan tanggal booked"
+      - name: approved_to_skk
+        type: "INT"
+        description: "Jumlah hari kalender antara tanggal approved dan tanggal penerbitan SKK"
+      - name: approved_to_booked
+        type: "INT"
+        description: "Jumlah hari kalender antara tanggal approved dan tanggal booked"
+      - name: pk_to_booking
+        type: "INT"
+        description: "Jumlah hari kalender antara tanggal diterbitkannya PK  dan tanggal pembukuan (booking)"
+      - name: tgl_approved
+        type: "DATE"
+        description: "Tanggal fasilitas disetujui"
+      - name: booked_to_disburshment
+        type: "INT"
+        description: "Jumlah hari antara tanggal booked dan tanggal pencairan dana"
+      - name: applied_to_disburshment
+        type: "INT"
+        description: "Jumlah hari antara tanggal pengajuan dan tanggal pencairan dana"
+      - name: approved_to_pk
+        type: "INT"
+        description: "Jumlah hari kalender antara tanggal approved dan tanggal penerbitan PK"
+      - name: flag
+        type: "VARCHAR(10)"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: skk_to_pk
+        type: "INT"
+        description: "Jumlah hari antara SKK terbit sampai PK diterbitkan"
+      - name: status_aplikasi
+        type: "VARCHAR(10)"
+        description: "Status proses pengajuan dalam aplikasi terbaru"
+      - name: keterangan
+        type: "VARCHAR(100)"
+        description: "Catatan atau keterangan tambahan terkait data"
+      - name: gaji_pasangan
+        type: "DECIMAL(30,2)"
+        description: "Gaji Pasangan"
+      - name: no_aplikasi
+        type: "VARCHAR(50)"
+        description: "Nomor Aplikasi BNI"
+      - name: tgl_skk_confirmed
+        type: "DATE"
+        description: "Tanggal SKK yang telah dikonfirmasi secara resmi"
+      - name: nama_lnc_sta
+        type: "VARCHAR(250)"
+        description: "Nama LNC / STA"
+      - name: status_proses
+        type: "VARCHAR(25)"
+        description: "Status proses atau tindaklanjut dari tahapan terbaru"
+      - name: tgl_disbursement
+        type: "DATE"
+        description: "Tanggal pencairan dana"
+
+  - name: aum_daily_pms
+    description: ""
+    columns:
+      - name: marital_status
+        type: "VARCHAR(100)"
+        description: "Status bo status pernikahan yang menunjukkan kondisi atau tahapan terkini."
+      - name: flag
+        type: "VARCHAR(250)"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: age
+        type: "INT"
+        description: "Umur"
+      - name: birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: jenis_kelamin
+        type: "VARCHAR(250)"
+        description: "Jenis kelamin pengurus dan/atau pemilik: L=Laki-laki, P=Perempuan, B=Pemilik berupa badan usaha, M=Pemilik berupa masyarakat (khusus Perusahaan Terbuka/Publik). Kolom mandatory."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: hapusbuku
+    description: ""
+    columns:
+      - name: tahun
+        type: "INT"
+        description: "Tahun pelaporan data"
+
+  - name: lending
+    description: ""
+    columns:
+      - name: jenis_sk_bunga
+        type: "STRING"
+        description: "Jenis Suku Bunga"
+      - name: funding_type
+        type: "VARCHAR(5)"
+        description: "Tipe pendanaan"
+      - name: dsra_balance
+        type: "DECIMAL(31,5)"
+        description: "Saldo Debt Service Reserve Account"
+      - name: currency_type
+        type: "VARCHAR(30)"
+        description: "Jenis Valuta"
+      - name: org_term
+        type: "INT"
+        description: "Jangka Waktu"
+      - name: economic_sector_cd
+        type: "VARCHAR(10)"
+        description: "Kode Sektor Ekonomi"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: acct_close_date
+        type: "DATE"
+        description: "Tanggal Penutupan"
+      - name: grace_periode_term
+        type: "INT"
+        description: "Jangka waktu perjanjian"
+      - name: output_l1
+        type: "VARCHAR(30)"
+        description: "Hasil klasifikasi output pada level 1"
+      - name: flag
+        type: "STRING"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: short_name
+        type: "CHAR(60)"
+        description: "Nama Pendek"
+      - name: flag_esg
+        type: "STRING"
+        description: "Flag ESG digunakan untuk menandai apakah entitas tertentu telah memenuhi atau terkait dengan standar ESG. ESG mengacu pada Environmental (Lingkungan), Social (Sosial), dan Governance (Tata Kelola Perusahaan), yang merupakan indikator apakah suatu perusahaan atau individu terlibat dalam praktik bisnis yang berkelanjutan dan etis."
+      - name: org_term_mult
+        type: "VARCHAR(10)"
+        description: "Satuan Jangka Waktu"
+      - name: output_l3
+        type: "VARCHAR(30)"
+        description: "Hasil klasifikasi output pada level 3"
+      - name: pk_awal_dt
+        type: "DATE"
+        description: "Tanggal Perjanjian Kerjasama Awal"
+      - name: fixed_rate_date
+        type: "DATE"
+        description: "Tanggal Suku Bunga Fix"
+      - name: del_cur_days
+        type: "INT"
+        description: "Jumlah Hari Tunggakan Saat Ini"
+      - name: restructuring_cd
+        type: "VARCHAR(100)"
+        description: "Kode Cara Restruk"
+      - name: affiliated_acc_bal
+        type: "DECIMAL(17,2)"
+        description: "Balance Account yang Terafiliasi"
+      - name: special_int_rate
+        type: "DECIMAL(16,6)"
+        description: "Nilai Bunga Spesial"
+      - name: pk_akhir_dt
+        type: "DATE"
+        description: "Tanggal Perjanjian Kerjasama Akhir"
+      - name: ii_daily
+        type: "DECIMAL(38,2)"
+        description: "Interest Income Daily"
+      - name: mdm_id
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: no_hp_wondr
+        type: "STRING"
+        description: "Nomor HP adalah nomor telepon selular (mobile) sesuai dengan yang terdaftar pada wondr"
+      - name: market_segment_desc
+        type: "STRING"
+        description: "Kode Segmen market"
+      - name: ii_monthly
+        type: "DECIMAL(35,2)"
+        description: "Interest Income Monthly"
+      - name: output_l2
+        type: "VARCHAR(30)"
+        description: "Hasil klasifikasi output pada level 2"
+
+  - name: bni_investment
+    description: ""
+    columns:
+      - name: open_region_code
+        type: "INT"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: flag_profesi
+        type: "VARCHAR(100)"
+        description: "Flag Profesi"
+      - name: avg_balance_mtd
+        type: "DECIMAL(38,2)"
+        description: "Saldo Rata-Rata MTD"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: mdm_id
+        type: "VARCHAR(100)"
+        description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
+      - name: acct_close_date
+        type: "DATE"
+        description: "Tanggal Penutupan"
+      - name: source_data
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
+      - name: issuer_name
+        type: "VARCHAR(100)"
+        description: "Nama issuer yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: acct_renewal_date
+        type: "DATE"
+        description: "Tanggal Pembaruan Akun"
+      - name: flag
+        type: "VARCHAR(50)"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: open_region
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: cust_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+
+  - name: ncl
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: flag
+        type: "STRING"
+        description: "Penanda umum untuk klasifikasi atau status data"
+
+  - name: aum_daily
+    description: ""
+    columns:
+      - name: bni_birth_date
+        type: "DATE"
+        description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: jenis_kelamin
+        type: "VARCHAR(25)"
+        description: "Jenis kelamin pengurus dan/atau pemilik: L=Laki-laki, P=Perempuan, B=Pemilik berupa badan usaha, M=Pemilik berupa masyarakat (khusus Perusahaan Terbuka/Publik). Kolom mandatory."
+      - name: age
+        type: "INT"
+        description: "Umur"
+      - name: marital_status
+        type: "VARCHAR(25)"
+        description: "Status bo status pernikahan yang menunjukkan kondisi atau tahapan terkini."
+
+  - name: collateral
+    description: ""
+    columns:
+      - name: type_seq
+        type: "VARCHAR(5)"
+        description: "Urutan Jenis"
+      - name: priority
+        type: "VARCHAR(2)"
+        description: "Prioritas"
+      - name: controlled_type
+        type: "VARCHAR(2)"
+        description: "Jenis Kontrol"
+      - name: acct_close_date
+        type: "DATE"
+        description: "Tanggal Penutupan"
+      - name: njop
+        type: "DECIMAL(18,4)"
+        description: "Nilai Jual Objek Pajak (NJOP)"
+      - name: status_date
+        type: "DATE"
+        description: "Tanggal Status"
+      - name: bonus
+        type: "DECIMAL(8,5)"
+        description: "Bonus"
+      - name: doc_seq
+        type: "VARCHAR(5)"
+        description: "Urutan Dokumen"
+      - name: bank_valuation
+        type: "DECIMAL(18,4)"
+        description: "Taksasi Bank"
+      - name: liquid_date
+        type: "DATE"
+        description: "Tanggal Pencairan"
+      - name: rating_date
+        type: "DATE"
+        description: "Tanggal Pemeringkatan"
+      - name: nama_notaris
+        type: "VARCHAR(100)"
+        description: "Nama Notaris"
+      - name: liquid_value
+        type: "DECIMAL(18,4)"
+        description: "Nilai Pencairan"
+      - name: citizen_country_cd
+        type: "VARCHAR(5)"
+        description: "Kewarganegaraan"
+      - name: description_3
+        type: "VARCHAR(51)"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: fil1
+        type: "VARCHAR(10)"
+        description: "Fil01"
+      - name: flag
+        type: "STRING"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: status_kepemilikan
+        type: "VARCHAR(3)"
+        description: "Status Kepemilikan"
+      - name: legal_bind_type
+        type: "VARCHAR(3)"
+        description: "Jenis Pengikatan Hukum"
+      - name: valuation_date
+        type: "DATE"
+        description: "Tanggal Penilaian"
+      - name: no_cover_note
+        type: "VARCHAR(70)"
+        description: "Nomor Cover Note Notaris"
+      - name: economic_sector_cd
+        type: "VARCHAR(50)"
+        description: "Kode Sektor Ekonomi"
+      - name: relm_value
+        type: "DECIMAL(18,4)"
+        description: "Nilai RELM"
+      - name: economic_sector_cd_group
+        type: "VARCHAR(15)"
+        description: "Kode Kelompok Sektor Ekonomi"
+      - name: description_2
+        type: "VARCHAR(51)"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: description_1
+        type: "VARCHAR(51)"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: written_off_date
+        type: "DATE"
+        description: "Tanggal Hapus Buku"
+      - name: badan_hukum
+        type: "VARCHAR(50)"
+        description: "Badan Hukum"
+      - name: bus_sector_cd
+        type: "VARCHAR(10)"
+        description: "Kode Bidang Usaha"
+      - name: owner_certificate
+        type: "VARCHAR(41)"
+        description: "Sertifikat Pemilik"
+      - name: publisher_rating
+        type: "VARCHAR(12)"
+        description: "Peringkat Penerbit"
+      - name: relm_start_date
+        type: "DATE"
+        description: "Tanggal Mulai RELM"
+      - name: discount
+        type: "DECIMAL(8,5)"
+        description: "Diskon"
+      - name: relm_status
+        type: "VARCHAR(3)"
+        description: "Status RELM"
+      - name: short_desc
+        type: "VARCHAR(61)"
+        description: "Deskripsi Singkat"
+      - name: legal_bind_ref_num
+        type: "VARCHAR(42)"
+        description: "Nomor Referensi yang Mengikat secara Hukum"
+      - name: no_register
+        type: "VARCHAR(70)"
+        description: "No Register"
+      - name: premium
+        type: "DECIMAL(17,3)"
+        description: "Premium"
+      - name: other_claims
+        type: "DECIMAL(18,4)"
+        description: "Klaim Lainnya"
+
+  - name: channel_atm
+    description: ""
+    columns:
+      - name: propinsi
+        type: "VARCHAR(100)"
+        description: "Diisi dengan nama provinsi"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: subbranch_name
+        type: "VARCHAR(100)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+
+  - name: channel_branch
+    description: ""
+    columns:
+      - name: provinsi_name
+        type: "VARCHAR(500)"
+        description: "Diisi dengan nama provinsi"
+      - name: subbranch_name
+        type: "VARCHAR(50)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+
+  - name: channel_agent46
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: approve_by
+        type: "STRING"
+        description: "User yang melakukan approval"
+
+  - name: channel_merchant_android
+    description: ""
+    columns:
+      - name: provinsi
+        type: "VARCHAR(1000)"
+        description: "Diisi dengan nama provinsi"
+      - name: kode_mcc
+        type: "VARCHAR(1000)"
+        description: "Atribut yang mencatat informasi grup mcc dalam operasional perbankan."
+
+  - name: channel_teller
+    description: ""
+    columns:
+      - name: ca_desc
+        type: "VARCHAR(100)"
+        description: "Deskripsi CA"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: ca
+        type: "SMALLINT"
+        description: "CA"
+
+  - name: channel_merchant
+    description: ""
+    columns:
+      - name: assesment_34
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_16
+        type: "INT"
+        description: "Unknown"
+      - name: ed_name_4
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: dte_lst_stmt
+        type: "INT"
+        description: "Tanggal lst stmt yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: subbranch_name
+        type: "VARCHAR(1000)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: media_type
+        type: "INT"
+        description: "Atribut yang mencatat informasi media jenis dalam operasional perbankan."
+      - name: last_mainteger
+        type: "INT"
+        description: "Tanggal terakhir mainteger convert yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: nbr_bulletins_28
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: vs_integerchg_flg
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator vs integerchg yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: ed_user_nbr_4
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: ed_nbr_out_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: assesment_10
+        type: "INT"
+        description: "Unknown"
+      - name: plan3
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: assesment_1
+        type: "INT"
+        description: "Unknown"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: chain_fees_ind
+        type: "INT"
+        description: "Penanda/indikator chain fees yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: ed_user_nbr_2
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: assesment_33
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_30
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_name_2
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: ed_action_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: assesment_9
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_8
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_name_3
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: assesment_4
+        type: "INT"
+        description: "Unknown"
+      - name: ed_type_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: ed_action_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: assesment_26
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_5
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: avg_tkt_rng4
+        type: "INT"
+        description: "Rata-rata tkt rng4 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: nbr_bulletins_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: white_list
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi white daftar dalam operasional perbankan."
+      - name: mc_assign_id
+        type: "VARCHAR(10)"
+        description: "Pengidentifikasi unik (ID) mc assign yang menjadi kunci referensi data."
+      - name: assesment_12
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_30
+        type: "INT"
+        description: "Unknown"
+      - name: group_mcc_new
+        type: "VARCHAR(250)"
+        description: "Atribut yang mencatat informasi grup mcc baru dalam operasional perbankan."
+      - name: plan1
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: pos1
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi POS (Point of Sale) dalam operasional perbankan."
+      - name: nbr_bulletins_10
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_20
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_nbr_req_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: merchant_name
+        type: "VARCHAR(25)"
+        description: "Nama merchant yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: ed_user_field_2
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: ed_nbr_out_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: nbr_bulletins_32
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: plan_exp_dte2
+        type: "INT"
+        description: "Tanggal plan kedaluwarsa yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: nbr_bulletins_21
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: status_info
+        type: "VARCHAR(2)"
+        description: "Status info yang menunjukkan kondisi atau tahapan terkini."
+      - name: assesment_32
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_25
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_14
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_20
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_17
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_type_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: assesment_22
+        type: "INT"
+        description: "Unknown"
+      - name: ed_user_nbr_3
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: assesment_35
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_14
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: disc_freq
+        type: "INT"
+        description: "Atribut yang mencatat informasi diskon freq dalam operasional perbankan."
+      - name: assesment_24
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_23
+        type: "INT"
+        description: "Unknown"
+      - name: vs_auth_srce
+        type: "VARCHAR(10)"
+        description: "Atribut yang mencatat informasi vs otorisasi srce dalam operasional perbankan."
+      - name: phone
+        type: "VARCHAR(18)"
+        description: "Diisi dengan nomor telepon."
+      - name: assesment_13
+        type: "INT"
+        description: "Unknown"
+      - name: user_data
+        type: "VARCHAR(30)"
+        description: "Atribut yang mencatat informasi pengguna data dalam operasional perbankan."
+      - name: plan_exp_dte1
+        type: "INT"
+        description: "Tanggal plan kedaluwarsa yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: avg_tkt_rng3
+        type: "INT"
+        description: "Rata-rata tkt rng3 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: ed_user_field_3
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: nbr_bulletins_16
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_nbr_out_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: nbr_bulletins_23
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: pos3
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi POS (Point of Sale) dalam operasional perbankan."
+      - name: ed_type_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: ed_user_field_1
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: group_mcc
+        type: "VARCHAR(250)"
+        description: "Atribut yang mencatat informasi grup mcc baru dalam operasional perbankan."
+      - name: avg_tkt_rng2
+        type: "INT"
+        description: "Rata-rata tkt rng2 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: nbr_chkapp_ctd
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor chkapp ctd dalam operasional perbankan."
+      - name: nbr_chgbck_ctd
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor chgbck ctd dalam operasional perbankan."
+      - name: assesment_18
+        type: "INT"
+        description: "Unknown"
+      - name: avg_tkt_rng1
+        type: "INT"
+        description: "Rata-rata tkt rng1 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: nbr_bulletins_24
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_nbr_out_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: dte_lst_rteadj
+        type: "INT"
+        description: "Tanggal lst rteadj yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: edctype
+        type: "VARCHAR(1000)"
+        description: "Atribut yang mencatat informasi mesin EDC jenis dalam operasional perbankan."
+      - name: chain_sett_ind
+        type: "INT"
+        description: "Penanda/indikator chain sett yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: nbr_bulletins_19
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_8
+        type: "INT"
+        description: "Unknown"
+      - name: dte_lst_vst
+        type: "INT"
+        description: "Tanggal lst vst yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: chain_dd_ind
+        type: "INT"
+        description: "Penanda/indikator chain dd yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: assesment_2
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_22
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: plan2
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: nbr_bulletins_12
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_6
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_35
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_7
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: dte_nxt_vst
+        type: "INT"
+        description: "Tanggal nxt vst yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: description
+        type: "VARCHAR(250)"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: chain_stmt_ind
+        type: "INT"
+        description: "Penanda/indikator chain stmt yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: assesment_27
+        type: "INT"
+        description: "Unknown"
+      - name: plan_exp_dte3
+        type: "INT"
+        description: "Tanggal plan kedaluwarsa yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: assesment_28
+        type: "INT"
+        description: "Unknown"
+      - name: ed_nbr_req_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: assesment_31
+        type: "INT"
+        description: "Unknown"
+      - name: admin_fee
+        type: "BIGINT"
+        description: "Biaya Admin"
+      - name: ed_nbr_req_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: vs_fac_in_x
+        type: "VARCHAR(10)"
+        description: "Atribut yang mencatat informasi vs fac masuk x dalam operasional perbankan."
+      - name: type_of_stmt
+        type: "INT"
+        description: "Atribut yang mencatat informasi jenis stmt dalam operasional perbankan."
+      - name: ed_name_1
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: nbr_bulletins_26
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: merchant_city
+        type: "VARCHAR(13)"
+        description: "Atribut yang mencatat informasi merchant city dalam operasional perbankan."
+      - name: assesment_29
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_27
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_action_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: chain_rrt_ind
+        type: "INT"
+        description: "Penanda/indikator chain rrt yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: mc_integerchg_flg
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator mc integerchg yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: assesment_21
+        type: "INT"
+        description: "Unknown"
+      - name: dte_nxt_rev
+        type: "INT"
+        description: "Tanggal nxt rev yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: integerchg_reject
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi integerchg penolakan dalam operasional perbankan."
+      - name: ed_nbr_req_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: nbr_bulletins_18
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: vs_nbr_chgbks
+        type: "INT"
+        description: "Atribut yang mencatat informasi vs nomor chgbks dalam operasional perbankan."
+      - name: nbr_bulletins_9
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_13
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: vs_pos_cap
+        type: "VARCHAR(10)"
+        description: "Atribut yang mencatat informasi vs POS (Point of Sale) cap dalam operasional perbankan."
+      - name: nbr_bulletins_34
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_15
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: mc_sls_id
+        type: "VARCHAR(15)"
+        description: "Pengidentifikasi unik (ID) mc sls yang menjadi kunci referensi data."
+      - name: mc_epss_integerchg_flg
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator mc epss integerchg yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: nbr_bulletins_33
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: mc_fac_or_sls_ind
+        type: "VARCHAR(10)"
+        description: "Penanda/indikator mc fac sls yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: assesment_5
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_25
+        type: "INT"
+        description: "Unknown"
+      - name: chain_disc_ind
+        type: "INT"
+        description: "Penanda/indikator chain diskon yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: vs_fac_ind
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator vs fac yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: category_mcc
+        type: "VARCHAR(250)"
+        description: "Atribut yang mencatat informasi kategori mcc dalam operasional perbankan."
+      - name: assesment_11
+        type: "INT"
+        description: "Unknown"
+      - name: merch_type
+        type: "INT"
+        description: "Atribut yang mencatat informasi merch jenis dalam operasional perbankan."
+      - name: ed_user_nbr_1
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: assesment_3
+        type: "INT"
+        description: "Unknown"
+      - name: ed_type_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: assesment_17
+        type: "INT"
+        description: "Unknown"
+      - name: disc_method
+        type: "INT"
+        description: "Atribut yang mencatat informasi diskon method dalam operasional perbankan."
+      - name: nbr_bulletins_11
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_29
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: merchant_open_date
+        type: "DATE"
+        description: "Tanggal merchant pembukaan yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: amex_se_nbr
+        type: "VARCHAR(15)"
+        description: "Atribut yang mencatat informasi amex se nomor dalam operasional perbankan."
+      - name: assesment_19
+        type: "INT"
+        description: "Unknown"
+      - name: prov
+        type: "VARCHAR(2)"
+        description: "Diisi dengan nama provinsi"
+      - name: assesment_15
+        type: "INT"
+        description: "Unknown"
+      - name: proj_avg_tkt
+        type: "INT"
+        description: "Rata-rata proj tkt yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: ed_user_field_4
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: nmid
+        type: "VARCHAR(15)"
+        description: "Pengidentifikasi unik (ID) nama yang menjadi kunci referensi data."
+      - name: nbr_bulletins_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_6
+        type: "INT"
+        description: "Unknown"
+      - name: contact
+        type: "VARCHAR(25)"
+        description: "Atribut yang mencatat informasi kontak dalam operasional perbankan."
+      - name: mcc
+        type: "VARCHAR(6)"
+        description: "Atribut yang mencatat informasi grup mcc dalam operasional perbankan."
+      - name: ed_action_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: nbr_bulletins_31
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: vs_mbr_id
+        type: "INT"
+        description: "Pengidentifikasi unik (ID) vs mbr yang menjadi kunci referensi data."
+      - name: vs_mail_ind
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator vs mail yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: assesment_7
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+
+  - name: channel_merchant_qris
+    description: ""
+    columns:
+      - name: pos1
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi POS (Point of Sale) dalam operasional perbankan."
+      - name: pos3
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi POS (Point of Sale) dalam operasional perbankan."
+      - name: acct_nmbr
+        type: "VARCHAR(20)"
+        description: "Tanggal Penutupan"
+      - name: nmid
+        type: "VARCHAR(20)"
+        description: "Pengidentifikasi unik (ID) nama yang menjadi kunci referensi data."
+      - name: contact
+        type: "VARCHAR(50)"
+        description: "Atribut yang mencatat informasi kontak dalam operasional perbankan."
+      - name: bank_name
+        type: "VARCHAR(50)"
+        description: "Nama Bank"
+      - name: plan3
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: plan2
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: user_data
+        type: "VARCHAR(50)"
+        description: "Atribut yang mencatat informasi pengguna data dalam operasional perbankan."
+      - name: source_code
+        type: "VARCHAR(20)"
+        description: "Identifikasi sumber asal data"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: merchant_name
+        type: "VARCHAR(50)"
+        description: "Nama merchant yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: phone
+        type: "VARCHAR(20)"
+        description: "Diisi dengan nomor telepon."
+      - name: plan1
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: merch_type
+        type: "VARCHAR(20)"
+        description: "Atribut yang mencatat informasi merch jenis dalam operasional perbankan."
+      - name: mcc
+        type: "VARCHAR(1000)"
+        description: "Atribut yang mencatat informasi grup mcc dalam operasional perbankan."
+
+  - name: master_merchant
+    description: ""
+    columns:
+      - name: assesment_7
+        type: "INT"
+        description: "Unknown"
+      - name: avg_tkt_rng3
+        type: "INT"
+        description: "Rata-rata tkt rng3 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: ed_user_nbr_4
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: nbr_bulletins_12
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: avg_tkt_rng1
+        type: "INT"
+        description: "Rata-rata tkt rng1 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: nbr_bulletins_29
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_name_3
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: description
+        type: "VARCHAR(250)"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: admin_fee
+        type: "BIGINT"
+        description: "Biaya Admin"
+      - name: assesment_18
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_35
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_30
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_13
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_28
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_32
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_2
+        type: "INT"
+        description: "Unknown"
+      - name: ed_action_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: pos1
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi POS (Point of Sale) dalam operasional perbankan."
+      - name: vs_mbr_id
+        type: "INT"
+        description: "Pengidentifikasi unik (ID) vs mbr yang menjadi kunci referensi data."
+      - name: status_info
+        type: "VARCHAR(2)"
+        description: "Status info yang menunjukkan kondisi atau tahapan terkini."
+      - name: assesment_15
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_chgbck_ctd
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor chgbck ctd dalam operasional perbankan."
+      - name: ed_nbr_out_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: assesment_30
+        type: "INT"
+        description: "Unknown"
+      - name: ed_user_field_2
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: assesment_19
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_9
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_29
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_22
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: pos3
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi POS (Point of Sale) dalam operasional perbankan."
+      - name: proj_avg_tkt
+        type: "INT"
+        description: "Rata-rata proj tkt yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: nbr_bulletins_19
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_nbr_req_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: nbr_bulletins_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: dte_lst_vst
+        type: "INT"
+        description: "Tanggal lst vst yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: assesment_12
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_4
+        type: "INT"
+        description: "Unknown"
+      - name: subbranch_name
+        type: "VARCHAR(1000)"
+        description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: white_list
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi white daftar dalam operasional perbankan."
+      - name: group_mcc_new
+        type: "VARCHAR(250)"
+        description: "Atribut yang mencatat informasi grup mcc baru dalam operasional perbankan."
+      - name: nbr_bulletins_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_nbr_req_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: nbr_bulletins_21
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_27
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_34
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_28
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: vs_fac_ind
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator vs fac yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: media_type
+        type: "INT"
+        description: "Atribut yang mencatat informasi media jenis dalam operasional perbankan."
+      - name: plan1
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: ed_user_field_1
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: chain_stmt_ind
+        type: "INT"
+        description: "Penanda/indikator chain stmt yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: edctype
+        type: "VARCHAR(1000)"
+        description: "Atribut yang mencatat informasi mesin EDC jenis dalam operasional perbankan."
+      - name: nbr_bulletins_14
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_type_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: ed_action_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: vs_integerchg_flg
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator vs integerchg yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: dte_nxt_vst
+        type: "INT"
+        description: "Tanggal nxt vst yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: assesment_26
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_3
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_1
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_14
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_6
+        type: "INT"
+        description: "Unknown"
+      - name: dte_lst_rteadj
+        type: "INT"
+        description: "Tanggal lst rteadj yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: ed_action_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: merchant_city
+        type: "VARCHAR(13)"
+        description: "Atribut yang mencatat informasi merchant city dalam operasional perbankan."
+      - name: last_mainteger
+        type: "INT"
+        description: "Tanggal terakhir mainteger convert yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: nbr_bulletins_16
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: mcc
+        type: "VARCHAR(6)"
+        description: "Atribut yang mencatat informasi grup mcc dalam operasional perbankan."
+      - name: plan_exp_dte1
+        type: "INT"
+        description: "Tanggal plan kedaluwarsa yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: ed_user_nbr_1
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: nbr_bulletins_8
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: chain_disc_ind
+        type: "INT"
+        description: "Penanda/indikator chain diskon yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: assesment_24
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_20
+        type: "INT"
+        description: "Unknown"
+      - name: category_mcc
+        type: "VARCHAR(250)"
+        description: "Atribut yang mencatat informasi kategori mcc dalam operasional perbankan."
+      - name: ed_name_4
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: ed_type_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: nbr_bulletins_6
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_23
+        type: "INT"
+        description: "Unknown"
+      - name: ed_name_1
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: chain_dd_ind
+        type: "INT"
+        description: "Penanda/indikator chain dd yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: vs_pos_cap
+        type: "VARCHAR(10)"
+        description: "Atribut yang mencatat informasi vs POS (Point of Sale) cap dalam operasional perbankan."
+      - name: ed_user_nbr_2
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: integerchg_reject
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi integerchg penolakan dalam operasional perbankan."
+      - name: nbr_bulletins_7
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_chkapp_ctd
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor chkapp ctd dalam operasional perbankan."
+      - name: nbr_bulletins_15
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_nbr_out_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: nbr_bulletins_24
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_25
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: vs_mail_ind
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator vs mail yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: ed_nbr_out_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: dte_nxt_rev
+        type: "INT"
+        description: "Tanggal nxt rev yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: nbr_bulletins_23
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_11
+        type: "INT"
+        description: "Unknown"
+      - name: type_of_stmt
+        type: "INT"
+        description: "Atribut yang mencatat informasi jenis stmt dalam operasional perbankan."
+      - name: vs_fac_in_x
+        type: "VARCHAR(10)"
+        description: "Atribut yang mencatat informasi vs fac masuk x dalam operasional perbankan."
+      - name: disc_method
+        type: "INT"
+        description: "Atribut yang mencatat informasi diskon method dalam operasional perbankan."
+      - name: assesment_8
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_20
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: plan3
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: merchant_name
+        type: "VARCHAR(25)"
+        description: "Nama merchant yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: ed_type_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: nbr_bulletins_10
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: mc_integerchg_flg
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator mc integerchg yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: ed_action_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed aksi dalam operasional perbankan."
+      - name: chain_fees_ind
+        type: "INT"
+        description: "Penanda/indikator chain fees yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: plan_exp_dte2
+        type: "INT"
+        description: "Tanggal plan kedaluwarsa yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: user_data
+        type: "VARCHAR(30)"
+        description: "Atribut yang mencatat informasi pengguna data dalam operasional perbankan."
+      - name: nbr_bulletins_2
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_5
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_22
+        type: "INT"
+        description: "Unknown"
+      - name: amex_se_nbr
+        type: "VARCHAR(15)"
+        description: "Atribut yang mencatat informasi amex se nomor dalam operasional perbankan."
+      - name: ed_name_2
+        type: "VARCHAR(40)"
+        description: "Nama ed yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: chain_rrt_ind
+        type: "INT"
+        description: "Penanda/indikator chain rrt yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: nbr_bulletins_34
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_33
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_9
+        type: "INT"
+        description: "Unknown"
+      - name: ed_nbr_req_1
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: merchant_open_date
+        type: "DATE"
+        description: "Tanggal merchant pembukaan yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: ed_type_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed jenis dalam operasional perbankan."
+      - name: plan_exp_dte3
+        type: "INT"
+        description: "Tanggal plan kedaluwarsa yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: nbr_bulletins_5
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_25
+        type: "INT"
+        description: "Unknown"
+      - name: chain_sett_ind
+        type: "INT"
+        description: "Penanda/indikator chain sett yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: nbr_bulletins_32
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_16
+        type: "INT"
+        description: "Unknown"
+      - name: nmid
+        type: "VARCHAR(15)"
+        description: "Pengidentifikasi unik (ID) nama yang menjadi kunci referensi data."
+      - name: contact
+        type: "VARCHAR(25)"
+        description: "Atribut yang mencatat informasi kontak dalam operasional perbankan."
+      - name: vs_auth_srce
+        type: "VARCHAR(10)"
+        description: "Atribut yang mencatat informasi vs otorisasi srce dalam operasional perbankan."
+      - name: nbr_bulletins_18
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: avg_tkt_rng4
+        type: "INT"
+        description: "Rata-rata tkt rng4 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: dte_lst_stmt
+        type: "INT"
+        description: "Tanggal lst stmt yang mencatat kapan hal tersebut terjadi atau berlaku."
+      - name: nbr_bulletins_13
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: vs_nbr_chgbks
+        type: "INT"
+        description: "Atribut yang mencatat informasi vs nomor chgbks dalam operasional perbankan."
+      - name: assesment_31
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_21
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_11
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: assesment_17
+        type: "INT"
+        description: "Unknown"
+      - name: assesment_27
+        type: "INT"
+        description: "Unknown"
+      - name: ed_nbr_req_3
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor req dalam operasional perbankan."
+      - name: assesment_10
+        type: "INT"
+        description: "Unknown"
+      - name: avg_tkt_rng2
+        type: "INT"
+        description: "Rata-rata tkt rng2 yang dihitung untuk kebutuhan analisis dan pelaporan."
+      - name: nbr_bulletins_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: mc_epss_integerchg_flg
+        type: "VARCHAR(5)"
+        description: "Penanda/indikator mc epss integerchg yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: ed_user_field_3
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: nbr_bulletins_17
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: nbr_bulletins_26
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: ed_user_field_4
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi ed pengguna field dalam operasional perbankan."
+      - name: mc_fac_or_sls_ind
+        type: "VARCHAR(10)"
+        description: "Penanda/indikator mc fac sls yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: mc_sls_id
+        type: "VARCHAR(15)"
+        description: "Pengidentifikasi unik (ID) mc sls yang menjadi kunci referensi data."
+      - name: prov
+        type: "VARCHAR(2)"
+        description: "Diisi dengan nama provinsi"
+      - name: ed_user_nbr_3
+        type: "BIGINT"
+        description: "Atribut yang mencatat informasi ed pengguna nomor dalam operasional perbankan."
+      - name: mc_assign_id
+        type: "VARCHAR(10)"
+        description: "Pengidentifikasi unik (ID) mc assign yang menjadi kunci referensi data."
+      - name: disc_freq
+        type: "INT"
+        description: "Atribut yang mencatat informasi diskon freq dalam operasional perbankan."
+      - name: ed_nbr_out_4
+        type: "INT"
+        description: "Atribut yang mencatat informasi ed nomor keluar dalam operasional perbankan."
+      - name: assesment_35
+        type: "INT"
+        description: "Unknown"
+      - name: nbr_bulletins_31
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+      - name: merch_type
+        type: "INT"
+        description: "Atribut yang mencatat informasi merch jenis dalam operasional perbankan."
+      - name: plan2
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi rencana dalam operasional perbankan."
+      - name: nbr_bulletins_33
+        type: "INT"
+        description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
+
+  - name: transaction_cta_batch
+    description: ""
+    columns:
+      - name: row_no
+        type: "BIGINT"
+        description: "Nomor urut baris data"
+      - name: balance_ori
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: load_timestamp
+        type: "DATE"
+        description: "Waktu data dimuat ke dalam sistem data warehouse"
+      - name: balance_idr
+        type: "DECIMAL(38,6)"
+        description: "Saldo dalam rupiah"
+      - name: description_21
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+      - name: load_timestamp_ori
+        type: "TIMESTAMP"
+        description: "Waktu data dimuat ke dalam sistem data warehouse"
+      - name: terminal
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
+
+  - name: transaction_dpk
+    description: ""
+    columns:
+      - name: customer_name_destination
+        type: "STRING"
+        description: "Nama destination yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: bank_destination
+        type: "STRING"
+        description: "Nama Bank tujuan"
+
+  - name: transaction_dpk_batch
+    description: ""
+    columns:
+      - name: balance_idr_01
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: description_36_1
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: merchant_name
+        type: "STRING"
+        description: "Nama merchant yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: balance_idr_03
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_idr_05
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_ori_01
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+      - name: description_36_2
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: description_23
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_idr_02
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: seq
+        type: "STRING"
+        description: "Atribut yang mencatat informasi seq nomor dalam operasional perbankan."
+      - name: merchant_city
+        type: "STRING"
+        description: "Atribut yang mencatat informasi merchant city dalam operasional perbankan."
+      - name: balance_idr_06
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_ori_03
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: customer_name_destination
+        type: "STRING"
+        description: "Nama destination yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: biller_code
+        type: "INT"
+        description: "Atribut yang mencatat informasi biller target dalam operasional perbankan."
+      - name: balance_ori_04
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: description_20
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: description_21
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: bank_destination
+        type: "STRING"
+        description: "Nama Bank tujuan"
+      - name: terminal_id
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
+      - name: balance_ori_06
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: row_no
+        type: "STRING"
+        description: "Nomor urut baris data"
+      - name: description_07
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_ori_05
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: balance_idr_04
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_ori_02
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: description_33
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: description_03
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+
+  - name: transaction_dpk_all
+    description: ""
+    columns:
+      - name: description_21
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_idr_02
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: description_36_2
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: description_07
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: bank_destination
+        type: "STRING"
+        description: "Nama Bank tujuan"
+      - name: balance_idr_05
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_ori_04
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: seq
+        type: "STRING"
+        description: "Atribut yang mencatat informasi seq nomor dalam operasional perbankan."
+      - name: balance_idr_04
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_ori_03
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: balance_ori_05
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: flag
+        type: "STRING"
+        description: "Penanda umum untuk klasifikasi atau status data"
+      - name: description_36_1
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: description_33
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_idr_01
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: merchant_city
+        type: "STRING"
+        description: "Atribut yang mencatat informasi merchant city dalam operasional perbankan."
+      - name: customer_name_destination
+        type: "STRING"
+        description: "Nama destination yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: biller_code
+        type: "INT"
+        description: "Atribut yang mencatat informasi biller target dalam operasional perbankan."
+      - name: terminal_id
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
+      - name: merchant_name
+        type: "STRING"
+        description: "Nama merchant yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: description_20
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_idr_03
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_ori_02
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: balance_ori_01
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: balance_idr_06
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: description_03
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_ori_06
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: description_23
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+      - name: row_no
+        type: "STRING"
+        description: "Nomor urut baris data"
+
+  - name: transaction_gen_batch
+    description: ""
+    columns:
+      - name: description_36
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_idr
+        type: "DECIMAL(38,6)"
+        description: "Saldo dalam rupiah"
+      - name: terminal
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+      - name: row_no
+        type: "BIGINT"
+        description: "Nomor urut baris data"
+      - name: balance_ori
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: load_timestamp
+        type: "DATE"
+        description: "Waktu data dimuat ke dalam sistem data warehouse"
+      - name: load_timestamp_ori
+        type: "TIMESTAMP"
+        description: "Waktu data dimuat ke dalam sistem data warehouse"
+
+  - name: transaction_dpk_nearrealtime
+    description: ""
+    columns:
+      - name: description_36_1
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_idr_03
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: balance_idr_01
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: seq
+        type: "STRING"
+        description: "Atribut yang mencatat informasi seq nomor dalam operasional perbankan."
+      - name: balance_idr_04
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: description_20
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: biller_code
+        type: "INT"
+        description: "Atribut yang mencatat informasi biller target dalam operasional perbankan."
+      - name: balance_ori_06
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: description_03
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: description_21
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: terminal_id
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
+      - name: description_36_2
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_ori_05
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: balance_ori_01
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: balance_idr_05
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+      - name: description_23
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: merchant_city
+        type: "STRING"
+        description: "Atribut yang mencatat informasi merchant city dalam operasional perbankan."
+      - name: balance_idr_02
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: merchant_name
+        type: "STRING"
+        description: "Nama merchant yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: balance_ori_03
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+      - name: description_33
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: balance_idr_06
+        type: "DECIMAL(38,3)"
+        description: "Saldo dalam rupiah"
+      - name: bank_destination
+        type: "STRING"
+        description: "Nama Bank tujuan"
+      - name: description_07
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: row_no
+        type: "STRING"
+        description: "Nomor urut baris data"
+      - name: balance_ori_04
+        type: "DECIMAL(38,3)"
+        description: "Saldo"
+
+  - name: trxchannel
+    description: ""
+    columns:
+      - name: machine_acquirer
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi machine acquirer dalam operasional perbankan."
+      - name: source_data
+        type: "VARCHAR(50)"
+        description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
+      - name: open_region
+        type: "SMALLINT"
+        description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
+      - name: industri
+        type: "VARCHAR(50)"
+        description: "Atribut yang mencatat informasi industri dalam operasional perbankan."
+      - name: terminal_id
+        type: "VARCHAR(50)"
+        description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
+      - name: issuer_name
+        type: "VARCHAR(100)"
+        description: "Nama issuer yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: destination_name
+        type: "VARCHAR(50)"
+        description: "Nama destination yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: biller_target
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi biller target dalam operasional perbankan."
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: bsu_flag
+        type: "VARCHAR(2)"
+        description: "Penanda/indikator bsu yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+
+  - name: transaction_loan_batch
+    description: ""
+    columns:
+      - name: load_timestamp
+        type: "DATE"
+        description: "Waktu data dimuat ke dalam sistem data warehouse"
+      - name: balance_idr
+        type: "DECIMAL(38,6)"
+        description: "Saldo dalam rupiah"
+      - name: terminal
+        type: "STRING"
+        description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
+      - name: balance_ori
+        type: "DECIMAL(38,2)"
+        description: "Saldo"
+      - name: arrears
+        type: "DECIMAL(38,2)"
+        description: "Area"
+      - name: description_36
+        type: "STRING"
+        description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
+      - name: row_no
+        type: "BIGINT"
+        description: "Nomor urut baris data"
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+      - name: rate_57
+        type: "STRING"
+        description: "Penanda terkait jenis atau status suku bunga"
+      - name: load_timestamp_ori
+        type: "TIMESTAMP"
+        description: "Waktu data dimuat ke dalam sistem data warehouse"
+
+  - name: transaction_mvtrx
+    description: ""
+    columns:
+      - name: mcc
+        type: "VARCHAR(5)"
+        description: "Atribut yang mencatat informasi grup mcc dalam operasional perbankan."
+      - name: date_process
+        type: "DATE"
+        description: "Tanggal data diproses oleh sistem"
+
+  - name: transaction_tapcash
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: merchant_name
+        type: "VARCHAR(100)"
+        description: "Nama merchant yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: source_data
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
+
+  - name: trxchannel_cico
+    description: ""
+    columns:
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+      - name: issuer_name
+        type: "VARCHAR(1000)"
+        description: "Nama issuer yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: flag_bank
+        type: "VARCHAR(20)"
+        description: "Penanda/indikator bank yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
+      - name: destination_name
+        type: "VARCHAR(1000)"
+        description: "Nama destination yang mengidentifikasi entitas tersebut secara deskriptif."
+      - name: source_data
+        type: "VARCHAR(100)"
+        description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
