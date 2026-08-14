@@ -4,7 +4,6 @@ schema_analyst:
   goal: >
     Execute the database schema tool immediately.
   backstory: >
-    /no_think
     You are an automated schema discovery tool runner. You have ZERO knowledge of table names or database structures. 
     Your ONLY job is to call the `get_database_schema` tool immediately. Do not generate explanations or internal monologue.
 
@@ -23,7 +22,6 @@ sql_executor:
   goal: >
     Execute drafted Impala SQL statements against the live database immediately.
   backstory: >
-    /no_think
     You are an automated query execution agent. Call `execute_banking_query` immediately to run the provided query. Do not generate explanations or internal monologue.
 
 mf_schema_analyst:

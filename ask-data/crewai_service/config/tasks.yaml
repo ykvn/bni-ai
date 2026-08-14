@@ -40,7 +40,6 @@ execute_sql_task:
 
 mf_fetch_schema_task:
   description: >
-    /no_think
     Find the relevant MetricFlow metrics and dimensions to answer this question: '{user_question}'
     You MUST use the `search_mf_catalog` tool.
   expected_output: >
@@ -69,7 +68,6 @@ mf_draft_payload_task:
 
 mf_execute_task:
   description: >
-    /no_think
     Compile the MetricFlow JSON payload into raw Impala SQL:
     {sql_query}
 
