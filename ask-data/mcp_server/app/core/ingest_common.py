@@ -87,9 +87,9 @@ def reset_and_index(
     dataset_name: str,
 ) -> None:
     """
-    Generate embeddings, flush + recreate the Qdrant collection, then bulk
-    upload the documents. This is the single standardized reset-and-index
-    routine used by all metadata ingest pipelines.
+    Generate embeddings (in batches), flush + recreate the Qdrant collection, 
+    then bulk upload the documents. This is the single standardized 
+    reset-and-index routine used by all metadata ingest pipelines.
     """
     if not documents:
         print(f"⚠️ No documents provided for {dataset_name}.", flush=True)
@@ -99,12 +99,33 @@ def reset_and_index(
 
     print(
         f"🧠 Generating embeddings for {len(documents)} {dataset_name} "
-        f"via {embed_rerank_url}...",
+        f"via {embed_rerank_url} in batches...",
         flush=True,
     )
-    embeddings, vector_dim = get_embeddings(
-        documents, embed_rerank_url, cml_token, timeout=120.0
-    )
+    
+    # --- BATCHING LOGIC START ---
+    batch_size = 20
+    all_embeddings = []
+    vector_dim = None
+    
+    for i in range(0, len(documents), batch_size):
+        batch_docs = documents[i:i + batch_size]
+        print(f"   -> Processing batch {i+1} to {min(i+batch_size, len(documents))}...", flush=True)
+        
+        batch_emb, v_dim = get_embeddings(
+            batch_docs, embed_rerank_url, cml_token, timeout=120.0
+        )
+        
+        all_embeddings.extend(batch_emb)
+        
+        # Capture the vector dimension from the first batch
+        if vector_dim is None:
+            vector_dim = v_dim
+    # --- BATCHING LOGIC END ---
+
+    if not all_embeddings or vector_dim is None:
+        print("❌ CRITICAL ERROR: Failed to generate embeddings.", flush=True)
+        return
 
     # Reset and recreate collection using the remote vector dimension
     qdrant_client.delete_collection(name=collection_name)
@@ -114,7 +135,7 @@ def reset_and_index(
     qdrant_client.add_documents(
         collection_name=collection_name,
         documents=documents,
-        embeddings=embeddings,
+        embeddings=all_embeddings,
         metadatas=metadatas,
         ids=ids,
     )
