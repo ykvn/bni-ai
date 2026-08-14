@@ -5,10 +5,16 @@ from shared.embed_client import get_embedding_vector, rerank_documents
 from shared.qdrant_client import QdrantClient
 from shared.cml_auth import get_cml_token
 
-def search_mf_catalog(user_query: str, top_k: int = 50, top_n: int = 20) -> str:
+def search_mf_catalog(
+    user_query: str, 
+    top_candidates: int = 50,
+    max_metrics: int = 3,
+    max_dimensions: int = 20,
+    max_entities: int = 10
+) -> str:
     """
-    Searches Qdrant for MetricFlow metrics, dimensions, and entities based on user intent,
-    and applies Cross-Encoder reranking to return the most accurate items.
+    Searches Qdrant for MetricFlow items and uses Category Quotas to guarantee 
+    that metrics do not crowd out necessary dimensions and entities.
     """
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
@@ -16,21 +22,21 @@ def search_mf_catalog(user_query: str, top_k: int = 50, top_n: int = 20) -> str:
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
 
     try:
-        # Stage 1: Broad Candidate Fetching via Dense Vector Search
+        # 1. Fetch a broad candidate net (50 items) across the entire vector space
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
         qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
         
         results = qdrant_client.search(
             collection_name,
             query_vector,
-            top_k=top_k,
+            top_k=top_candidates,
             token=cml_token,
         )
         
         if not results or (isinstance(results, list) and len(results) > 0 and "error" in results[0]):
             return yaml.dump({"matched_metrics": [], "matched_dimensions": [], "matched_entities": []})
 
-        # Stage 2: Parse Candidates and Format for Reranker
+        # 2. Parse Candidates
         candidate_items = []
         rerank_docs = []
 
@@ -43,9 +49,8 @@ def search_mf_catalog(user_query: str, top_k: int = 50, top_n: int = 20) -> str:
                     item = json.loads(raw_json)
                     item_type = item.get("item_type", "metric")
                     
-                    # Create structured text block for Cross-Encoder scoring
                     if item_type == "metric":
-                        doc_str = f"Metric: {item.get('name', '')} | Label: {item.get('label', '')} | Description: {item.get('description', '')} | Synonyms: {item.get('synonyms', [])}"
+                        doc_str = f"Metric: {item.get('name', '')} | Label: {item.get('label', '')} | Description: {item.get('description', '')}"
                     elif item_type == "dimension":
                         doc_str = f"Dimension Path: {item.get('name', '')} | Description: {item.get('description', '')}"
                     elif item_type == "entity":
@@ -61,43 +66,46 @@ def search_mf_catalog(user_query: str, top_k: int = 50, top_n: int = 20) -> str:
         if not candidate_items:
             return yaml.dump({"matched_metrics": [], "matched_dimensions": [], "matched_entities": []})
 
-        # Stage 3: Apply Cross-Encoder Reranking
+        # 3. Apply Cross-Encoder Reranking across all candidates
         try:
             rerank_results = rerank_documents(
                 query=user_query,
                 documents=rerank_docs,
                 engine_url=embed_url,
                 cml_token=cml_token,
-                top_n=top_n,
+                top_n=len(rerank_docs),  # Rerank full candidate list
                 timeout=15,
             )
             
-            # Select top_n candidates according to reranker order
-            winning_items = []
+            ordered_candidates = []
             for hit in rerank_results:
                 idx = hit.get("index")
                 if idx is not None and idx < len(candidate_items):
-                    winning_items.append(candidate_items[idx])
+                    ordered_candidates.append(candidate_items[idx])
         except Exception as e:
-            print(f"⚠️ Reranker failed, falling back to top_n vector results: {e}", flush=True)
-            winning_items = candidate_items[:top_n]
+            print(f"⚠️ Reranker failed, falling back to raw vector results: {e}", flush=True)
+            ordered_candidates = candidate_items
 
-        # Stage 4: Organize Matched Items for LLM Context Output
+        # 4. Enforce Category Quotas
         metrics = []
         dimensions = []
         entities = []
 
-        for item in winning_items:
+        for item in ordered_candidates:
             item_type = item.pop("item_type", None)
             
-            if item_type == "metric":
+            if item_type == "metric" and len(metrics) < max_metrics:
                 metrics.append(item)
-            elif item_type == "dimension":
+            elif item_type == "dimension" and len(dimensions) < max_dimensions:
                 dimensions.append(item)
-            elif item_type == "entity":
+            elif item_type == "entity" and len(entities) < max_entities:
                 entities.append(item)
-            else:
-                metrics.append(item)
+
+            # Stop scanning early if all quotas are satisfied
+            if (len(metrics) >= max_metrics and 
+                len(dimensions) >= max_dimensions and 
+                len(entities) >= max_entities):
+                break
 
         catalog_output = {
             "matched_metrics": metrics,
