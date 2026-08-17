@@ -9,6 +9,12 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
     tables_df = pd.read_excel(excel_path, sheet_name="Tables")
     cols_df = pd.read_excel(excel_path, sheet_name="Columns")
     
+    # Extract Value Mappings sheet if present
+    try:
+        vals_df = pd.read_excel(excel_path, sheet_name="Value_Mappings")
+    except Exception:
+        vals_df = pd.DataFrame()
+    
     # Initialize the YAML with top-level properties and explicit quotes
     yaml_lines = [
         'version: "1.0"',
@@ -22,9 +28,16 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
     # Process Business Tables
     for _, table in tables_df.iterrows():
         table_name = str(table.get("Table Name", "")).strip()
+        custom_schema = str(table.get("Schema / Database", "")).strip()
         
         if not table_name or table_name.lower() == 'nan':
             continue
+
+        # Prepend schema/database to the table name if it exists
+        if custom_schema and custom_schema.lower() != 'nan':
+            full_table_name = f"{custom_schema}.{table_name}"
+        else:
+            full_table_name = table_name
 
         # Get description exactly as is, without stripping
         table_desc_raw = table.get("Description")
@@ -33,11 +46,12 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
         # Safely escape quotes and newlines for double-quoted YAML strings
         table_desc = table_desc.replace('"', '\\"').replace('\n', '\\n')
 
-        # Add table level properties with quoted descriptions
-        yaml_lines.append(f'  - name: {table_name}')
+        # Add table level properties with quoted descriptions (using full_table_name)
+        yaml_lines.append(f'  - name: {full_table_name}')
         yaml_lines.append(f'    description: "{table_desc}"')
         yaml_lines.append('    columns:')
 
+        # We still match columns to the raw table_name from the Columns sheet
         table_cols = cols_df[cols_df["Table Name"] == table_name]
 
         for _, col in table_cols.iterrows():
@@ -49,10 +63,48 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
             is_pk = col.get("Is PK?", False)
             ref_fk = col.get("References (Foreign Keys)")
             
+            val_mode = col.get("Distinct Value Mode")
+            static_vals = col.get("Static Allowed Values")
+
             # Get description exactly as is, without stripping
             col_desc_raw = col.get("Description")
             col_desc = str(col_desc_raw) if pd.notna(col_desc_raw) else ""
+
+            meta_parts = []
             
+            # Format Distinct Value Mode and Static Allowed Values
+            if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
+                meta_parts.append(f"Mode: {str(val_mode).strip()}")
+            
+            if pd.notna(static_vals) and str(static_vals).strip() and str(static_vals).strip().lower() != "nan":
+                meta_parts.append(f"Allowed: [{str(static_vals).strip()}]")
+
+            # Match and format entries from Value_Mappings sheet
+            if not vals_df.empty:
+                col_mappings = vals_df[(vals_df["Table Name"] == table_name) & (vals_df["Column Name"] == col_name)]
+                if not col_mappings.empty:
+                    value_entries = []
+                    for _, mapping_row in col_mappings.iterrows():
+                        db_val = str(mapping_row.get("Database Value", "")).strip()
+                        syns = str(mapping_row.get("Synonyms / User Phrasing", "")).strip()
+                        ctx = str(mapping_row.get("Description / Context", "")).strip()
+                        
+                        if db_val and db_val.lower() != "nan":
+                            entry = f"{db_val}"
+                            syn_list = [s.strip() for s in syns.split(",") if s.strip() and s.lower() != "nan"]
+                            if syn_list:
+                                entry += f" (Synonyms: {', '.join(syn_list)})"
+                            if ctx and ctx.lower() != "nan":
+                                entry += f" - {ctx}"
+                            value_entries.append(entry)
+                    
+                    if value_entries:
+                        meta_parts.append(f"Value Mappings: [{'; '.join(value_entries)}]")
+
+            # Append the LLM context if any metadata parts exist
+            if meta_parts:
+                col_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
+
             # Safely escape quotes and newlines for double-quoted YAML strings
             col_desc = col_desc.replace('"', '\\"').replace('\n', '\\n')
 

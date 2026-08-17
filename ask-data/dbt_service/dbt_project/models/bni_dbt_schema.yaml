@@ -50,7 +50,10 @@ semantic_models:
   measures: []
 - name: customer_performance
   model: ref('customer_performance')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: primary
+    expr: mdm_id
   dimensions:
   - name: total_reksadana
     type: categorical
@@ -204,10 +207,6 @@ semantic_models:
     type: categorical
     expr: total_cc
     description: Total CC
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   - name: avg_balance_mtd_fleksi
     type: categorical
     expr: avg_balance_mtd_fleksi
@@ -234,10 +233,413 @@ semantic_models:
     type: categorical
     expr: register_agen46_flag
     description: Flag Pendaftaran Agen46
-  measures: []
+  measures:
+  - name: customer_performance_total_reksadana_sum
+    expr: total_reksadana
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_reksadana_average
+    expr: total_reksadana
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_reksadana_min
+    expr: total_reksadana
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_reksadana_max
+    expr: total_reksadana
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dspa_sum
+    expr: saldo_dspa
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dspa_average
+    expr: saldo_dspa
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dspa_min
+    expr: saldo_dspa
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dspa_max
+    expr: saldo_dspa
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_agen46_sum
+    expr: total_agen46
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_agen46_average
+    expr: total_agen46
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_agen46_min
+    expr: total_agen46
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_agen46_max
+    expr: total_agen46
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_jf_sum
+    expr: avg_balance_mtd_jf
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_jf_average
+    expr: avg_balance_mtd_jf
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_jf_min
+    expr: avg_balance_mtd_jf
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_jf_max
+    expr: avg_balance_mtd_jf
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_bnidirect_sum
+    expr: total_bnidirect
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_bnidirect_average
+    expr: total_bnidirect
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_bnidirect_min
+    expr: total_bnidirect
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_bnidirect_max
+    expr: total_bnidirect
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_mcl_sum
+    expr: ending_balance_mcl
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_mcl_average
+    expr: ending_balance_mcl
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_mcl_min
+    expr: ending_balance_mcl
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_mcl_max
+    expr: ending_balance_mcl
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dsra_sum
+    expr: saldo_dsra
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dsra_average
+    expr: saldo_dsra
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dsra_min
+    expr: saldo_dsra
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_saldo_dsra_max
+    expr: saldo_dsra
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_reksadana_sum
+    expr: balance_reksadana
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_reksadana_average
+    expr: balance_reksadana
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_reksadana_min
+    expr: balance_reksadana
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_reksadana_max
+    expr: balance_reksadana
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_jf_sum
+    expr: ending_balance_jf
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_jf_average
+    expr: ending_balance_jf
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_jf_min
+    expr: ending_balance_jf
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_jf_max
+    expr: ending_balance_jf
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_dpk_sum
+    expr: ending_balance_dpk
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_dpk_average
+    expr: ending_balance_dpk
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_dpk_min
+    expr: ending_balance_dpk
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_dpk_max
+    expr: ending_balance_dpk
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_saham_sum
+    expr: balance_saham
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_saham_average
+    expr: balance_saham
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_saham_min
+    expr: balance_saham
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_saham_max
+    expr: balance_saham
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_debitcard_sum
+    expr: total_debitcard
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_debitcard_average
+    expr: total_debitcard
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_debitcard_min
+    expr: total_debitcard
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_debitcard_max
+    expr: total_debitcard
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_saham_sum
+    expr: total_saham
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_saham_average
+    expr: total_saham
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_saham_min
+    expr: total_saham
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_saham_max
+    expr: total_saham
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_mcl_sum
+    expr: avg_balance_mtd_mcl
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_mcl_average
+    expr: avg_balance_mtd_mcl
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_mcl_min
+    expr: avg_balance_mtd_mcl
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_mcl_max
+    expr: avg_balance_mtd_mcl
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_griya_sum
+    expr: avg_balance_mtd_griya
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_griya_average
+    expr: avg_balance_mtd_griya
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_griya_min
+    expr: avg_balance_mtd_griya
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_griya_max
+    expr: avg_balance_mtd_griya
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_aum_sum
+    expr: balance_aum
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_aum_average
+    expr: balance_aum
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_aum_min
+    expr: balance_aum
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_balance_aum_max
+    expr: balance_aum
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_fleksi_sum
+    expr: ending_balance_fleksi
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_fleksi_average
+    expr: ending_balance_fleksi
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_fleksi_min
+    expr: ending_balance_fleksi
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_fleksi_max
+    expr: ending_balance_fleksi
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_smsbank_sum
+    expr: total_smsbank
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_smsbank_average
+    expr: total_smsbank
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_smsbank_min
+    expr: total_smsbank
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_smsbank_max
+    expr: total_smsbank
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_dpk_sum
+    expr: avg_balance_dpk
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_dpk_average
+    expr: avg_balance_dpk
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_dpk_min
+    expr: avg_balance_dpk
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_dpk_max
+    expr: avg_balance_dpk
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_wondr_sum
+    expr: total_wondr
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_wondr_average
+    expr: total_wondr
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_wondr_min
+    expr: total_wondr
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_wondr_max
+    expr: total_wondr
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_dplk_sum
+    expr: total_dplk
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_dplk_average
+    expr: total_dplk
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_dplk_min
+    expr: total_dplk
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_dplk_max
+    expr: total_dplk
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_cc_sum
+    expr: total_cc
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_cc_average
+    expr: total_cc
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_cc_min
+    expr: total_cc
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_cc_max
+    expr: total_cc
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_fleksi_sum
+    expr: avg_balance_mtd_fleksi
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_fleksi_average
+    expr: avg_balance_mtd_fleksi
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_fleksi_min
+    expr: avg_balance_mtd_fleksi
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_avg_balance_mtd_fleksi_max
+    expr: avg_balance_mtd_fleksi
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_edc_sum
+    expr: total_edc
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_edc_average
+    expr: total_edc
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_edc_min
+    expr: total_edc
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_total_edc_max
+    expr: total_edc
+    agg: max
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_griya_sum
+    expr: ending_balance_griya
+    agg: sum
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_griya_average
+    expr: ending_balance_griya
+    agg: average
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_griya_min
+    expr: ending_balance_griya
+    agg: min
+    agg_time_dimension: register_mbank_date
+  - name: customer_performance_ending_balance_griya_max
+    expr: ending_balance_griya
+    agg: max
+    agg_time_dimension: register_mbank_date
 - name: customer_beneficial_owner_individu
   model: ref('customer_beneficial_owner_individu')
-  entities: []
+  entities:
+  - name: bo_id_number
+    type: primary
+    expr: bo_id_number
   dimensions:
   - name: bo_id_type
     type: categorical
@@ -258,11 +660,6 @@ semantic_models:
     expr: bo_fund_year_own
     description: Atribut yang mencatat informasi bo dana tahun own dalam operasional
       perbankan.
-  - name: bo_id_number
-    type: categorical
-    expr: bo_id_number
-    description: Pengidentifikasi unik (ID) bo nomor yang menjadi kunci referensi
-      data.
   - name: as_of_date
     type: time
     expr: as_of_date
@@ -324,7 +721,10 @@ semantic_models:
   measures: []
 - name: customer_kplus
   model: ref('customer_kplus')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: primary
+    expr: mdm_id
   dimensions:
   - name: emailcc
     type: categorical
@@ -349,10 +749,6 @@ semantic_models:
     type: categorical
     expr: is_resident
     description: Warga negara Peserta
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   - name: nationality
     type: categorical
     expr: nationality
@@ -421,7 +817,10 @@ semantic_models:
   measures: []
 - name: customer_icons
   model: ref('customer_icons')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: primary
+    expr: mdm_id
   dimensions:
   - name: segment_maverick
     type: categorical
@@ -548,18 +947,49 @@ semantic_models:
       yang tercatat atau pernah tercatat sebagai anggora partai politik yang memiliki
       pengaruh terhadap kebijakan dan operasional partai politik, baik yang berkewarganegaraan
       Indonesia maupun yang berkewarganegaraan asing.
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   - name: exporter_type
     type: categorical
     expr: exporter_type
     description: Jenis Pengekspor
-  measures: []
+  measures:
+  - name: customer_icons_cust_other_income_sum
+    expr: cust_other_income
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_icons_cust_other_income_average
+    expr: cust_other_income
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_icons_cust_other_income_min
+    expr: cust_other_income
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_icons_cust_other_income_max
+    expr: cust_other_income
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_icons_cust_rental_income_sum
+    expr: cust_rental_income
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_icons_cust_rental_income_average
+    expr: cust_rental_income
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_icons_cust_rental_income_min
+    expr: cust_rental_income
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_icons_cust_rental_income_max
+    expr: cust_rental_income
+    agg: max
+    agg_time_dimension: as_of_date
 - name: customer_beneficial_owner
   model: ref('customer_beneficial_owner')
-  entities: []
+  entities:
+  - name: bo_id_number
+    type: primary
+    expr: bo_id_number
   dimensions:
   - name: bo_id_type_desc
     type: categorical
@@ -622,11 +1052,6 @@ semantic_models:
     description: Posisi periode dari data yang ditampilkan
     type_params:
       time_granularity: day
-  - name: bo_id_number
-    type: categorical
-    expr: bo_id_number
-    description: Pengidentifikasi unik (ID) bo nomor yang menjadi kunci referensi
-      data.
   - name: bo_birth_date
     type: time
     expr: bo_birth_date
@@ -637,7 +1062,10 @@ semantic_models:
   measures: []
 - name: customer_dplk
   model: ref('customer_dplk')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: primary
+    expr: mdm_id
   dimensions:
   - name: home_add_rtrw_ktp
     type: categorical
@@ -679,10 +1107,6 @@ semantic_models:
     type: categorical
     expr: ben_id_number
     description: Nomor Identitas Pemberi Dana
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   - name: cust_birth_date
     type: time
     expr: cust_birth_date
@@ -724,7 +1148,10 @@ semantic_models:
   measures: []
 - name: customer_creditcard
   model: ref('customer_creditcard')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: primary
+    expr: mdm_id
   dimensions:
   - name: cr_var_na_length_1
     type: categorical
@@ -872,10 +1299,6 @@ semantic_models:
     type: categorical
     expr: filler_4
     description: nan
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   - name: cr_crlimit_temp_eff_dte
     type: time
     expr: cr_crlimit_temp_eff_dte
@@ -1058,7 +1481,295 @@ semantic_models:
     type: categorical
     expr: amount_ftp_mtd_dpk
     description: Jumlah Uang Tunai di MTD
-  measures: []
+  measures:
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_sum
+    expr: amount_ftp_scmr_ytd_dpk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_average
+    expr: amount_ftp_scmr_ytd_dpk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_min
+    expr: amount_ftp_scmr_ytd_dpk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_max
+    expr: amount_ftp_scmr_ytd_dpk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_sum
+    expr: avg_balance_mtd_idr_dpk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_average
+    expr: avg_balance_mtd_idr_dpk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_min
+    expr: avg_balance_mtd_idr_dpk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_max
+    expr: avg_balance_mtd_idr_dpk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_a_sum
+    expr: amount_ftp_ytd_a
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_a_average
+    expr: amount_ftp_ytd_a
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_a_min
+    expr: amount_ftp_ytd_a
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_a_max
+    expr: amount_ftp_ytd_a
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_b_sum
+    expr: amount_ftp_ytd_b
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_b_average
+    expr: amount_ftp_ytd_b
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_b_min
+    expr: amount_ftp_ytd_b
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_b_max
+    expr: amount_ftp_ytd_b
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_sum
+    expr: avg_balance_mtd_idr_fnk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_average
+    expr: avg_balance_mtd_idr_fnk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_min
+    expr: avg_balance_mtd_idr_fnk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_max
+    expr: avg_balance_mtd_idr_fnk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_sum
+    expr: amount_ftp_scmr_mtd_b
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_average
+    expr: amount_ftp_scmr_mtd_b
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_min
+    expr: amount_ftp_scmr_mtd_b
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_max
+    expr: amount_ftp_scmr_mtd_b
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_a_sum
+    expr: amount_ftp_mtd_a
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_a_average
+    expr: amount_ftp_mtd_a
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_a_min
+    expr: amount_ftp_mtd_a
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_a_max
+    expr: amount_ftp_mtd_a
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_sum
+    expr: amount_ftp_scmr_ytd_a
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_average
+    expr: amount_ftp_scmr_ytd_a
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_min
+    expr: amount_ftp_scmr_ytd_a
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_max
+    expr: amount_ftp_scmr_ytd_a
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_sum
+    expr: amount_ftp_scmr_mtd_dpk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_average
+    expr: amount_ftp_scmr_mtd_dpk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_min
+    expr: amount_ftp_scmr_mtd_dpk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_max
+    expr: amount_ftp_scmr_mtd_dpk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_fnk_sum
+    expr: amount_ftp_mtd_fnk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_fnk_average
+    expr: amount_ftp_mtd_fnk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_fnk_min
+    expr: amount_ftp_mtd_fnk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_fnk_max
+    expr: amount_ftp_mtd_fnk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_b_sum
+    expr: amount_ftp_mtd_b
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_b_average
+    expr: amount_ftp_mtd_b
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_b_min
+    expr: amount_ftp_mtd_b
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_b_max
+    expr: amount_ftp_mtd_b
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_fnk_sum
+    expr: amount_ftp_ytd_fnk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_fnk_average
+    expr: amount_ftp_ytd_fnk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_fnk_min
+    expr: amount_ftp_ytd_fnk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_fnk_max
+    expr: amount_ftp_ytd_fnk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_dpk_sum
+    expr: amount_ftp_ytd_dpk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_dpk_average
+    expr: amount_ftp_ytd_dpk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_dpk_min
+    expr: amount_ftp_ytd_dpk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_ytd_dpk_max
+    expr: amount_ftp_ytd_dpk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_sum
+    expr: amount_ftp_scmr_ytd_b
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_average
+    expr: amount_ftp_scmr_ytd_b
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_min
+    expr: amount_ftp_scmr_ytd_b
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_max
+    expr: amount_ftp_scmr_ytd_b
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_sum
+    expr: amount_ftp_scmr_ytd_fnk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_average
+    expr: amount_ftp_scmr_ytd_fnk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_min
+    expr: amount_ftp_scmr_ytd_fnk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_max
+    expr: amount_ftp_scmr_ytd_fnk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_sum
+    expr: amount_ftp_scmr_mtd_fnk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_average
+    expr: amount_ftp_scmr_mtd_fnk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_min
+    expr: amount_ftp_scmr_mtd_fnk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_max
+    expr: amount_ftp_scmr_mtd_fnk
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_sum
+    expr: amount_ftp_scmr_mtd_a
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_average
+    expr: amount_ftp_scmr_mtd_a
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_min
+    expr: amount_ftp_scmr_mtd_a
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_max
+    expr: amount_ftp_scmr_mtd_a
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_dpk_sum
+    expr: amount_ftp_mtd_dpk
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_dpk_average
+    expr: amount_ftp_mtd_dpk
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_dpk_min
+    expr: amount_ftp_mtd_dpk
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: customer_performance_pms3d_amount_ftp_mtd_dpk_max
+    expr: amount_ftp_mtd_dpk
+    agg: max
+    agg_time_dimension: as_of_date
 - name: connect_monitoring_leads
   model: ref('connect_monitoring_leads')
   entities: []
@@ -1107,12 +1818,11 @@ semantic_models:
   measures: []
 - name: customer_wms
   model: ref('customer_wms')
-  entities: []
-  dimensions:
+  entities:
   - name: mdm_id
-    type: categorical
+    type: primary
     expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
+  dimensions:
   - name: sid_mutual_fund
     type: categorical
     expr: sid_mutual_fund
@@ -1178,16 +1888,15 @@ semantic_models:
   measures: []
 - name: xref_customer
   model: ref('xref_customer')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: foreign
+    expr: mdm_id
   dimensions:
   - name: source_data
     type: categorical
     expr: source_data
     description: Atribut yang mencatat informasi sumber data dalam operasional perbankan.
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   measures: []
 - name: digisales_monitoring_leads
   model: ref('digisales_monitoring_leads')
@@ -1348,7 +2057,71 @@ semantic_models:
     type: categorical
     expr: register_smsbank_flag
     description: Flag  Register SMS Bank
-  measures: []
+  measures:
+  - name: customer_performance_transaction_amount_cash_in_ytd_sum
+    expr: amount_cash_in_ytd
+    agg: sum
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_in_ytd_average
+    expr: amount_cash_in_ytd
+    agg: average
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_in_ytd_min
+    expr: amount_cash_in_ytd
+    agg: min
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_in_ytd_max
+    expr: amount_cash_in_ytd
+    agg: max
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_ytd_sum
+    expr: amount_cash_out_ytd
+    agg: sum
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_ytd_average
+    expr: amount_cash_out_ytd
+    agg: average
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_ytd_min
+    expr: amount_cash_out_ytd
+    agg: min
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_ytd_max
+    expr: amount_cash_out_ytd
+    agg: max
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_mtd_sum
+    expr: amount_cash_out_mtd
+    agg: sum
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_mtd_average
+    expr: amount_cash_out_mtd
+    agg: average
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_mtd_min
+    expr: amount_cash_out_mtd
+    agg: min
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_out_mtd_max
+    expr: amount_cash_out_mtd
+    agg: max
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_in_mtd_sum
+    expr: amount_cash_in_mtd
+    agg: sum
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_in_mtd_average
+    expr: amount_cash_in_mtd
+    agg: average
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_in_mtd_min
+    expr: amount_cash_in_mtd
+    agg: min
+    agg_time_dimension: register_smsbank_date
+  - name: customer_performance_transaction_amount_cash_in_mtd_max
+    expr: amount_cash_in_mtd
+    agg: max
+    agg_time_dimension: register_smsbank_date
 - name: bnimove_monitoring_leads
   model: ref('bnimove_monitoring_leads')
   entities: []
@@ -1434,7 +2207,10 @@ semantic_models:
   measures: []
 - name: card
   model: ref('card')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: foreign
+    expr: mdm_id
   dimensions:
   - name: subbranch_name
     type: categorical
@@ -1450,14 +2226,13 @@ semantic_models:
     description: Posisi periode dari data yang ditampilkan
     type_params:
       time_granularity: day
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   measures: []
 - name: performance_creditcard_new
   model: ref('performance_creditcard_new')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: foreign
+    expr: mdm_id
   dimensions:
   - name: expiry_date
     type: time
@@ -1481,10 +2256,6 @@ semantic_models:
     description: Posisi periode dari data yang ditampilkan
     type_params:
       time_granularity: day
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   measures: []
 - name: performance_creditcard
   model: ref('performance_creditcard')
@@ -1671,7 +2442,39 @@ semantic_models:
     type: categorical
     expr: source
     description: Identifikasi sumber asal data
-  measures: []
+  measures:
+  - name: mart_jurnal_transaksi_entered_debit_sum
+    expr: entered_debit
+    agg: sum
+    agg_time_dimension: creation_date
+  - name: mart_jurnal_transaksi_entered_debit_average
+    expr: entered_debit
+    agg: average
+    agg_time_dimension: creation_date
+  - name: mart_jurnal_transaksi_entered_debit_min
+    expr: entered_debit
+    agg: min
+    agg_time_dimension: creation_date
+  - name: mart_jurnal_transaksi_entered_debit_max
+    expr: entered_debit
+    agg: max
+    agg_time_dimension: creation_date
+  - name: mart_jurnal_transaksi_accounted_debit_sum
+    expr: accounted_debit
+    agg: sum
+    agg_time_dimension: creation_date
+  - name: mart_jurnal_transaksi_accounted_debit_average
+    expr: accounted_debit
+    agg: average
+    agg_time_dimension: creation_date
+  - name: mart_jurnal_transaksi_accounted_debit_min
+    expr: accounted_debit
+    agg: min
+    agg_time_dimension: creation_date
+  - name: mart_jurnal_transaksi_accounted_debit_max
+    expr: accounted_debit
+    agg: max
+    agg_time_dimension: creation_date
 - name: mart_ledger_statement
   model: ref('mart_ledger_statement')
   entities: []
@@ -1837,7 +2640,39 @@ semantic_models:
     description: Tanggal Pembaruan Akun
     type_params:
       time_granularity: day
-  measures: []
+  measures:
+  - name: funding_deposito_saldo_rate_sum
+    expr: saldo_rate
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_deposito_saldo_rate_average
+    expr: saldo_rate
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_deposito_saldo_rate_min
+    expr: saldo_rate
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_deposito_saldo_rate_max
+    expr: saldo_rate
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: funding_deposito_saldo_usd_sum
+    expr: saldo_usd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_deposito_saldo_usd_average
+    expr: saldo_usd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_deposito_saldo_usd_min
+    expr: saldo_usd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_deposito_saldo_usd_max
+    expr: saldo_usd
+    agg: max
+    agg_time_dimension: as_of_date
 - name: funding_cof
   model: ref('funding_cof')
   entities: []
@@ -1868,7 +2703,71 @@ semantic_models:
     type: categorical
     expr: avg_r_mtd
     description: Rata-rata saldo reguler dari awal bulan sampai tanggal laporan
-  measures: []
+  measures:
+  - name: funding_cof_avg_r_ytd_sum
+    expr: avg_r_ytd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_r_ytd_average
+    expr: avg_r_ytd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_r_ytd_min
+    expr: avg_r_ytd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_r_ytd_max
+    expr: avg_r_ytd
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_mtd_sum
+    expr: avg_sr_mtd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_mtd_average
+    expr: avg_sr_mtd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_mtd_min
+    expr: avg_sr_mtd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_mtd_max
+    expr: avg_sr_mtd
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_ytd_sum
+    expr: avg_sr_ytd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_ytd_average
+    expr: avg_sr_ytd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_ytd_min
+    expr: avg_sr_ytd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_sr_ytd_max
+    expr: avg_sr_ytd
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_r_mtd_sum
+    expr: avg_r_mtd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_r_mtd_average
+    expr: avg_r_mtd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_r_mtd_min
+    expr: avg_r_mtd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_cof_avg_r_mtd_max
+    expr: avg_r_mtd
+    agg: max
+    agg_time_dimension: as_of_date
 - name: funding_giro
   model: ref('funding_giro')
   entities: []
@@ -1897,7 +2796,23 @@ semantic_models:
     type: categorical
     expr: flag_bni_direct
     description: Flag BNI Direct
-  measures: []
+  measures:
+  - name: funding_giro_saldo_rate_sum
+    expr: saldo_rate
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_giro_saldo_rate_average
+    expr: saldo_rate
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_giro_saldo_rate_min
+    expr: saldo_rate
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_giro_saldo_rate_max
+    expr: saldo_rate
+    agg: max
+    agg_time_dimension: as_of_date
 - name: funding_tabungan
   model: ref('funding_tabungan')
   entities: []
@@ -1920,7 +2835,23 @@ semantic_models:
     type: categorical
     expr: flag_mbank
     description: Flag Mbank
-  measures: []
+  measures:
+  - name: funding_tabungan_saldo_rate_sum
+    expr: saldo_rate
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: funding_tabungan_saldo_rate_average
+    expr: saldo_rate
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: funding_tabungan_saldo_rate_min
+    expr: saldo_rate
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: funding_tabungan_saldo_rate_max
+    expr: saldo_rate
+    agg: max
+    agg_time_dimension: as_of_date
 - name: funding_movement
   model: ref('funding_movement')
   entities: []
@@ -2081,12 +3012,11 @@ semantic_models:
   measures: []
 - name: account_dplk
   model: ref('account_dplk')
-  entities: []
-  dimensions:
+  entities:
   - name: mdm_id
-    type: categorical
+    type: foreign
     expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
+  dimensions:
   - name: as_of_date
     type: time
     expr: as_of_date
@@ -2252,7 +3182,39 @@ semantic_models:
     description: Tanggal pencairan dana
     type_params:
       time_granularity: day
-  measures: []
+  measures:
+  - name: elo_incoming_gaji_bersih_sum
+    expr: gaji_bersih
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: elo_incoming_gaji_bersih_average
+    expr: gaji_bersih
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: elo_incoming_gaji_bersih_min
+    expr: gaji_bersih
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: elo_incoming_gaji_bersih_max
+    expr: gaji_bersih
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: elo_incoming_gaji_pasangan_sum
+    expr: gaji_pasangan
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: elo_incoming_gaji_pasangan_average
+    expr: gaji_pasangan
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: elo_incoming_gaji_pasangan_min
+    expr: gaji_pasangan
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: elo_incoming_gaji_pasangan_max
+    expr: gaji_pasangan
+    agg: max
+    agg_time_dimension: as_of_date
 - name: aum_daily_pms
   model: ref('aum_daily_pms')
   entities: []
@@ -2301,7 +3263,10 @@ semantic_models:
   measures: []
 - name: lending
   model: ref('lending')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: foreign
+    expr: mdm_id
   dimensions:
   - name: jenis_sk_bunga
     type: categorical
@@ -2409,10 +3374,6 @@ semantic_models:
     type: categorical
     expr: ii_daily
     description: Interest Income Daily
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   - name: no_hp_wondr
     type: categorical
     expr: no_hp_wondr
@@ -2430,10 +3391,93 @@ semantic_models:
     type: categorical
     expr: output_l2
     description: Hasil klasifikasi output pada level 2
-  measures: []
+  measures:
+  - name: lending_dsra_balance_sum
+    expr: dsra_balance
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_dsra_balance_average
+    expr: dsra_balance
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_dsra_balance_min
+    expr: dsra_balance
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_dsra_balance_max
+    expr: dsra_balance
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_affiliated_acc_bal_sum
+    expr: affiliated_acc_bal
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_affiliated_acc_bal_average
+    expr: affiliated_acc_bal
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_affiliated_acc_bal_min
+    expr: affiliated_acc_bal
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_affiliated_acc_bal_max
+    expr: affiliated_acc_bal
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_special_int_rate_sum
+    expr: special_int_rate
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_special_int_rate_average
+    expr: special_int_rate
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_special_int_rate_min
+    expr: special_int_rate
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_special_int_rate_max
+    expr: special_int_rate
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_sum
+    expr: ii_daily
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_average
+    expr: ii_daily
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_min
+    expr: ii_daily
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_max
+    expr: ii_daily
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_sum
+    expr: ii_monthly
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_average
+    expr: ii_monthly
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_min
+    expr: ii_monthly
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_max
+    expr: ii_monthly
+    agg: max
+    agg_time_dimension: as_of_date
 - name: bni_investment
   model: ref('bni_investment')
-  entities: []
+  entities:
+  - name: mdm_id
+    type: foreign
+    expr: mdm_id
   dimensions:
   - name: open_region_code
     type: categorical
@@ -2454,10 +3498,6 @@ semantic_models:
     description: Posisi periode dari data yang ditampilkan
     type_params:
       time_granularity: day
-  - name: mdm_id
-    type: categorical
-    expr: mdm_id
-    description: Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data.
   - name: acct_close_date
     type: time
     expr: acct_close_date
@@ -2494,7 +3534,23 @@ semantic_models:
       berlaku.
     type_params:
       time_granularity: day
-  measures: []
+  measures:
+  - name: bni_investment_avg_balance_mtd_sum
+    expr: avg_balance_mtd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: bni_investment_avg_balance_mtd_average
+    expr: avg_balance_mtd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: bni_investment_avg_balance_mtd_min
+    expr: avg_balance_mtd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: bni_investment_avg_balance_mtd_max
+    expr: avg_balance_mtd
+    agg: max
+    agg_time_dimension: as_of_date
 - name: ncl
   model: ref('ncl')
   entities: []
@@ -2723,7 +3779,135 @@ semantic_models:
     type: categorical
     expr: other_claims
     description: Klaim Lainnya
-  measures: []
+  measures:
+  - name: collateral_njop_sum
+    expr: njop
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_njop_average
+    expr: njop
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_njop_min
+    expr: njop
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_njop_max
+    expr: njop
+    agg: max
+    agg_time_dimension: acct_close_date
+  - name: collateral_bonus_sum
+    expr: bonus
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_bonus_average
+    expr: bonus
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_bonus_min
+    expr: bonus
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_bonus_max
+    expr: bonus
+    agg: max
+    agg_time_dimension: acct_close_date
+  - name: collateral_bank_valuation_sum
+    expr: bank_valuation
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_bank_valuation_average
+    expr: bank_valuation
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_bank_valuation_min
+    expr: bank_valuation
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_bank_valuation_max
+    expr: bank_valuation
+    agg: max
+    agg_time_dimension: acct_close_date
+  - name: collateral_liquid_value_sum
+    expr: liquid_value
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_liquid_value_average
+    expr: liquid_value
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_liquid_value_min
+    expr: liquid_value
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_liquid_value_max
+    expr: liquid_value
+    agg: max
+    agg_time_dimension: acct_close_date
+  - name: collateral_relm_value_sum
+    expr: relm_value
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_relm_value_average
+    expr: relm_value
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_relm_value_min
+    expr: relm_value
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_relm_value_max
+    expr: relm_value
+    agg: max
+    agg_time_dimension: acct_close_date
+  - name: collateral_discount_sum
+    expr: discount
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_discount_average
+    expr: discount
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_discount_min
+    expr: discount
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_discount_max
+    expr: discount
+    agg: max
+    agg_time_dimension: acct_close_date
+  - name: collateral_premium_sum
+    expr: premium
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_premium_average
+    expr: premium
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_premium_min
+    expr: premium
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_premium_max
+    expr: premium
+    agg: max
+    agg_time_dimension: acct_close_date
+  - name: collateral_other_claims_sum
+    expr: other_claims
+    agg: sum
+    agg_time_dimension: acct_close_date
+  - name: collateral_other_claims_average
+    expr: other_claims
+    agg: average
+    agg_time_dimension: acct_close_date
+  - name: collateral_other_claims_min
+    expr: other_claims
+    agg: min
+    agg_time_dimension: acct_close_date
+  - name: collateral_other_claims_max
+    expr: other_claims
+    agg: max
+    agg_time_dimension: acct_close_date
 - name: channel_atm
   model: ref('channel_atm')
   entities: []
@@ -3549,7 +4733,23 @@ semantic_models:
     expr: nbr_bulletins_1
     description: Atribut yang mencatat informasi nomor bulletins dalam operasional
       perbankan.
-  measures: []
+  measures:
+  - name: channel_merchant_admin_fee_sum
+    expr: admin_fee
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: channel_merchant_admin_fee_average
+    expr: admin_fee
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: channel_merchant_admin_fee_min
+    expr: admin_fee
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: channel_merchant_admin_fee_max
+    expr: admin_fee
+    agg: max
+    agg_time_dimension: as_of_date
 - name: channel_merchant_qris
   model: ref('channel_merchant_qris')
   entities: []
@@ -4355,7 +5555,23 @@ semantic_models:
     expr: nbr_bulletins_33
     description: Atribut yang mencatat informasi nomor bulletins dalam operasional
       perbankan.
-  measures: []
+  measures:
+  - name: master_merchant_admin_fee_sum
+    expr: admin_fee
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: master_merchant_admin_fee_average
+    expr: admin_fee
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: master_merchant_admin_fee_min
+    expr: admin_fee
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: master_merchant_admin_fee_max
+    expr: admin_fee
+    agg: max
+    agg_time_dimension: as_of_date
 - name: transaction_cta_batch
   model: ref('transaction_cta_batch')
   entities: []
@@ -4399,7 +5615,39 @@ semantic_models:
     expr: terminal
     description: Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi
       data.
-  measures: []
+  measures:
+  - name: transaction_cta_batch_balance_ori_sum
+    expr: balance_ori
+    agg: sum
+    agg_time_dimension: load_timestamp
+  - name: transaction_cta_batch_balance_ori_average
+    expr: balance_ori
+    agg: average
+    agg_time_dimension: load_timestamp
+  - name: transaction_cta_batch_balance_ori_min
+    expr: balance_ori
+    agg: min
+    agg_time_dimension: load_timestamp
+  - name: transaction_cta_batch_balance_ori_max
+    expr: balance_ori
+    agg: max
+    agg_time_dimension: load_timestamp
+  - name: transaction_cta_batch_balance_idr_sum
+    expr: balance_idr
+    agg: sum
+    agg_time_dimension: load_timestamp
+  - name: transaction_cta_batch_balance_idr_average
+    expr: balance_idr
+    agg: average
+    agg_time_dimension: load_timestamp
+  - name: transaction_cta_batch_balance_idr_min
+    expr: balance_idr
+    agg: min
+    agg_time_dimension: load_timestamp
+  - name: transaction_cta_batch_balance_idr_max
+    expr: balance_idr
+    agg: max
+    agg_time_dimension: load_timestamp
 - name: transaction_dpk
   model: ref('transaction_dpk')
   entities: []
@@ -4536,7 +5784,199 @@ semantic_models:
     type: categorical
     expr: description_03
     description: Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan.
-  measures: []
+  measures:
+  - name: transaction_dpk_batch_balance_idr_01_sum
+    expr: balance_idr_01
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_01_average
+    expr: balance_idr_01
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_01_min
+    expr: balance_idr_01
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_01_max
+    expr: balance_idr_01
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_03_sum
+    expr: balance_idr_03
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_03_average
+    expr: balance_idr_03
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_03_min
+    expr: balance_idr_03
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_03_max
+    expr: balance_idr_03
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_05_sum
+    expr: balance_idr_05
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_05_average
+    expr: balance_idr_05
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_05_min
+    expr: balance_idr_05
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_05_max
+    expr: balance_idr_05
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_01_sum
+    expr: balance_ori_01
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_01_average
+    expr: balance_ori_01
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_01_min
+    expr: balance_ori_01
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_01_max
+    expr: balance_ori_01
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_02_sum
+    expr: balance_idr_02
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_02_average
+    expr: balance_idr_02
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_02_min
+    expr: balance_idr_02
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_02_max
+    expr: balance_idr_02
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_06_sum
+    expr: balance_idr_06
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_06_average
+    expr: balance_idr_06
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_06_min
+    expr: balance_idr_06
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_06_max
+    expr: balance_idr_06
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_03_sum
+    expr: balance_ori_03
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_03_average
+    expr: balance_ori_03
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_03_min
+    expr: balance_ori_03
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_03_max
+    expr: balance_ori_03
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_04_sum
+    expr: balance_ori_04
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_04_average
+    expr: balance_ori_04
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_04_min
+    expr: balance_ori_04
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_04_max
+    expr: balance_ori_04
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_06_sum
+    expr: balance_ori_06
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_06_average
+    expr: balance_ori_06
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_06_min
+    expr: balance_ori_06
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_06_max
+    expr: balance_ori_06
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_05_sum
+    expr: balance_ori_05
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_05_average
+    expr: balance_ori_05
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_05_min
+    expr: balance_ori_05
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_05_max
+    expr: balance_ori_05
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_04_sum
+    expr: balance_idr_04
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_04_average
+    expr: balance_idr_04
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_04_min
+    expr: balance_idr_04
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_idr_04_max
+    expr: balance_idr_04
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_02_sum
+    expr: balance_ori_02
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_02_average
+    expr: balance_ori_02
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_02_min
+    expr: balance_ori_02
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_batch_balance_ori_02_max
+    expr: balance_ori_02
+    agg: max
+    agg_time_dimension: date_process
 - name: transaction_dpk_all
   model: ref('transaction_dpk_all')
   entities: []
@@ -4664,7 +6104,199 @@ semantic_models:
     type: categorical
     expr: row_no
     description: Nomor urut baris data
-  measures: []
+  measures:
+  - name: transaction_dpk_all_balance_idr_02_sum
+    expr: balance_idr_02
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_02_average
+    expr: balance_idr_02
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_02_min
+    expr: balance_idr_02
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_02_max
+    expr: balance_idr_02
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_05_sum
+    expr: balance_idr_05
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_05_average
+    expr: balance_idr_05
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_05_min
+    expr: balance_idr_05
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_05_max
+    expr: balance_idr_05
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_04_sum
+    expr: balance_ori_04
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_04_average
+    expr: balance_ori_04
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_04_min
+    expr: balance_ori_04
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_04_max
+    expr: balance_ori_04
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_04_sum
+    expr: balance_idr_04
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_04_average
+    expr: balance_idr_04
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_04_min
+    expr: balance_idr_04
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_04_max
+    expr: balance_idr_04
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_03_sum
+    expr: balance_ori_03
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_03_average
+    expr: balance_ori_03
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_03_min
+    expr: balance_ori_03
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_03_max
+    expr: balance_ori_03
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_05_sum
+    expr: balance_ori_05
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_05_average
+    expr: balance_ori_05
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_05_min
+    expr: balance_ori_05
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_05_max
+    expr: balance_ori_05
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_01_sum
+    expr: balance_idr_01
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_01_average
+    expr: balance_idr_01
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_01_min
+    expr: balance_idr_01
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_01_max
+    expr: balance_idr_01
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_03_sum
+    expr: balance_idr_03
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_03_average
+    expr: balance_idr_03
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_03_min
+    expr: balance_idr_03
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_03_max
+    expr: balance_idr_03
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_02_sum
+    expr: balance_ori_02
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_02_average
+    expr: balance_ori_02
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_02_min
+    expr: balance_ori_02
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_02_max
+    expr: balance_ori_02
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_01_sum
+    expr: balance_ori_01
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_01_average
+    expr: balance_ori_01
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_01_min
+    expr: balance_ori_01
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_01_max
+    expr: balance_ori_01
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_06_sum
+    expr: balance_idr_06
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_06_average
+    expr: balance_idr_06
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_06_min
+    expr: balance_idr_06
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_idr_06_max
+    expr: balance_idr_06
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_06_sum
+    expr: balance_ori_06
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_06_average
+    expr: balance_ori_06
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_06_min
+    expr: balance_ori_06
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_all_balance_ori_06_max
+    expr: balance_ori_06
+    agg: max
+    agg_time_dimension: date_process
 - name: transaction_gen_batch
   model: ref('transaction_gen_batch')
   entities: []
@@ -4708,7 +6340,39 @@ semantic_models:
     description: Waktu data dimuat ke dalam sistem data warehouse
     type_params:
       time_granularity: day
-  measures: []
+  measures:
+  - name: transaction_gen_batch_balance_idr_sum
+    expr: balance_idr
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_gen_batch_balance_idr_average
+    expr: balance_idr
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_gen_batch_balance_idr_min
+    expr: balance_idr
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_gen_batch_balance_idr_max
+    expr: balance_idr
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_gen_batch_balance_ori_sum
+    expr: balance_ori
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_gen_batch_balance_ori_average
+    expr: balance_ori
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_gen_batch_balance_ori_min
+    expr: balance_ori
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_gen_batch_balance_ori_max
+    expr: balance_ori
+    agg: max
+    agg_time_dimension: date_process
 - name: transaction_dpk_nearrealtime
   model: ref('transaction_dpk_nearrealtime')
   entities: []
@@ -4824,7 +6488,183 @@ semantic_models:
     type: categorical
     expr: balance_ori_04
     description: Saldo
-  measures: []
+  measures:
+  - name: transaction_dpk_nearrealtime_balance_idr_03_sum
+    expr: balance_idr_03
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_03_average
+    expr: balance_idr_03
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_03_min
+    expr: balance_idr_03
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_03_max
+    expr: balance_idr_03
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_01_sum
+    expr: balance_idr_01
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_01_average
+    expr: balance_idr_01
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_01_min
+    expr: balance_idr_01
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_01_max
+    expr: balance_idr_01
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_04_sum
+    expr: balance_idr_04
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_04_average
+    expr: balance_idr_04
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_04_min
+    expr: balance_idr_04
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_04_max
+    expr: balance_idr_04
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_06_sum
+    expr: balance_ori_06
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_06_average
+    expr: balance_ori_06
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_06_min
+    expr: balance_ori_06
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_06_max
+    expr: balance_ori_06
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_05_sum
+    expr: balance_ori_05
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_05_average
+    expr: balance_ori_05
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_05_min
+    expr: balance_ori_05
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_05_max
+    expr: balance_ori_05
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_01_sum
+    expr: balance_ori_01
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_01_average
+    expr: balance_ori_01
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_01_min
+    expr: balance_ori_01
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_01_max
+    expr: balance_ori_01
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_05_sum
+    expr: balance_idr_05
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_05_average
+    expr: balance_idr_05
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_05_min
+    expr: balance_idr_05
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_05_max
+    expr: balance_idr_05
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_02_sum
+    expr: balance_idr_02
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_02_average
+    expr: balance_idr_02
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_02_min
+    expr: balance_idr_02
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_02_max
+    expr: balance_idr_02
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_03_sum
+    expr: balance_ori_03
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_03_average
+    expr: balance_ori_03
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_03_min
+    expr: balance_ori_03
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_03_max
+    expr: balance_ori_03
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_06_sum
+    expr: balance_idr_06
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_06_average
+    expr: balance_idr_06
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_06_min
+    expr: balance_idr_06
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_idr_06_max
+    expr: balance_idr_06
+    agg: max
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_04_sum
+    expr: balance_ori_04
+    agg: sum
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_04_average
+    expr: balance_ori_04
+    agg: average
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_04_min
+    expr: balance_ori_04
+    agg: min
+    agg_time_dimension: date_process
+  - name: transaction_dpk_nearrealtime_balance_ori_04_max
+    expr: balance_ori_04
+    agg: max
+    agg_time_dimension: date_process
 - name: trxchannel
   model: ref('trxchannel')
   entities: []
@@ -4927,7 +6767,55 @@ semantic_models:
     description: Waktu data dimuat ke dalam sistem data warehouse
     type_params:
       time_granularity: day
-  measures: []
+  measures:
+  - name: transaction_loan_batch_balance_idr_sum
+    expr: balance_idr
+    agg: sum
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_balance_idr_average
+    expr: balance_idr
+    agg: average
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_balance_idr_min
+    expr: balance_idr
+    agg: min
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_balance_idr_max
+    expr: balance_idr
+    agg: max
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_balance_ori_sum
+    expr: balance_ori
+    agg: sum
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_balance_ori_average
+    expr: balance_ori
+    agg: average
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_balance_ori_min
+    expr: balance_ori
+    agg: min
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_balance_ori_max
+    expr: balance_ori
+    agg: max
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_arrears_sum
+    expr: arrears
+    agg: sum
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_arrears_average
+    expr: arrears
+    agg: average
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_arrears_min
+    expr: arrears
+    agg: min
+    agg_time_dimension: load_timestamp
+  - name: transaction_loan_batch_arrears_max
+    expr: arrears
+    agg: max
+    agg_time_dimension: load_timestamp
 - name: transaction_mvtrx
   model: ref('transaction_mvtrx')
   entities: []
@@ -4990,4 +6878,2864 @@ semantic_models:
     expr: source_data
     description: Atribut yang mencatat informasi sumber data dalam operasional perbankan.
   measures: []
-metrics: []
+metrics:
+- name: customer_performance_total_reksadana_sum_metric
+  label: Customer_Performance Total_Reksadana Sum
+  description: Total Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_total_reksadana_sum
+- name: customer_performance_total_reksadana_average_metric
+  label: Customer_Performance Total_Reksadana Average
+  description: Total Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_total_reksadana_average
+- name: customer_performance_total_reksadana_min_metric
+  label: Customer_Performance Total_Reksadana Min
+  description: Total Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_total_reksadana_min
+- name: customer_performance_total_reksadana_max_metric
+  label: Customer_Performance Total_Reksadana Max
+  description: Total Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_total_reksadana_max
+- name: customer_performance_saldo_dspa_sum_metric
+  label: Customer_Performance Saldo_Dspa Sum
+  description: Saldo DSPA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dspa_sum
+- name: customer_performance_saldo_dspa_average_metric
+  label: Customer_Performance Saldo_Dspa Average
+  description: Saldo DSPA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dspa_average
+- name: customer_performance_saldo_dspa_min_metric
+  label: Customer_Performance Saldo_Dspa Min
+  description: Saldo DSPA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dspa_min
+- name: customer_performance_saldo_dspa_max_metric
+  label: Customer_Performance Saldo_Dspa Max
+  description: Saldo DSPA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dspa_max
+- name: customer_performance_total_agen46_sum_metric
+  label: Customer_Performance Total_Agen46 Sum
+  description: Total Agen46
+  type: simple
+  type_params:
+    measure: customer_performance_total_agen46_sum
+- name: customer_performance_total_agen46_average_metric
+  label: Customer_Performance Total_Agen46 Average
+  description: Total Agen46
+  type: simple
+  type_params:
+    measure: customer_performance_total_agen46_average
+- name: customer_performance_total_agen46_min_metric
+  label: Customer_Performance Total_Agen46 Min
+  description: Total Agen46
+  type: simple
+  type_params:
+    measure: customer_performance_total_agen46_min
+- name: customer_performance_total_agen46_max_metric
+  label: Customer_Performance Total_Agen46 Max
+  description: Total Agen46
+  type: simple
+  type_params:
+    measure: customer_performance_total_agen46_max
+- name: customer_performance_avg_balance_mtd_jf_sum_metric
+  label: Customer_Performance Avg_Balance_Mtd_Jf Sum
+  description: Saldo Rata-Rata MTD JF
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_jf_sum
+- name: customer_performance_avg_balance_mtd_jf_average_metric
+  label: Customer_Performance Avg_Balance_Mtd_Jf Average
+  description: Saldo Rata-Rata MTD JF
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_jf_average
+- name: customer_performance_avg_balance_mtd_jf_min_metric
+  label: Customer_Performance Avg_Balance_Mtd_Jf Min
+  description: Saldo Rata-Rata MTD JF
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_jf_min
+- name: customer_performance_avg_balance_mtd_jf_max_metric
+  label: Customer_Performance Avg_Balance_Mtd_Jf Max
+  description: Saldo Rata-Rata MTD JF
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_jf_max
+- name: customer_performance_total_bnidirect_sum_metric
+  label: Customer_Performance Total_Bnidirect Sum
+  description: Total BNI Direct
+  type: simple
+  type_params:
+    measure: customer_performance_total_bnidirect_sum
+- name: customer_performance_total_bnidirect_average_metric
+  label: Customer_Performance Total_Bnidirect Average
+  description: Total BNI Direct
+  type: simple
+  type_params:
+    measure: customer_performance_total_bnidirect_average
+- name: customer_performance_total_bnidirect_min_metric
+  label: Customer_Performance Total_Bnidirect Min
+  description: Total BNI Direct
+  type: simple
+  type_params:
+    measure: customer_performance_total_bnidirect_min
+- name: customer_performance_total_bnidirect_max_metric
+  label: Customer_Performance Total_Bnidirect Max
+  description: Total BNI Direct
+  type: simple
+  type_params:
+    measure: customer_performance_total_bnidirect_max
+- name: customer_performance_ending_balance_mcl_sum_metric
+  label: Customer_Performance Ending_Balance_Mcl Sum
+  description: Saldo Akhir MCL
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_mcl_sum
+- name: customer_performance_ending_balance_mcl_average_metric
+  label: Customer_Performance Ending_Balance_Mcl Average
+  description: Saldo Akhir MCL
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_mcl_average
+- name: customer_performance_ending_balance_mcl_min_metric
+  label: Customer_Performance Ending_Balance_Mcl Min
+  description: Saldo Akhir MCL
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_mcl_min
+- name: customer_performance_ending_balance_mcl_max_metric
+  label: Customer_Performance Ending_Balance_Mcl Max
+  description: Saldo Akhir MCL
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_mcl_max
+- name: customer_performance_saldo_dsra_sum_metric
+  label: Customer_Performance Saldo_Dsra Sum
+  description: Saldo DSRA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dsra_sum
+- name: customer_performance_saldo_dsra_average_metric
+  label: Customer_Performance Saldo_Dsra Average
+  description: Saldo DSRA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dsra_average
+- name: customer_performance_saldo_dsra_min_metric
+  label: Customer_Performance Saldo_Dsra Min
+  description: Saldo DSRA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dsra_min
+- name: customer_performance_saldo_dsra_max_metric
+  label: Customer_Performance Saldo_Dsra Max
+  description: Saldo DSRA
+  type: simple
+  type_params:
+    measure: customer_performance_saldo_dsra_max
+- name: customer_performance_balance_reksadana_sum_metric
+  label: Customer_Performance Balance_Reksadana Sum
+  description: Saldo Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_balance_reksadana_sum
+- name: customer_performance_balance_reksadana_average_metric
+  label: Customer_Performance Balance_Reksadana Average
+  description: Saldo Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_balance_reksadana_average
+- name: customer_performance_balance_reksadana_min_metric
+  label: Customer_Performance Balance_Reksadana Min
+  description: Saldo Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_balance_reksadana_min
+- name: customer_performance_balance_reksadana_max_metric
+  label: Customer_Performance Balance_Reksadana Max
+  description: Saldo Reksadana
+  type: simple
+  type_params:
+    measure: customer_performance_balance_reksadana_max
+- name: customer_performance_ending_balance_jf_sum_metric
+  label: Customer_Performance Ending_Balance_Jf Sum
+  description: Saldo Akhir JF
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_jf_sum
+- name: customer_performance_ending_balance_jf_average_metric
+  label: Customer_Performance Ending_Balance_Jf Average
+  description: Saldo Akhir JF
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_jf_average
+- name: customer_performance_ending_balance_jf_min_metric
+  label: Customer_Performance Ending_Balance_Jf Min
+  description: Saldo Akhir JF
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_jf_min
+- name: customer_performance_ending_balance_jf_max_metric
+  label: Customer_Performance Ending_Balance_Jf Max
+  description: Saldo Akhir JF
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_jf_max
+- name: customer_performance_ending_balance_dpk_sum_metric
+  label: Customer_Performance Ending_Balance_Dpk Sum
+  description: Saldo Akhir DPK
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_dpk_sum
+- name: customer_performance_ending_balance_dpk_average_metric
+  label: Customer_Performance Ending_Balance_Dpk Average
+  description: Saldo Akhir DPK
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_dpk_average
+- name: customer_performance_ending_balance_dpk_min_metric
+  label: Customer_Performance Ending_Balance_Dpk Min
+  description: Saldo Akhir DPK
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_dpk_min
+- name: customer_performance_ending_balance_dpk_max_metric
+  label: Customer_Performance Ending_Balance_Dpk Max
+  description: Saldo Akhir DPK
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_dpk_max
+- name: customer_performance_balance_saham_sum_metric
+  label: Customer_Performance Balance_Saham Sum
+  description: Saldo Saham
+  type: simple
+  type_params:
+    measure: customer_performance_balance_saham_sum
+- name: customer_performance_balance_saham_average_metric
+  label: Customer_Performance Balance_Saham Average
+  description: Saldo Saham
+  type: simple
+  type_params:
+    measure: customer_performance_balance_saham_average
+- name: customer_performance_balance_saham_min_metric
+  label: Customer_Performance Balance_Saham Min
+  description: Saldo Saham
+  type: simple
+  type_params:
+    measure: customer_performance_balance_saham_min
+- name: customer_performance_balance_saham_max_metric
+  label: Customer_Performance Balance_Saham Max
+  description: Saldo Saham
+  type: simple
+  type_params:
+    measure: customer_performance_balance_saham_max
+- name: customer_performance_total_debitcard_sum_metric
+  label: Customer_Performance Total_Debitcard Sum
+  description: Total Debit Card
+  type: simple
+  type_params:
+    measure: customer_performance_total_debitcard_sum
+- name: customer_performance_total_debitcard_average_metric
+  label: Customer_Performance Total_Debitcard Average
+  description: Total Debit Card
+  type: simple
+  type_params:
+    measure: customer_performance_total_debitcard_average
+- name: customer_performance_total_debitcard_min_metric
+  label: Customer_Performance Total_Debitcard Min
+  description: Total Debit Card
+  type: simple
+  type_params:
+    measure: customer_performance_total_debitcard_min
+- name: customer_performance_total_debitcard_max_metric
+  label: Customer_Performance Total_Debitcard Max
+  description: Total Debit Card
+  type: simple
+  type_params:
+    measure: customer_performance_total_debitcard_max
+- name: customer_performance_total_saham_sum_metric
+  label: Customer_Performance Total_Saham Sum
+  description: Total Sahan
+  type: simple
+  type_params:
+    measure: customer_performance_total_saham_sum
+- name: customer_performance_total_saham_average_metric
+  label: Customer_Performance Total_Saham Average
+  description: Total Sahan
+  type: simple
+  type_params:
+    measure: customer_performance_total_saham_average
+- name: customer_performance_total_saham_min_metric
+  label: Customer_Performance Total_Saham Min
+  description: Total Sahan
+  type: simple
+  type_params:
+    measure: customer_performance_total_saham_min
+- name: customer_performance_total_saham_max_metric
+  label: Customer_Performance Total_Saham Max
+  description: Total Sahan
+  type: simple
+  type_params:
+    measure: customer_performance_total_saham_max
+- name: customer_performance_avg_balance_mtd_mcl_sum_metric
+  label: Customer_Performance Avg_Balance_Mtd_Mcl Sum
+  description: Saldo Rata-Rata MTD MCL
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_mcl_sum
+- name: customer_performance_avg_balance_mtd_mcl_average_metric
+  label: Customer_Performance Avg_Balance_Mtd_Mcl Average
+  description: Saldo Rata-Rata MTD MCL
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_mcl_average
+- name: customer_performance_avg_balance_mtd_mcl_min_metric
+  label: Customer_Performance Avg_Balance_Mtd_Mcl Min
+  description: Saldo Rata-Rata MTD MCL
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_mcl_min
+- name: customer_performance_avg_balance_mtd_mcl_max_metric
+  label: Customer_Performance Avg_Balance_Mtd_Mcl Max
+  description: Saldo Rata-Rata MTD MCL
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_mcl_max
+- name: customer_performance_avg_balance_mtd_griya_sum_metric
+  label: Customer_Performance Avg_Balance_Mtd_Griya Sum
+  description: Saldo Rata-Rata MTD Griya
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_griya_sum
+- name: customer_performance_avg_balance_mtd_griya_average_metric
+  label: Customer_Performance Avg_Balance_Mtd_Griya Average
+  description: Saldo Rata-Rata MTD Griya
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_griya_average
+- name: customer_performance_avg_balance_mtd_griya_min_metric
+  label: Customer_Performance Avg_Balance_Mtd_Griya Min
+  description: Saldo Rata-Rata MTD Griya
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_griya_min
+- name: customer_performance_avg_balance_mtd_griya_max_metric
+  label: Customer_Performance Avg_Balance_Mtd_Griya Max
+  description: Saldo Rata-Rata MTD Griya
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_griya_max
+- name: customer_performance_balance_aum_sum_metric
+  label: Customer_Performance Balance_Aum Sum
+  description: Saldo AUM
+  type: simple
+  type_params:
+    measure: customer_performance_balance_aum_sum
+- name: customer_performance_balance_aum_average_metric
+  label: Customer_Performance Balance_Aum Average
+  description: Saldo AUM
+  type: simple
+  type_params:
+    measure: customer_performance_balance_aum_average
+- name: customer_performance_balance_aum_min_metric
+  label: Customer_Performance Balance_Aum Min
+  description: Saldo AUM
+  type: simple
+  type_params:
+    measure: customer_performance_balance_aum_min
+- name: customer_performance_balance_aum_max_metric
+  label: Customer_Performance Balance_Aum Max
+  description: Saldo AUM
+  type: simple
+  type_params:
+    measure: customer_performance_balance_aum_max
+- name: customer_performance_ending_balance_fleksi_sum_metric
+  label: Customer_Performance Ending_Balance_Fleksi Sum
+  description: Saldo Akhir Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_fleksi_sum
+- name: customer_performance_ending_balance_fleksi_average_metric
+  label: Customer_Performance Ending_Balance_Fleksi Average
+  description: Saldo Akhir Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_fleksi_average
+- name: customer_performance_ending_balance_fleksi_min_metric
+  label: Customer_Performance Ending_Balance_Fleksi Min
+  description: Saldo Akhir Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_fleksi_min
+- name: customer_performance_ending_balance_fleksi_max_metric
+  label: Customer_Performance Ending_Balance_Fleksi Max
+  description: Saldo Akhir Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_fleksi_max
+- name: customer_performance_total_smsbank_sum_metric
+  label: Customer_Performance Total_Smsbank Sum
+  description: Total SMS Bank
+  type: simple
+  type_params:
+    measure: customer_performance_total_smsbank_sum
+- name: customer_performance_total_smsbank_average_metric
+  label: Customer_Performance Total_Smsbank Average
+  description: Total SMS Bank
+  type: simple
+  type_params:
+    measure: customer_performance_total_smsbank_average
+- name: customer_performance_total_smsbank_min_metric
+  label: Customer_Performance Total_Smsbank Min
+  description: Total SMS Bank
+  type: simple
+  type_params:
+    measure: customer_performance_total_smsbank_min
+- name: customer_performance_total_smsbank_max_metric
+  label: Customer_Performance Total_Smsbank Max
+  description: Total SMS Bank
+  type: simple
+  type_params:
+    measure: customer_performance_total_smsbank_max
+- name: customer_performance_avg_balance_dpk_sum_metric
+  label: Customer_Performance Avg_Balance_Dpk Sum
+  description: Saldo Rata-Rata DPK
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_dpk_sum
+- name: customer_performance_avg_balance_dpk_average_metric
+  label: Customer_Performance Avg_Balance_Dpk Average
+  description: Saldo Rata-Rata DPK
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_dpk_average
+- name: customer_performance_avg_balance_dpk_min_metric
+  label: Customer_Performance Avg_Balance_Dpk Min
+  description: Saldo Rata-Rata DPK
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_dpk_min
+- name: customer_performance_avg_balance_dpk_max_metric
+  label: Customer_Performance Avg_Balance_Dpk Max
+  description: Saldo Rata-Rata DPK
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_dpk_max
+- name: customer_performance_total_wondr_sum_metric
+  label: Customer_Performance Total_Wondr Sum
+  description: Total Wondr
+  type: simple
+  type_params:
+    measure: customer_performance_total_wondr_sum
+- name: customer_performance_total_wondr_average_metric
+  label: Customer_Performance Total_Wondr Average
+  description: Total Wondr
+  type: simple
+  type_params:
+    measure: customer_performance_total_wondr_average
+- name: customer_performance_total_wondr_min_metric
+  label: Customer_Performance Total_Wondr Min
+  description: Total Wondr
+  type: simple
+  type_params:
+    measure: customer_performance_total_wondr_min
+- name: customer_performance_total_wondr_max_metric
+  label: Customer_Performance Total_Wondr Max
+  description: Total Wondr
+  type: simple
+  type_params:
+    measure: customer_performance_total_wondr_max
+- name: customer_performance_total_dplk_sum_metric
+  label: Customer_Performance Total_Dplk Sum
+  description: Total DPLK
+  type: simple
+  type_params:
+    measure: customer_performance_total_dplk_sum
+- name: customer_performance_total_dplk_average_metric
+  label: Customer_Performance Total_Dplk Average
+  description: Total DPLK
+  type: simple
+  type_params:
+    measure: customer_performance_total_dplk_average
+- name: customer_performance_total_dplk_min_metric
+  label: Customer_Performance Total_Dplk Min
+  description: Total DPLK
+  type: simple
+  type_params:
+    measure: customer_performance_total_dplk_min
+- name: customer_performance_total_dplk_max_metric
+  label: Customer_Performance Total_Dplk Max
+  description: Total DPLK
+  type: simple
+  type_params:
+    measure: customer_performance_total_dplk_max
+- name: customer_performance_total_cc_sum_metric
+  label: Customer_Performance Total_Cc Sum
+  description: Total CC
+  type: simple
+  type_params:
+    measure: customer_performance_total_cc_sum
+- name: customer_performance_total_cc_average_metric
+  label: Customer_Performance Total_Cc Average
+  description: Total CC
+  type: simple
+  type_params:
+    measure: customer_performance_total_cc_average
+- name: customer_performance_total_cc_min_metric
+  label: Customer_Performance Total_Cc Min
+  description: Total CC
+  type: simple
+  type_params:
+    measure: customer_performance_total_cc_min
+- name: customer_performance_total_cc_max_metric
+  label: Customer_Performance Total_Cc Max
+  description: Total CC
+  type: simple
+  type_params:
+    measure: customer_performance_total_cc_max
+- name: customer_performance_avg_balance_mtd_fleksi_sum_metric
+  label: Customer_Performance Avg_Balance_Mtd_Fleksi Sum
+  description: Saldo Rata-Rata MTD Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_fleksi_sum
+- name: customer_performance_avg_balance_mtd_fleksi_average_metric
+  label: Customer_Performance Avg_Balance_Mtd_Fleksi Average
+  description: Saldo Rata-Rata MTD Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_fleksi_average
+- name: customer_performance_avg_balance_mtd_fleksi_min_metric
+  label: Customer_Performance Avg_Balance_Mtd_Fleksi Min
+  description: Saldo Rata-Rata MTD Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_fleksi_min
+- name: customer_performance_avg_balance_mtd_fleksi_max_metric
+  label: Customer_Performance Avg_Balance_Mtd_Fleksi Max
+  description: Saldo Rata-Rata MTD Fleksi
+  type: simple
+  type_params:
+    measure: customer_performance_avg_balance_mtd_fleksi_max
+- name: customer_performance_total_edc_sum_metric
+  label: Customer_Performance Total_Edc Sum
+  description: Total EDC
+  type: simple
+  type_params:
+    measure: customer_performance_total_edc_sum
+- name: customer_performance_total_edc_average_metric
+  label: Customer_Performance Total_Edc Average
+  description: Total EDC
+  type: simple
+  type_params:
+    measure: customer_performance_total_edc_average
+- name: customer_performance_total_edc_min_metric
+  label: Customer_Performance Total_Edc Min
+  description: Total EDC
+  type: simple
+  type_params:
+    measure: customer_performance_total_edc_min
+- name: customer_performance_total_edc_max_metric
+  label: Customer_Performance Total_Edc Max
+  description: Total EDC
+  type: simple
+  type_params:
+    measure: customer_performance_total_edc_max
+- name: customer_performance_ending_balance_griya_sum_metric
+  label: Customer_Performance Ending_Balance_Griya Sum
+  description: Saldo Akhir Griya
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_griya_sum
+- name: customer_performance_ending_balance_griya_average_metric
+  label: Customer_Performance Ending_Balance_Griya Average
+  description: Saldo Akhir Griya
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_griya_average
+- name: customer_performance_ending_balance_griya_min_metric
+  label: Customer_Performance Ending_Balance_Griya Min
+  description: Saldo Akhir Griya
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_griya_min
+- name: customer_performance_ending_balance_griya_max_metric
+  label: Customer_Performance Ending_Balance_Griya Max
+  description: Saldo Akhir Griya
+  type: simple
+  type_params:
+    measure: customer_performance_ending_balance_griya_max
+- name: customer_icons_cust_other_income_sum_metric
+  label: Customer_Icons Cust_Other_Income Sum
+  description: Jumlah sumber pendapatan tambahan selain pendapatan utama.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_other_income_sum
+- name: customer_icons_cust_other_income_average_metric
+  label: Customer_Icons Cust_Other_Income Average
+  description: Jumlah sumber pendapatan tambahan selain pendapatan utama.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_other_income_average
+- name: customer_icons_cust_other_income_min_metric
+  label: Customer_Icons Cust_Other_Income Min
+  description: Jumlah sumber pendapatan tambahan selain pendapatan utama.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_other_income_min
+- name: customer_icons_cust_other_income_max_metric
+  label: Customer_Icons Cust_Other_Income Max
+  description: Jumlah sumber pendapatan tambahan selain pendapatan utama.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_other_income_max
+- name: customer_icons_cust_rental_income_sum_metric
+  label: Customer_Icons Cust_Rental_Income Sum
+  description: Jumlah pendapatan yang diperoleh dari menyewakan properti atau aset
+    lainnya.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_rental_income_sum
+- name: customer_icons_cust_rental_income_average_metric
+  label: Customer_Icons Cust_Rental_Income Average
+  description: Jumlah pendapatan yang diperoleh dari menyewakan properti atau aset
+    lainnya.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_rental_income_average
+- name: customer_icons_cust_rental_income_min_metric
+  label: Customer_Icons Cust_Rental_Income Min
+  description: Jumlah pendapatan yang diperoleh dari menyewakan properti atau aset
+    lainnya.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_rental_income_min
+- name: customer_icons_cust_rental_income_max_metric
+  label: Customer_Icons Cust_Rental_Income Max
+  description: Jumlah pendapatan yang diperoleh dari menyewakan properti atau aset
+    lainnya.
+  type: simple
+  type_params:
+    measure: customer_icons_cust_rental_income_max
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Dpk Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Dpk Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_average
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Dpk Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_min
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Dpk Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_dpk_max
+- name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_sum_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Dpk Sum
+  description: Saldo Rata-Rata MTD DPK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_dpk_sum
+- name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_average_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Dpk Average
+  description: Saldo Rata-Rata MTD DPK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_dpk_average
+- name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_min_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Dpk Min
+  description: Saldo Rata-Rata MTD DPK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_dpk_min
+- name: customer_performance_pms3d_avg_balance_mtd_idr_dpk_max_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Dpk Max
+  description: Saldo Rata-Rata MTD DPK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_dpk_max
+- name: customer_performance_pms3d_amount_ftp_ytd_a_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_A Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_a_sum
+- name: customer_performance_pms3d_amount_ftp_ytd_a_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_A Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_a_average
+- name: customer_performance_pms3d_amount_ftp_ytd_a_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_A Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_a_min
+- name: customer_performance_pms3d_amount_ftp_ytd_a_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_A Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_a_max
+- name: customer_performance_pms3d_amount_ftp_ytd_b_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_B Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_b_sum
+- name: customer_performance_pms3d_amount_ftp_ytd_b_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_B Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_b_average
+- name: customer_performance_pms3d_amount_ftp_ytd_b_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_B Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_b_min
+- name: customer_performance_pms3d_amount_ftp_ytd_b_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_B Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_b_max
+- name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_sum_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Fnk Sum
+  description: Saldo Rata-Rata MTD FNK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_fnk_sum
+- name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_average_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Fnk Average
+  description: Saldo Rata-Rata MTD FNK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_fnk_average
+- name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_min_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Fnk Min
+  description: Saldo Rata-Rata MTD FNK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_fnk_min
+- name: customer_performance_pms3d_avg_balance_mtd_idr_fnk_max_metric
+  label: Customer_Performance_Pms3D Avg_Balance_Mtd_Idr_Fnk Max
+  description: Saldo Rata-Rata MTD FNK
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_avg_balance_mtd_idr_fnk_max
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_B Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_b_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_B Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_b_average
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_B Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_b_min
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_b_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_B Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_b_max
+- name: customer_performance_pms3d_amount_ftp_mtd_a_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_A Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_a_sum
+- name: customer_performance_pms3d_amount_ftp_mtd_a_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_A Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_a_average
+- name: customer_performance_pms3d_amount_ftp_mtd_a_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_A Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_a_min
+- name: customer_performance_pms3d_amount_ftp_mtd_a_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_A Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_a_max
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_A Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_a_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_A Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_a_average
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_A Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_a_min
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_a_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_A Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_a_max
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Dpk Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Dpk Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_average
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Dpk Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_min
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Dpk Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_dpk_max
+- name: customer_performance_pms3d_amount_ftp_mtd_fnk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Fnk Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_fnk_sum
+- name: customer_performance_pms3d_amount_ftp_mtd_fnk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Fnk Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_fnk_average
+- name: customer_performance_pms3d_amount_ftp_mtd_fnk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Fnk Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_fnk_min
+- name: customer_performance_pms3d_amount_ftp_mtd_fnk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Fnk Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_fnk_max
+- name: customer_performance_pms3d_amount_ftp_mtd_b_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_B Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_b_sum
+- name: customer_performance_pms3d_amount_ftp_mtd_b_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_B Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_b_average
+- name: customer_performance_pms3d_amount_ftp_mtd_b_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_B Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_b_min
+- name: customer_performance_pms3d_amount_ftp_mtd_b_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_B Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_b_max
+- name: customer_performance_pms3d_amount_ftp_ytd_fnk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Fnk Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_fnk_sum
+- name: customer_performance_pms3d_amount_ftp_ytd_fnk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Fnk Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_fnk_average
+- name: customer_performance_pms3d_amount_ftp_ytd_fnk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Fnk Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_fnk_min
+- name: customer_performance_pms3d_amount_ftp_ytd_fnk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Fnk Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_fnk_max
+- name: customer_performance_pms3d_amount_ftp_ytd_dpk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Dpk Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_dpk_sum
+- name: customer_performance_pms3d_amount_ftp_ytd_dpk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Dpk Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_dpk_average
+- name: customer_performance_pms3d_amount_ftp_ytd_dpk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Dpk Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_dpk_min
+- name: customer_performance_pms3d_amount_ftp_ytd_dpk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Ytd_Dpk Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_ytd_dpk_max
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_B Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_b_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_B Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_b_average
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_B Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_b_min
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_b_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_B Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_b_max
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Fnk Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Fnk Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_average
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Fnk Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_min
+- name: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Ytd_Fnk Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_ytd_fnk_max
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Fnk Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Fnk Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_average
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Fnk Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_min
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_Fnk Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_fnk_max
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_A Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_a_sum
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_A Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_a_average
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_A Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_a_min
+- name: customer_performance_pms3d_amount_ftp_scmr_mtd_a_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Scmr_Mtd_A Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_scmr_mtd_a_max
+- name: customer_performance_pms3d_amount_ftp_mtd_dpk_sum_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Dpk Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_dpk_sum
+- name: customer_performance_pms3d_amount_ftp_mtd_dpk_average_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Dpk Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_dpk_average
+- name: customer_performance_pms3d_amount_ftp_mtd_dpk_min_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Dpk Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_dpk_min
+- name: customer_performance_pms3d_amount_ftp_mtd_dpk_max_metric
+  label: Customer_Performance_Pms3D Amount_Ftp_Mtd_Dpk Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_pms3d_amount_ftp_mtd_dpk_max
+- name: customer_performance_transaction_amount_cash_in_ytd_sum_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Ytd Sum
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_ytd_sum
+- name: customer_performance_transaction_amount_cash_in_ytd_average_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Ytd Average
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_ytd_average
+- name: customer_performance_transaction_amount_cash_in_ytd_min_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Ytd Min
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_ytd_min
+- name: customer_performance_transaction_amount_cash_in_ytd_max_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Ytd Max
+  description: Jumlah Uang Tunai di YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_ytd_max
+- name: customer_performance_transaction_amount_cash_out_ytd_sum_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Ytd Sum
+  description: Jumlah Penarikan Tunai YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_ytd_sum
+- name: customer_performance_transaction_amount_cash_out_ytd_average_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Ytd Average
+  description: Jumlah Penarikan Tunai YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_ytd_average
+- name: customer_performance_transaction_amount_cash_out_ytd_min_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Ytd Min
+  description: Jumlah Penarikan Tunai YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_ytd_min
+- name: customer_performance_transaction_amount_cash_out_ytd_max_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Ytd Max
+  description: Jumlah Penarikan Tunai YTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_ytd_max
+- name: customer_performance_transaction_amount_cash_out_mtd_sum_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Mtd Sum
+  description: Jumlah Penarikan Tunai MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_mtd_sum
+- name: customer_performance_transaction_amount_cash_out_mtd_average_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Mtd Average
+  description: Jumlah Penarikan Tunai MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_mtd_average
+- name: customer_performance_transaction_amount_cash_out_mtd_min_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Mtd Min
+  description: Jumlah Penarikan Tunai MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_mtd_min
+- name: customer_performance_transaction_amount_cash_out_mtd_max_metric
+  label: Customer_Performance_Transaction Amount_Cash_Out_Mtd Max
+  description: Jumlah Penarikan Tunai MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_out_mtd_max
+- name: customer_performance_transaction_amount_cash_in_mtd_sum_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Mtd Sum
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_mtd_sum
+- name: customer_performance_transaction_amount_cash_in_mtd_average_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Mtd Average
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_mtd_average
+- name: customer_performance_transaction_amount_cash_in_mtd_min_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Mtd Min
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_mtd_min
+- name: customer_performance_transaction_amount_cash_in_mtd_max_metric
+  label: Customer_Performance_Transaction Amount_Cash_In_Mtd Max
+  description: Jumlah Uang Tunai di MTD
+  type: simple
+  type_params:
+    measure: customer_performance_transaction_amount_cash_in_mtd_max
+- name: mart_jurnal_transaksi_entered_debit_sum_metric
+  label: Mart_Jurnal_Transaksi Entered_Debit Sum
+  description: Atribut yang mencatat informasi entered debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_entered_debit_sum
+- name: mart_jurnal_transaksi_entered_debit_average_metric
+  label: Mart_Jurnal_Transaksi Entered_Debit Average
+  description: Atribut yang mencatat informasi entered debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_entered_debit_average
+- name: mart_jurnal_transaksi_entered_debit_min_metric
+  label: Mart_Jurnal_Transaksi Entered_Debit Min
+  description: Atribut yang mencatat informasi entered debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_entered_debit_min
+- name: mart_jurnal_transaksi_entered_debit_max_metric
+  label: Mart_Jurnal_Transaksi Entered_Debit Max
+  description: Atribut yang mencatat informasi entered debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_entered_debit_max
+- name: mart_jurnal_transaksi_accounted_debit_sum_metric
+  label: Mart_Jurnal_Transaksi Accounted_Debit Sum
+  description: Atribut yang mencatat informasi accounted debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_accounted_debit_sum
+- name: mart_jurnal_transaksi_accounted_debit_average_metric
+  label: Mart_Jurnal_Transaksi Accounted_Debit Average
+  description: Atribut yang mencatat informasi accounted debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_accounted_debit_average
+- name: mart_jurnal_transaksi_accounted_debit_min_metric
+  label: Mart_Jurnal_Transaksi Accounted_Debit Min
+  description: Atribut yang mencatat informasi accounted debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_accounted_debit_min
+- name: mart_jurnal_transaksi_accounted_debit_max_metric
+  label: Mart_Jurnal_Transaksi Accounted_Debit Max
+  description: Atribut yang mencatat informasi accounted debit dalam operasional perbankan.
+  type: simple
+  type_params:
+    measure: mart_jurnal_transaksi_accounted_debit_max
+- name: funding_deposito_saldo_rate_sum_metric
+  label: Funding_Deposito Saldo_Rate Sum
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_rate_sum
+- name: funding_deposito_saldo_rate_average_metric
+  label: Funding_Deposito Saldo_Rate Average
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_rate_average
+- name: funding_deposito_saldo_rate_min_metric
+  label: Funding_Deposito Saldo_Rate Min
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_rate_min
+- name: funding_deposito_saldo_rate_max_metric
+  label: Funding_Deposito Saldo_Rate Max
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_rate_max
+- name: funding_deposito_saldo_usd_sum_metric
+  label: Funding_Deposito Saldo_Usd Sum
+  description: Saldo dalam Usd
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_usd_sum
+- name: funding_deposito_saldo_usd_average_metric
+  label: Funding_Deposito Saldo_Usd Average
+  description: Saldo dalam Usd
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_usd_average
+- name: funding_deposito_saldo_usd_min_metric
+  label: Funding_Deposito Saldo_Usd Min
+  description: Saldo dalam Usd
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_usd_min
+- name: funding_deposito_saldo_usd_max_metric
+  label: Funding_Deposito Saldo_Usd Max
+  description: Saldo dalam Usd
+  type: simple
+  type_params:
+    measure: funding_deposito_saldo_usd_max
+- name: funding_cof_avg_r_ytd_sum_metric
+  label: Funding_Cof Avg_R_Ytd Sum
+  description: Rata-rata saldo reguler dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_ytd_sum
+- name: funding_cof_avg_r_ytd_average_metric
+  label: Funding_Cof Avg_R_Ytd Average
+  description: Rata-rata saldo reguler dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_ytd_average
+- name: funding_cof_avg_r_ytd_min_metric
+  label: Funding_Cof Avg_R_Ytd Min
+  description: Rata-rata saldo reguler dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_ytd_min
+- name: funding_cof_avg_r_ytd_max_metric
+  label: Funding_Cof Avg_R_Ytd Max
+  description: Rata-rata saldo reguler dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_ytd_max
+- name: funding_cof_avg_sr_mtd_sum_metric
+  label: Funding_Cof Avg_Sr_Mtd Sum
+  description: Rata-rata saldo special rate dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_mtd_sum
+- name: funding_cof_avg_sr_mtd_average_metric
+  label: Funding_Cof Avg_Sr_Mtd Average
+  description: Rata-rata saldo special rate dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_mtd_average
+- name: funding_cof_avg_sr_mtd_min_metric
+  label: Funding_Cof Avg_Sr_Mtd Min
+  description: Rata-rata saldo special rate dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_mtd_min
+- name: funding_cof_avg_sr_mtd_max_metric
+  label: Funding_Cof Avg_Sr_Mtd Max
+  description: Rata-rata saldo special rate dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_mtd_max
+- name: funding_cof_avg_sr_ytd_sum_metric
+  label: Funding_Cof Avg_Sr_Ytd Sum
+  description: Rata-rata saldo special rate dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_ytd_sum
+- name: funding_cof_avg_sr_ytd_average_metric
+  label: Funding_Cof Avg_Sr_Ytd Average
+  description: Rata-rata saldo special rate dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_ytd_average
+- name: funding_cof_avg_sr_ytd_min_metric
+  label: Funding_Cof Avg_Sr_Ytd Min
+  description: Rata-rata saldo special rate dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_ytd_min
+- name: funding_cof_avg_sr_ytd_max_metric
+  label: Funding_Cof Avg_Sr_Ytd Max
+  description: Rata-rata saldo special rate dari awal tahun sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_sr_ytd_max
+- name: funding_cof_avg_r_mtd_sum_metric
+  label: Funding_Cof Avg_R_Mtd Sum
+  description: Rata-rata saldo reguler dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_mtd_sum
+- name: funding_cof_avg_r_mtd_average_metric
+  label: Funding_Cof Avg_R_Mtd Average
+  description: Rata-rata saldo reguler dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_mtd_average
+- name: funding_cof_avg_r_mtd_min_metric
+  label: Funding_Cof Avg_R_Mtd Min
+  description: Rata-rata saldo reguler dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_mtd_min
+- name: funding_cof_avg_r_mtd_max_metric
+  label: Funding_Cof Avg_R_Mtd Max
+  description: Rata-rata saldo reguler dari awal bulan sampai tanggal laporan
+  type: simple
+  type_params:
+    measure: funding_cof_avg_r_mtd_max
+- name: funding_giro_saldo_rate_sum_metric
+  label: Funding_Giro Saldo_Rate Sum
+  description: Sado Rate
+  type: simple
+  type_params:
+    measure: funding_giro_saldo_rate_sum
+- name: funding_giro_saldo_rate_average_metric
+  label: Funding_Giro Saldo_Rate Average
+  description: Sado Rate
+  type: simple
+  type_params:
+    measure: funding_giro_saldo_rate_average
+- name: funding_giro_saldo_rate_min_metric
+  label: Funding_Giro Saldo_Rate Min
+  description: Sado Rate
+  type: simple
+  type_params:
+    measure: funding_giro_saldo_rate_min
+- name: funding_giro_saldo_rate_max_metric
+  label: Funding_Giro Saldo_Rate Max
+  description: Sado Rate
+  type: simple
+  type_params:
+    measure: funding_giro_saldo_rate_max
+- name: funding_tabungan_saldo_rate_sum_metric
+  label: Funding_Tabungan Saldo_Rate Sum
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_tabungan_saldo_rate_sum
+- name: funding_tabungan_saldo_rate_average_metric
+  label: Funding_Tabungan Saldo_Rate Average
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_tabungan_saldo_rate_average
+- name: funding_tabungan_saldo_rate_min_metric
+  label: Funding_Tabungan Saldo_Rate Min
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_tabungan_saldo_rate_min
+- name: funding_tabungan_saldo_rate_max_metric
+  label: Funding_Tabungan Saldo_Rate Max
+  description: Saldo Rate
+  type: simple
+  type_params:
+    measure: funding_tabungan_saldo_rate_max
+- name: elo_incoming_gaji_bersih_sum_metric
+  label: Elo_Incoming Gaji_Bersih Sum
+  description: Gaji Bersih
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_bersih_sum
+- name: elo_incoming_gaji_bersih_average_metric
+  label: Elo_Incoming Gaji_Bersih Average
+  description: Gaji Bersih
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_bersih_average
+- name: elo_incoming_gaji_bersih_min_metric
+  label: Elo_Incoming Gaji_Bersih Min
+  description: Gaji Bersih
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_bersih_min
+- name: elo_incoming_gaji_bersih_max_metric
+  label: Elo_Incoming Gaji_Bersih Max
+  description: Gaji Bersih
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_bersih_max
+- name: elo_incoming_gaji_pasangan_sum_metric
+  label: Elo_Incoming Gaji_Pasangan Sum
+  description: Gaji Pasangan
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_pasangan_sum
+- name: elo_incoming_gaji_pasangan_average_metric
+  label: Elo_Incoming Gaji_Pasangan Average
+  description: Gaji Pasangan
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_pasangan_average
+- name: elo_incoming_gaji_pasangan_min_metric
+  label: Elo_Incoming Gaji_Pasangan Min
+  description: Gaji Pasangan
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_pasangan_min
+- name: elo_incoming_gaji_pasangan_max_metric
+  label: Elo_Incoming Gaji_Pasangan Max
+  description: Gaji Pasangan
+  type: simple
+  type_params:
+    measure: elo_incoming_gaji_pasangan_max
+- name: lending_dsra_balance_sum_metric
+  label: Lending Dsra_Balance Sum
+  description: Saldo Debt Service Reserve Account
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_sum
+- name: lending_dsra_balance_average_metric
+  label: Lending Dsra_Balance Average
+  description: Saldo Debt Service Reserve Account
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_average
+- name: lending_dsra_balance_min_metric
+  label: Lending Dsra_Balance Min
+  description: Saldo Debt Service Reserve Account
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_min
+- name: lending_dsra_balance_max_metric
+  label: Lending Dsra_Balance Max
+  description: Saldo Debt Service Reserve Account
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_max
+- name: lending_affiliated_acc_bal_sum_metric
+  label: Lending Affiliated_Acc_Bal Sum
+  description: Balance Account yang Terafiliasi
+  type: simple
+  type_params:
+    measure: lending_affiliated_acc_bal_sum
+- name: lending_affiliated_acc_bal_average_metric
+  label: Lending Affiliated_Acc_Bal Average
+  description: Balance Account yang Terafiliasi
+  type: simple
+  type_params:
+    measure: lending_affiliated_acc_bal_average
+- name: lending_affiliated_acc_bal_min_metric
+  label: Lending Affiliated_Acc_Bal Min
+  description: Balance Account yang Terafiliasi
+  type: simple
+  type_params:
+    measure: lending_affiliated_acc_bal_min
+- name: lending_affiliated_acc_bal_max_metric
+  label: Lending Affiliated_Acc_Bal Max
+  description: Balance Account yang Terafiliasi
+  type: simple
+  type_params:
+    measure: lending_affiliated_acc_bal_max
+- name: lending_special_int_rate_sum_metric
+  label: Lending Special_Int_Rate Sum
+  description: Nilai Bunga Spesial
+  type: simple
+  type_params:
+    measure: lending_special_int_rate_sum
+- name: lending_special_int_rate_average_metric
+  label: Lending Special_Int_Rate Average
+  description: Nilai Bunga Spesial
+  type: simple
+  type_params:
+    measure: lending_special_int_rate_average
+- name: lending_special_int_rate_min_metric
+  label: Lending Special_Int_Rate Min
+  description: Nilai Bunga Spesial
+  type: simple
+  type_params:
+    measure: lending_special_int_rate_min
+- name: lending_special_int_rate_max_metric
+  label: Lending Special_Int_Rate Max
+  description: Nilai Bunga Spesial
+  type: simple
+  type_params:
+    measure: lending_special_int_rate_max
+- name: lending_ii_daily_sum_metric
+  label: Lending Ii_Daily Sum
+  description: Interest Income Daily
+  type: simple
+  type_params:
+    measure: lending_ii_daily_sum
+- name: lending_ii_daily_average_metric
+  label: Lending Ii_Daily Average
+  description: Interest Income Daily
+  type: simple
+  type_params:
+    measure: lending_ii_daily_average
+- name: lending_ii_daily_min_metric
+  label: Lending Ii_Daily Min
+  description: Interest Income Daily
+  type: simple
+  type_params:
+    measure: lending_ii_daily_min
+- name: lending_ii_daily_max_metric
+  label: Lending Ii_Daily Max
+  description: Interest Income Daily
+  type: simple
+  type_params:
+    measure: lending_ii_daily_max
+- name: lending_ii_monthly_sum_metric
+  label: Lending Ii_Monthly Sum
+  description: Interest Income Monthly
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_sum
+- name: lending_ii_monthly_average_metric
+  label: Lending Ii_Monthly Average
+  description: Interest Income Monthly
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_average
+- name: lending_ii_monthly_min_metric
+  label: Lending Ii_Monthly Min
+  description: Interest Income Monthly
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_min
+- name: lending_ii_monthly_max_metric
+  label: Lending Ii_Monthly Max
+  description: Interest Income Monthly
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_max
+- name: bni_investment_avg_balance_mtd_sum_metric
+  label: Bni_Investment Avg_Balance_Mtd Sum
+  description: Saldo Rata-Rata MTD
+  type: simple
+  type_params:
+    measure: bni_investment_avg_balance_mtd_sum
+- name: bni_investment_avg_balance_mtd_average_metric
+  label: Bni_Investment Avg_Balance_Mtd Average
+  description: Saldo Rata-Rata MTD
+  type: simple
+  type_params:
+    measure: bni_investment_avg_balance_mtd_average
+- name: bni_investment_avg_balance_mtd_min_metric
+  label: Bni_Investment Avg_Balance_Mtd Min
+  description: Saldo Rata-Rata MTD
+  type: simple
+  type_params:
+    measure: bni_investment_avg_balance_mtd_min
+- name: bni_investment_avg_balance_mtd_max_metric
+  label: Bni_Investment Avg_Balance_Mtd Max
+  description: Saldo Rata-Rata MTD
+  type: simple
+  type_params:
+    measure: bni_investment_avg_balance_mtd_max
+- name: collateral_njop_sum_metric
+  label: Collateral Njop Sum
+  description: Nilai Jual Objek Pajak (NJOP)
+  type: simple
+  type_params:
+    measure: collateral_njop_sum
+- name: collateral_njop_average_metric
+  label: Collateral Njop Average
+  description: Nilai Jual Objek Pajak (NJOP)
+  type: simple
+  type_params:
+    measure: collateral_njop_average
+- name: collateral_njop_min_metric
+  label: Collateral Njop Min
+  description: Nilai Jual Objek Pajak (NJOP)
+  type: simple
+  type_params:
+    measure: collateral_njop_min
+- name: collateral_njop_max_metric
+  label: Collateral Njop Max
+  description: Nilai Jual Objek Pajak (NJOP)
+  type: simple
+  type_params:
+    measure: collateral_njop_max
+- name: collateral_bonus_sum_metric
+  label: Collateral Bonus Sum
+  description: Bonus
+  type: simple
+  type_params:
+    measure: collateral_bonus_sum
+- name: collateral_bonus_average_metric
+  label: Collateral Bonus Average
+  description: Bonus
+  type: simple
+  type_params:
+    measure: collateral_bonus_average
+- name: collateral_bonus_min_metric
+  label: Collateral Bonus Min
+  description: Bonus
+  type: simple
+  type_params:
+    measure: collateral_bonus_min
+- name: collateral_bonus_max_metric
+  label: Collateral Bonus Max
+  description: Bonus
+  type: simple
+  type_params:
+    measure: collateral_bonus_max
+- name: collateral_bank_valuation_sum_metric
+  label: Collateral Bank_Valuation Sum
+  description: Taksasi Bank
+  type: simple
+  type_params:
+    measure: collateral_bank_valuation_sum
+- name: collateral_bank_valuation_average_metric
+  label: Collateral Bank_Valuation Average
+  description: Taksasi Bank
+  type: simple
+  type_params:
+    measure: collateral_bank_valuation_average
+- name: collateral_bank_valuation_min_metric
+  label: Collateral Bank_Valuation Min
+  description: Taksasi Bank
+  type: simple
+  type_params:
+    measure: collateral_bank_valuation_min
+- name: collateral_bank_valuation_max_metric
+  label: Collateral Bank_Valuation Max
+  description: Taksasi Bank
+  type: simple
+  type_params:
+    measure: collateral_bank_valuation_max
+- name: collateral_liquid_value_sum_metric
+  label: Collateral Liquid_Value Sum
+  description: Nilai Pencairan
+  type: simple
+  type_params:
+    measure: collateral_liquid_value_sum
+- name: collateral_liquid_value_average_metric
+  label: Collateral Liquid_Value Average
+  description: Nilai Pencairan
+  type: simple
+  type_params:
+    measure: collateral_liquid_value_average
+- name: collateral_liquid_value_min_metric
+  label: Collateral Liquid_Value Min
+  description: Nilai Pencairan
+  type: simple
+  type_params:
+    measure: collateral_liquid_value_min
+- name: collateral_liquid_value_max_metric
+  label: Collateral Liquid_Value Max
+  description: Nilai Pencairan
+  type: simple
+  type_params:
+    measure: collateral_liquid_value_max
+- name: collateral_relm_value_sum_metric
+  label: Collateral Relm_Value Sum
+  description: Nilai RELM
+  type: simple
+  type_params:
+    measure: collateral_relm_value_sum
+- name: collateral_relm_value_average_metric
+  label: Collateral Relm_Value Average
+  description: Nilai RELM
+  type: simple
+  type_params:
+    measure: collateral_relm_value_average
+- name: collateral_relm_value_min_metric
+  label: Collateral Relm_Value Min
+  description: Nilai RELM
+  type: simple
+  type_params:
+    measure: collateral_relm_value_min
+- name: collateral_relm_value_max_metric
+  label: Collateral Relm_Value Max
+  description: Nilai RELM
+  type: simple
+  type_params:
+    measure: collateral_relm_value_max
+- name: collateral_discount_sum_metric
+  label: Collateral Discount Sum
+  description: Diskon
+  type: simple
+  type_params:
+    measure: collateral_discount_sum
+- name: collateral_discount_average_metric
+  label: Collateral Discount Average
+  description: Diskon
+  type: simple
+  type_params:
+    measure: collateral_discount_average
+- name: collateral_discount_min_metric
+  label: Collateral Discount Min
+  description: Diskon
+  type: simple
+  type_params:
+    measure: collateral_discount_min
+- name: collateral_discount_max_metric
+  label: Collateral Discount Max
+  description: Diskon
+  type: simple
+  type_params:
+    measure: collateral_discount_max
+- name: collateral_premium_sum_metric
+  label: Collateral Premium Sum
+  description: Premium
+  type: simple
+  type_params:
+    measure: collateral_premium_sum
+- name: collateral_premium_average_metric
+  label: Collateral Premium Average
+  description: Premium
+  type: simple
+  type_params:
+    measure: collateral_premium_average
+- name: collateral_premium_min_metric
+  label: Collateral Premium Min
+  description: Premium
+  type: simple
+  type_params:
+    measure: collateral_premium_min
+- name: collateral_premium_max_metric
+  label: Collateral Premium Max
+  description: Premium
+  type: simple
+  type_params:
+    measure: collateral_premium_max
+- name: collateral_other_claims_sum_metric
+  label: Collateral Other_Claims Sum
+  description: Klaim Lainnya
+  type: simple
+  type_params:
+    measure: collateral_other_claims_sum
+- name: collateral_other_claims_average_metric
+  label: Collateral Other_Claims Average
+  description: Klaim Lainnya
+  type: simple
+  type_params:
+    measure: collateral_other_claims_average
+- name: collateral_other_claims_min_metric
+  label: Collateral Other_Claims Min
+  description: Klaim Lainnya
+  type: simple
+  type_params:
+    measure: collateral_other_claims_min
+- name: collateral_other_claims_max_metric
+  label: Collateral Other_Claims Max
+  description: Klaim Lainnya
+  type: simple
+  type_params:
+    measure: collateral_other_claims_max
+- name: channel_merchant_admin_fee_sum_metric
+  label: Channel_Merchant Admin_Fee Sum
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: channel_merchant_admin_fee_sum
+- name: channel_merchant_admin_fee_average_metric
+  label: Channel_Merchant Admin_Fee Average
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: channel_merchant_admin_fee_average
+- name: channel_merchant_admin_fee_min_metric
+  label: Channel_Merchant Admin_Fee Min
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: channel_merchant_admin_fee_min
+- name: channel_merchant_admin_fee_max_metric
+  label: Channel_Merchant Admin_Fee Max
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: channel_merchant_admin_fee_max
+- name: master_merchant_admin_fee_sum_metric
+  label: Master_Merchant Admin_Fee Sum
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: master_merchant_admin_fee_sum
+- name: master_merchant_admin_fee_average_metric
+  label: Master_Merchant Admin_Fee Average
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: master_merchant_admin_fee_average
+- name: master_merchant_admin_fee_min_metric
+  label: Master_Merchant Admin_Fee Min
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: master_merchant_admin_fee_min
+- name: master_merchant_admin_fee_max_metric
+  label: Master_Merchant Admin_Fee Max
+  description: Biaya Admin
+  type: simple
+  type_params:
+    measure: master_merchant_admin_fee_max
+- name: transaction_cta_batch_balance_ori_sum_metric
+  label: Transaction_Cta_Batch Balance_Ori Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_ori_sum
+- name: transaction_cta_batch_balance_ori_average_metric
+  label: Transaction_Cta_Batch Balance_Ori Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_ori_average
+- name: transaction_cta_batch_balance_ori_min_metric
+  label: Transaction_Cta_Batch Balance_Ori Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_ori_min
+- name: transaction_cta_batch_balance_ori_max_metric
+  label: Transaction_Cta_Batch Balance_Ori Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_ori_max
+- name: transaction_cta_batch_balance_idr_sum_metric
+  label: Transaction_Cta_Batch Balance_Idr Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_idr_sum
+- name: transaction_cta_batch_balance_idr_average_metric
+  label: Transaction_Cta_Batch Balance_Idr Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_idr_average
+- name: transaction_cta_batch_balance_idr_min_metric
+  label: Transaction_Cta_Batch Balance_Idr Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_idr_min
+- name: transaction_cta_batch_balance_idr_max_metric
+  label: Transaction_Cta_Batch Balance_Idr Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_cta_batch_balance_idr_max
+- name: transaction_dpk_batch_balance_idr_01_sum_metric
+  label: Transaction_Dpk_Batch Balance_Idr_01 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_01_sum
+- name: transaction_dpk_batch_balance_idr_01_average_metric
+  label: Transaction_Dpk_Batch Balance_Idr_01 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_01_average
+- name: transaction_dpk_batch_balance_idr_01_min_metric
+  label: Transaction_Dpk_Batch Balance_Idr_01 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_01_min
+- name: transaction_dpk_batch_balance_idr_01_max_metric
+  label: Transaction_Dpk_Batch Balance_Idr_01 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_01_max
+- name: transaction_dpk_batch_balance_idr_03_sum_metric
+  label: Transaction_Dpk_Batch Balance_Idr_03 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_03_sum
+- name: transaction_dpk_batch_balance_idr_03_average_metric
+  label: Transaction_Dpk_Batch Balance_Idr_03 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_03_average
+- name: transaction_dpk_batch_balance_idr_03_min_metric
+  label: Transaction_Dpk_Batch Balance_Idr_03 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_03_min
+- name: transaction_dpk_batch_balance_idr_03_max_metric
+  label: Transaction_Dpk_Batch Balance_Idr_03 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_03_max
+- name: transaction_dpk_batch_balance_idr_05_sum_metric
+  label: Transaction_Dpk_Batch Balance_Idr_05 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_05_sum
+- name: transaction_dpk_batch_balance_idr_05_average_metric
+  label: Transaction_Dpk_Batch Balance_Idr_05 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_05_average
+- name: transaction_dpk_batch_balance_idr_05_min_metric
+  label: Transaction_Dpk_Batch Balance_Idr_05 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_05_min
+- name: transaction_dpk_batch_balance_idr_05_max_metric
+  label: Transaction_Dpk_Batch Balance_Idr_05 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_05_max
+- name: transaction_dpk_batch_balance_ori_01_sum_metric
+  label: Transaction_Dpk_Batch Balance_Ori_01 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_01_sum
+- name: transaction_dpk_batch_balance_ori_01_average_metric
+  label: Transaction_Dpk_Batch Balance_Ori_01 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_01_average
+- name: transaction_dpk_batch_balance_ori_01_min_metric
+  label: Transaction_Dpk_Batch Balance_Ori_01 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_01_min
+- name: transaction_dpk_batch_balance_ori_01_max_metric
+  label: Transaction_Dpk_Batch Balance_Ori_01 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_01_max
+- name: transaction_dpk_batch_balance_idr_02_sum_metric
+  label: Transaction_Dpk_Batch Balance_Idr_02 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_02_sum
+- name: transaction_dpk_batch_balance_idr_02_average_metric
+  label: Transaction_Dpk_Batch Balance_Idr_02 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_02_average
+- name: transaction_dpk_batch_balance_idr_02_min_metric
+  label: Transaction_Dpk_Batch Balance_Idr_02 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_02_min
+- name: transaction_dpk_batch_balance_idr_02_max_metric
+  label: Transaction_Dpk_Batch Balance_Idr_02 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_02_max
+- name: transaction_dpk_batch_balance_idr_06_sum_metric
+  label: Transaction_Dpk_Batch Balance_Idr_06 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_06_sum
+- name: transaction_dpk_batch_balance_idr_06_average_metric
+  label: Transaction_Dpk_Batch Balance_Idr_06 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_06_average
+- name: transaction_dpk_batch_balance_idr_06_min_metric
+  label: Transaction_Dpk_Batch Balance_Idr_06 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_06_min
+- name: transaction_dpk_batch_balance_idr_06_max_metric
+  label: Transaction_Dpk_Batch Balance_Idr_06 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_06_max
+- name: transaction_dpk_batch_balance_ori_03_sum_metric
+  label: Transaction_Dpk_Batch Balance_Ori_03 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_03_sum
+- name: transaction_dpk_batch_balance_ori_03_average_metric
+  label: Transaction_Dpk_Batch Balance_Ori_03 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_03_average
+- name: transaction_dpk_batch_balance_ori_03_min_metric
+  label: Transaction_Dpk_Batch Balance_Ori_03 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_03_min
+- name: transaction_dpk_batch_balance_ori_03_max_metric
+  label: Transaction_Dpk_Batch Balance_Ori_03 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_03_max
+- name: transaction_dpk_batch_balance_ori_04_sum_metric
+  label: Transaction_Dpk_Batch Balance_Ori_04 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_04_sum
+- name: transaction_dpk_batch_balance_ori_04_average_metric
+  label: Transaction_Dpk_Batch Balance_Ori_04 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_04_average
+- name: transaction_dpk_batch_balance_ori_04_min_metric
+  label: Transaction_Dpk_Batch Balance_Ori_04 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_04_min
+- name: transaction_dpk_batch_balance_ori_04_max_metric
+  label: Transaction_Dpk_Batch Balance_Ori_04 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_04_max
+- name: transaction_dpk_batch_balance_ori_06_sum_metric
+  label: Transaction_Dpk_Batch Balance_Ori_06 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_06_sum
+- name: transaction_dpk_batch_balance_ori_06_average_metric
+  label: Transaction_Dpk_Batch Balance_Ori_06 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_06_average
+- name: transaction_dpk_batch_balance_ori_06_min_metric
+  label: Transaction_Dpk_Batch Balance_Ori_06 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_06_min
+- name: transaction_dpk_batch_balance_ori_06_max_metric
+  label: Transaction_Dpk_Batch Balance_Ori_06 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_06_max
+- name: transaction_dpk_batch_balance_ori_05_sum_metric
+  label: Transaction_Dpk_Batch Balance_Ori_05 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_05_sum
+- name: transaction_dpk_batch_balance_ori_05_average_metric
+  label: Transaction_Dpk_Batch Balance_Ori_05 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_05_average
+- name: transaction_dpk_batch_balance_ori_05_min_metric
+  label: Transaction_Dpk_Batch Balance_Ori_05 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_05_min
+- name: transaction_dpk_batch_balance_ori_05_max_metric
+  label: Transaction_Dpk_Batch Balance_Ori_05 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_05_max
+- name: transaction_dpk_batch_balance_idr_04_sum_metric
+  label: Transaction_Dpk_Batch Balance_Idr_04 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_04_sum
+- name: transaction_dpk_batch_balance_idr_04_average_metric
+  label: Transaction_Dpk_Batch Balance_Idr_04 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_04_average
+- name: transaction_dpk_batch_balance_idr_04_min_metric
+  label: Transaction_Dpk_Batch Balance_Idr_04 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_04_min
+- name: transaction_dpk_batch_balance_idr_04_max_metric
+  label: Transaction_Dpk_Batch Balance_Idr_04 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_idr_04_max
+- name: transaction_dpk_batch_balance_ori_02_sum_metric
+  label: Transaction_Dpk_Batch Balance_Ori_02 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_02_sum
+- name: transaction_dpk_batch_balance_ori_02_average_metric
+  label: Transaction_Dpk_Batch Balance_Ori_02 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_02_average
+- name: transaction_dpk_batch_balance_ori_02_min_metric
+  label: Transaction_Dpk_Batch Balance_Ori_02 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_02_min
+- name: transaction_dpk_batch_balance_ori_02_max_metric
+  label: Transaction_Dpk_Batch Balance_Ori_02 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_batch_balance_ori_02_max
+- name: transaction_dpk_all_balance_idr_02_sum_metric
+  label: Transaction_Dpk_All Balance_Idr_02 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_02_sum
+- name: transaction_dpk_all_balance_idr_02_average_metric
+  label: Transaction_Dpk_All Balance_Idr_02 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_02_average
+- name: transaction_dpk_all_balance_idr_02_min_metric
+  label: Transaction_Dpk_All Balance_Idr_02 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_02_min
+- name: transaction_dpk_all_balance_idr_02_max_metric
+  label: Transaction_Dpk_All Balance_Idr_02 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_02_max
+- name: transaction_dpk_all_balance_idr_05_sum_metric
+  label: Transaction_Dpk_All Balance_Idr_05 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_05_sum
+- name: transaction_dpk_all_balance_idr_05_average_metric
+  label: Transaction_Dpk_All Balance_Idr_05 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_05_average
+- name: transaction_dpk_all_balance_idr_05_min_metric
+  label: Transaction_Dpk_All Balance_Idr_05 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_05_min
+- name: transaction_dpk_all_balance_idr_05_max_metric
+  label: Transaction_Dpk_All Balance_Idr_05 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_05_max
+- name: transaction_dpk_all_balance_ori_04_sum_metric
+  label: Transaction_Dpk_All Balance_Ori_04 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_04_sum
+- name: transaction_dpk_all_balance_ori_04_average_metric
+  label: Transaction_Dpk_All Balance_Ori_04 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_04_average
+- name: transaction_dpk_all_balance_ori_04_min_metric
+  label: Transaction_Dpk_All Balance_Ori_04 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_04_min
+- name: transaction_dpk_all_balance_ori_04_max_metric
+  label: Transaction_Dpk_All Balance_Ori_04 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_04_max
+- name: transaction_dpk_all_balance_idr_04_sum_metric
+  label: Transaction_Dpk_All Balance_Idr_04 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_04_sum
+- name: transaction_dpk_all_balance_idr_04_average_metric
+  label: Transaction_Dpk_All Balance_Idr_04 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_04_average
+- name: transaction_dpk_all_balance_idr_04_min_metric
+  label: Transaction_Dpk_All Balance_Idr_04 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_04_min
+- name: transaction_dpk_all_balance_idr_04_max_metric
+  label: Transaction_Dpk_All Balance_Idr_04 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_04_max
+- name: transaction_dpk_all_balance_ori_03_sum_metric
+  label: Transaction_Dpk_All Balance_Ori_03 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_03_sum
+- name: transaction_dpk_all_balance_ori_03_average_metric
+  label: Transaction_Dpk_All Balance_Ori_03 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_03_average
+- name: transaction_dpk_all_balance_ori_03_min_metric
+  label: Transaction_Dpk_All Balance_Ori_03 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_03_min
+- name: transaction_dpk_all_balance_ori_03_max_metric
+  label: Transaction_Dpk_All Balance_Ori_03 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_03_max
+- name: transaction_dpk_all_balance_ori_05_sum_metric
+  label: Transaction_Dpk_All Balance_Ori_05 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_05_sum
+- name: transaction_dpk_all_balance_ori_05_average_metric
+  label: Transaction_Dpk_All Balance_Ori_05 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_05_average
+- name: transaction_dpk_all_balance_ori_05_min_metric
+  label: Transaction_Dpk_All Balance_Ori_05 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_05_min
+- name: transaction_dpk_all_balance_ori_05_max_metric
+  label: Transaction_Dpk_All Balance_Ori_05 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_05_max
+- name: transaction_dpk_all_balance_idr_01_sum_metric
+  label: Transaction_Dpk_All Balance_Idr_01 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_01_sum
+- name: transaction_dpk_all_balance_idr_01_average_metric
+  label: Transaction_Dpk_All Balance_Idr_01 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_01_average
+- name: transaction_dpk_all_balance_idr_01_min_metric
+  label: Transaction_Dpk_All Balance_Idr_01 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_01_min
+- name: transaction_dpk_all_balance_idr_01_max_metric
+  label: Transaction_Dpk_All Balance_Idr_01 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_01_max
+- name: transaction_dpk_all_balance_idr_03_sum_metric
+  label: Transaction_Dpk_All Balance_Idr_03 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_03_sum
+- name: transaction_dpk_all_balance_idr_03_average_metric
+  label: Transaction_Dpk_All Balance_Idr_03 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_03_average
+- name: transaction_dpk_all_balance_idr_03_min_metric
+  label: Transaction_Dpk_All Balance_Idr_03 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_03_min
+- name: transaction_dpk_all_balance_idr_03_max_metric
+  label: Transaction_Dpk_All Balance_Idr_03 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_03_max
+- name: transaction_dpk_all_balance_ori_02_sum_metric
+  label: Transaction_Dpk_All Balance_Ori_02 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_02_sum
+- name: transaction_dpk_all_balance_ori_02_average_metric
+  label: Transaction_Dpk_All Balance_Ori_02 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_02_average
+- name: transaction_dpk_all_balance_ori_02_min_metric
+  label: Transaction_Dpk_All Balance_Ori_02 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_02_min
+- name: transaction_dpk_all_balance_ori_02_max_metric
+  label: Transaction_Dpk_All Balance_Ori_02 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_02_max
+- name: transaction_dpk_all_balance_ori_01_sum_metric
+  label: Transaction_Dpk_All Balance_Ori_01 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_01_sum
+- name: transaction_dpk_all_balance_ori_01_average_metric
+  label: Transaction_Dpk_All Balance_Ori_01 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_01_average
+- name: transaction_dpk_all_balance_ori_01_min_metric
+  label: Transaction_Dpk_All Balance_Ori_01 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_01_min
+- name: transaction_dpk_all_balance_ori_01_max_metric
+  label: Transaction_Dpk_All Balance_Ori_01 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_01_max
+- name: transaction_dpk_all_balance_idr_06_sum_metric
+  label: Transaction_Dpk_All Balance_Idr_06 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_06_sum
+- name: transaction_dpk_all_balance_idr_06_average_metric
+  label: Transaction_Dpk_All Balance_Idr_06 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_06_average
+- name: transaction_dpk_all_balance_idr_06_min_metric
+  label: Transaction_Dpk_All Balance_Idr_06 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_06_min
+- name: transaction_dpk_all_balance_idr_06_max_metric
+  label: Transaction_Dpk_All Balance_Idr_06 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_idr_06_max
+- name: transaction_dpk_all_balance_ori_06_sum_metric
+  label: Transaction_Dpk_All Balance_Ori_06 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_06_sum
+- name: transaction_dpk_all_balance_ori_06_average_metric
+  label: Transaction_Dpk_All Balance_Ori_06 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_06_average
+- name: transaction_dpk_all_balance_ori_06_min_metric
+  label: Transaction_Dpk_All Balance_Ori_06 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_06_min
+- name: transaction_dpk_all_balance_ori_06_max_metric
+  label: Transaction_Dpk_All Balance_Ori_06 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_all_balance_ori_06_max
+- name: transaction_gen_batch_balance_idr_sum_metric
+  label: Transaction_Gen_Batch Balance_Idr Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_idr_sum
+- name: transaction_gen_batch_balance_idr_average_metric
+  label: Transaction_Gen_Batch Balance_Idr Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_idr_average
+- name: transaction_gen_batch_balance_idr_min_metric
+  label: Transaction_Gen_Batch Balance_Idr Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_idr_min
+- name: transaction_gen_batch_balance_idr_max_metric
+  label: Transaction_Gen_Batch Balance_Idr Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_idr_max
+- name: transaction_gen_batch_balance_ori_sum_metric
+  label: Transaction_Gen_Batch Balance_Ori Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_ori_sum
+- name: transaction_gen_batch_balance_ori_average_metric
+  label: Transaction_Gen_Batch Balance_Ori Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_ori_average
+- name: transaction_gen_batch_balance_ori_min_metric
+  label: Transaction_Gen_Batch Balance_Ori Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_ori_min
+- name: transaction_gen_batch_balance_ori_max_metric
+  label: Transaction_Gen_Batch Balance_Ori Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_gen_batch_balance_ori_max
+- name: transaction_dpk_nearrealtime_balance_idr_03_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_03 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_03_sum
+- name: transaction_dpk_nearrealtime_balance_idr_03_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_03 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_03_average
+- name: transaction_dpk_nearrealtime_balance_idr_03_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_03 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_03_min
+- name: transaction_dpk_nearrealtime_balance_idr_03_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_03 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_03_max
+- name: transaction_dpk_nearrealtime_balance_idr_01_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_01 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_01_sum
+- name: transaction_dpk_nearrealtime_balance_idr_01_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_01 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_01_average
+- name: transaction_dpk_nearrealtime_balance_idr_01_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_01 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_01_min
+- name: transaction_dpk_nearrealtime_balance_idr_01_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_01 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_01_max
+- name: transaction_dpk_nearrealtime_balance_idr_04_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_04 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_04_sum
+- name: transaction_dpk_nearrealtime_balance_idr_04_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_04 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_04_average
+- name: transaction_dpk_nearrealtime_balance_idr_04_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_04 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_04_min
+- name: transaction_dpk_nearrealtime_balance_idr_04_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_04 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_04_max
+- name: transaction_dpk_nearrealtime_balance_ori_06_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_06 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_06_sum
+- name: transaction_dpk_nearrealtime_balance_ori_06_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_06 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_06_average
+- name: transaction_dpk_nearrealtime_balance_ori_06_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_06 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_06_min
+- name: transaction_dpk_nearrealtime_balance_ori_06_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_06 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_06_max
+- name: transaction_dpk_nearrealtime_balance_ori_05_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_05 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_05_sum
+- name: transaction_dpk_nearrealtime_balance_ori_05_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_05 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_05_average
+- name: transaction_dpk_nearrealtime_balance_ori_05_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_05 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_05_min
+- name: transaction_dpk_nearrealtime_balance_ori_05_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_05 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_05_max
+- name: transaction_dpk_nearrealtime_balance_ori_01_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_01 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_01_sum
+- name: transaction_dpk_nearrealtime_balance_ori_01_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_01 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_01_average
+- name: transaction_dpk_nearrealtime_balance_ori_01_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_01 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_01_min
+- name: transaction_dpk_nearrealtime_balance_ori_01_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_01 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_01_max
+- name: transaction_dpk_nearrealtime_balance_idr_05_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_05 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_05_sum
+- name: transaction_dpk_nearrealtime_balance_idr_05_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_05 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_05_average
+- name: transaction_dpk_nearrealtime_balance_idr_05_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_05 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_05_min
+- name: transaction_dpk_nearrealtime_balance_idr_05_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_05 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_05_max
+- name: transaction_dpk_nearrealtime_balance_idr_02_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_02 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_02_sum
+- name: transaction_dpk_nearrealtime_balance_idr_02_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_02 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_02_average
+- name: transaction_dpk_nearrealtime_balance_idr_02_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_02 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_02_min
+- name: transaction_dpk_nearrealtime_balance_idr_02_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_02 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_02_max
+- name: transaction_dpk_nearrealtime_balance_ori_03_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_03 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_03_sum
+- name: transaction_dpk_nearrealtime_balance_ori_03_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_03 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_03_average
+- name: transaction_dpk_nearrealtime_balance_ori_03_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_03 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_03_min
+- name: transaction_dpk_nearrealtime_balance_ori_03_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_03 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_03_max
+- name: transaction_dpk_nearrealtime_balance_idr_06_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_06 Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_06_sum
+- name: transaction_dpk_nearrealtime_balance_idr_06_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_06 Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_06_average
+- name: transaction_dpk_nearrealtime_balance_idr_06_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_06 Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_06_min
+- name: transaction_dpk_nearrealtime_balance_idr_06_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Idr_06 Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_idr_06_max
+- name: transaction_dpk_nearrealtime_balance_ori_04_sum_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_04 Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_04_sum
+- name: transaction_dpk_nearrealtime_balance_ori_04_average_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_04 Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_04_average
+- name: transaction_dpk_nearrealtime_balance_ori_04_min_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_04 Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_04_min
+- name: transaction_dpk_nearrealtime_balance_ori_04_max_metric
+  label: Transaction_Dpk_Nearrealtime Balance_Ori_04 Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_dpk_nearrealtime_balance_ori_04_max
+- name: transaction_loan_batch_balance_idr_sum_metric
+  label: Transaction_Loan_Batch Balance_Idr Sum
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_idr_sum
+- name: transaction_loan_batch_balance_idr_average_metric
+  label: Transaction_Loan_Batch Balance_Idr Average
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_idr_average
+- name: transaction_loan_batch_balance_idr_min_metric
+  label: Transaction_Loan_Batch Balance_Idr Min
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_idr_min
+- name: transaction_loan_batch_balance_idr_max_metric
+  label: Transaction_Loan_Batch Balance_Idr Max
+  description: Saldo dalam rupiah
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_idr_max
+- name: transaction_loan_batch_balance_ori_sum_metric
+  label: Transaction_Loan_Batch Balance_Ori Sum
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_ori_sum
+- name: transaction_loan_batch_balance_ori_average_metric
+  label: Transaction_Loan_Batch Balance_Ori Average
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_ori_average
+- name: transaction_loan_batch_balance_ori_min_metric
+  label: Transaction_Loan_Batch Balance_Ori Min
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_ori_min
+- name: transaction_loan_batch_balance_ori_max_metric
+  label: Transaction_Loan_Batch Balance_Ori Max
+  description: Saldo
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_balance_ori_max
+- name: transaction_loan_batch_arrears_sum_metric
+  label: Transaction_Loan_Batch Arrears Sum
+  description: Area
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_arrears_sum
+- name: transaction_loan_batch_arrears_average_metric
+  label: Transaction_Loan_Batch Arrears Average
+  description: Area
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_arrears_average
+- name: transaction_loan_batch_arrears_min_metric
+  label: Transaction_Loan_Batch Arrears Min
+  description: Area
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_arrears_min
+- name: transaction_loan_batch_arrears_max_metric
+  label: Transaction_Loan_Batch Arrears Max
+  description: Area
+  type: simple
+  type_params:
+    measure: transaction_loan_batch_arrears_max
