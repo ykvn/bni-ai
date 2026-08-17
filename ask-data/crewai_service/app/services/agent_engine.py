@@ -1,31 +1,23 @@
 import os
 import httpx
 import re
+import yaml
 from datetime import datetime
 from pathlib import Path
 
 from pydantic import BaseModel
 from crewai import Agent, Crew, Task, LLM
-from crewai.project import CrewBase, agent, crew, task
-from crewai.process import Process
 from crewai.tools import tool
-from crewai.flow.flow import Flow, listen, start, router, or_
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from shared.cml_auth import build_cml_headers
 
-from pydantic import BaseModel, Field
-from typing import List, Optional
-
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
-# --- TIMESTAMP HELPER ---
 def log_ts(msg: str):
-    """Prints log messages with precise millisecond timestamps."""
     ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
     print(f"⏱️ [{ts}] {msg}", flush=True)
 
-# --- CREWAI CALLBACKS ---
 def task_completion_callback(task_output):
     log_ts(f"✅ TASK COMPLETED: {task_output.name or 'Task'}")
 
@@ -37,53 +29,33 @@ os.environ["OPENAI_API_KEY"] = os.environ.get("CML_TOKEN") or os.environ.get("LI
 os.environ["OPENAI_API_BASE"] = os.environ.get("LITELLM_PROXY_URL") or os.environ.get("LITELLM_APP_URL", "")
 os.environ["OPENAI_MODEL_NAME"] = f"openai/{os.environ.get('CML_MODEL_NAME', '')}"
 
-# --- 1. GLOBAL SETUP ---
-# GLOBAL_LLM: Fast execution profile with thinking disabled (Ideal for schema lookups & query execution)
-GLOBAL_LLM = LLM(
-    model=f"openai/{os.getenv('CML_MODEL_NAME')}",
-    base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
-    api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
-    temperature=0.0,
-    max_tokens=4096,
-    extra_body={
-        "chat_template_kwargs": {"enable_thinking": False}
-    }
-)
-
-# REASONING_LLM: Profile with thinking enabled (Ideal for complex SQL drafting & reasoning)
-REASONING_LLM = LLM(
-    model=f"openai/{os.getenv('CML_MODEL_NAME')}",
-    base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
-    api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
-    temperature=0.0,
-    max_tokens=4096
-)
-
-# Pydantic schema for MetricFlow JSON payload validation
-class MetricFlowQueryPayload(BaseModel):
-    metrics: List[str] = Field(
-        ..., 
-        description="List of metric names to query, e.g. ['cai_savings_balance_sum_metric']"
+# --- 1. LLM PROFILES ---
+LLM_REGISTRY = {
+    "GLOBAL_LLM": LLM(
+        model=f"openai/{os.getenv('CML_MODEL_NAME')}",
+        base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
+        api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
+        temperature=0.0,
+        max_tokens=4096,
+        extra_body={"chat_template_kwargs": {"enable_thinking": False}}
+    ),
+    "REASONING_LLM": LLM(
+        model=f"openai/{os.getenv('CML_MODEL_NAME')}",
+        base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
+        api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
+        temperature=0.0,
+        max_tokens=4096
     )
-    group_by: List[str] = Field(
-        default_factory=list, 
-        description="List of entity dimensions using double-underscore notation, e.g. ['customer_id__bank_name']"
-    )
-    where: Optional[str] = Field(
-        default=None, 
-        description="Optional MetricFlow where filter string, e.g. 'metric_time__year = 2025'"
-    )
+}
 
+# --- 2. MCP TOOLS ---
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:
     start_time = datetime.now()
     log_ts(f"🔌 MCP Call Started: '{tool_name}'")
-    
     url = f"{os.getenv('MCP_SERVER_URL', '').rstrip('/')}/sse"
     headers = build_cml_headers(os.getenv("CML_TOKEN"))
-    
     async with sse_client(
-        url=url, 
-        headers=headers, 
+        url=url, headers=headers, 
         httpx_client_factory=lambda **kw: httpx.AsyncClient(verify=False, follow_redirects=True, **kw)
     ) as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
@@ -93,346 +65,136 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
             log_ts(f"🏁 MCP Call Completed: '{tool_name}' (Took {duration:.2f}s)")
             return res.content[0].text if res and res.content else ""
 
-
-# --- 2. CREWAI MCP TOOLS ---
 @tool("get_database_schema")
 async def mcp_get_database_schema(user_question: str) -> str:
-    """CRITICAL FIRST STEP: Retrieves table names and columns based on the user query."""
-    log_ts(f"🛠️ Tool Invoked: 'get_database_schema' | Input: {user_question[:60]}...")
     return await call_mcp("get_database_schema", {"user_question": user_question})
 
 @tool("search_golden_queries")
 async def mcp_search_golden_queries(user_question: str) -> str:
-    """Searches verified SQL templates matching the user's intent."""
-    log_ts(f"🛠️ Tool Invoked: 'search_golden_queries'")
     return await call_mcp("search_golden_queries", {"user_question": user_question})
 
 @tool("execute_banking_query")
 async def mcp_execute_banking_query(sql_query: str) -> str:
-    """Executes Impala SQL. Returns raw JSON rows or an error message if syntax is wrong."""
-    log_ts(f"🛠️ Tool Invoked: 'execute_banking_query'")
     return await call_mcp("execute_banking_query", {"sql_query": sql_query})
 
 @tool("search_policy_documents")
 async def mcp_search_policy_documents(query: str) -> str:
-    """Searches enterprise banking manuals, SOPs, and compliance guidelines."""
-    log_ts(f"🛠️ Tool Invoked: 'search_policy_documents'")
     return await call_mcp("search_policy_documents", {"query": query})
 
 @tool("search_mf_catalog")
 async def mcp_search_mf_catalog(user_question: str) -> str:
-    """
-    Searches the dbt MetricFlow semantic catalog for relevant metrics and dimensions based on the user's question.
-    ALWAYS use this before drafting a MetricFlow JSON payload to retrieve the exact metric names and dimension paths.
-    """
-    log_ts(f"🛠️ Tool Invoked: 'search_mf_catalog'")
     return await call_mcp("search_mf_catalog", {"user_question": user_question})
 
 @tool("compile_mf_sql")
 async def mcp_compile_mf_sql(json_payload: str) -> str:
-    """
-    Sends a JSON query payload to the dbt MetricFlow API to compile into SQL.
-    The payload MUST be a valid JSON string containing "metrics" and "group_by" arrays.
-    """
-    log_ts(f"🛠️ Tool Invoked: 'compile_mf_sql'")
     return await call_mcp("compile_mf_sql", {"json_payload": json_payload})
 
+TOOL_REGISTRY = {
+    "get_database_schema": mcp_get_database_schema,
+    "search_golden_queries": mcp_search_golden_queries,
+    "execute_banking_query": mcp_execute_banking_query,
+    "search_policy_documents": mcp_search_policy_documents,
+    "search_mf_catalog": mcp_search_mf_catalog,
+    "compile_mf_sql": mcp_compile_mf_sql
+}
 
-# --- 3. CREWBASE CLASSES ---
-@CrewBase
-class SQLAgentCrew:
-    agents_config = str(_CONFIG_DIR / "agents.yaml")
-    tasks_config = str(_CONFIG_DIR / "tasks.yaml")
+# --- 3. DYNAMIC WORKFLOW ENGINE ---
+def load_yaml(file_name: str) -> dict:
+    with open(_CONFIG_DIR / file_name, 'r') as f:
+        return yaml.safe_load(f)
 
-    @agent
-    def schema_analyst(self) -> Agent:
-        return Agent(
-            config=self.agents_config['schema_analyst'],
-            llm=GLOBAL_LLM,
-            tools=[mcp_get_database_schema, mcp_search_golden_queries],
-            step_callback=agent_step_callback
-        )
-
-    @agent
-    def sql_developer(self) -> Agent:
-        return Agent(
-            config=self.agents_config['sql_developer'],
-            llm=REASONING_LLM,
-            tools=[],
-            step_callback=agent_step_callback
-        )
-
-    @agent
-    def sql_executor(self) -> Agent:
-        return Agent(
-            config=self.agents_config['sql_executor'],
-            llm=GLOBAL_LLM,
-            tools=[mcp_execute_banking_query],
-            step_callback=agent_step_callback
-        )
-
-    @task
-    def fetch_schema_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['fetch_schema_task'],
-            agent=self.schema_analyst(),
-            callback=task_completion_callback
-        )
-
-    @task
-    def draft_sql_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['draft_sql_task'],
-            agent=self.sql_developer(),
-            callback=task_completion_callback
-        )
-
-    @task
-    def execute_sql_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['execute_sql_task'],
-            agent=self.sql_executor(),
-            callback=task_completion_callback
-        )
-
-    @crew
-    def crew(self) -> Crew:
-        return Crew(
-            agents=[self.schema_analyst(), self.sql_developer(), self.sql_executor()],
-            tasks=[self.fetch_schema_task(), self.draft_sql_task(), self.execute_sql_task()],
-            process=Process.sequential,
-            verbose=True
-        )
-
-
-@CrewBase
-class RAGAgentCrew:
-    agents_config = str(_CONFIG_DIR / "agents.yaml")
-    tasks_config = str(_CONFIG_DIR / "tasks.yaml")
-
-    @agent
-    def compliance_officer(self) -> Agent:
-        return Agent(
-            config=self.agents_config['compliance_officer'],
-            llm=REASONING_LLM,
-            tools=[mcp_search_policy_documents]
-        )
-
-    @task
-    def evaluate_policy_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['evaluate_policy_task'],
-            agent=self.compliance_officer()
-        )
-
-    @crew
-    def crew(self) -> Crew:
-        return Crew(agents=self.agents, tasks=self.tasks, verbose=True)
-
-
-@CrewBase
-class MetricFlowAgentCrew:
-    agents_config = str(_CONFIG_DIR / "agents.yaml")
-    tasks_config = str(_CONFIG_DIR / "tasks.yaml")
-
-    @agent
-    def mf_schema_analyst(self) -> Agent:
-        return Agent(
-            config=self.agents_config['mf_schema_analyst'],
-            llm=GLOBAL_LLM,
-            tools=[mcp_search_mf_catalog],
-            step_callback=agent_step_callback,
-            memory=False
-        )
-
-    @agent
-    def mf_payload_developer(self) -> Agent:
-        return Agent(
-            config=self.agents_config['mf_payload_developer'],
-            llm=REASONING_LLM,
-            tools=[],
-            step_callback=agent_step_callback,
-            memory=False
-        )
-
-    @agent
-    def mf_executor(self) -> Agent:
-        return Agent(
-            config=self.agents_config['mf_executor'],
-            llm=GLOBAL_LLM,
-            tools=[mcp_compile_mf_sql],
-            step_callback=agent_step_callback,
-            memory=False
-        )
-
-    @task
-    def mf_fetch_schema_task(self) -> Task:
-        return Task(config=self.tasks_config['mf_fetch_schema_task'], agent=self.mf_schema_analyst(), callback=task_completion_callback)
-
-    @task
-    def mf_draft_payload_task(self) -> Task:
-        return Task(
-            config=self.tasks_config['mf_draft_payload_task'],
-            agent=self.mf_payload_developer(),
-            output_pydantic=MetricFlowQueryPayload,
-            callback=task_completion_callback
-        )
-
-    @task
-    def mf_execute_task(self) -> Task:
-        return Task(config=self.tasks_config['mf_execute_task'], agent=self.mf_executor(), callback=task_completion_callback)
-
-    @crew
-    def crew(self) -> Crew:
-        return Crew(
-            agents=[self.mf_schema_analyst(), self.mf_payload_developer(), self.mf_executor()],
-            tasks=[self.mf_fetch_schema_task(), self.mf_draft_payload_task(), self.mf_execute_task()],
-            process=Process.sequential, verbose=True
-        )
-
-# --- 4. STATE AND FLOW ---
-class SQLState(BaseModel):
+class UniversalState(BaseModel):
     user_question: str = ""
     db_schema: str = ""
     sql_query: str = ""
-    compiled_mf_sql: str = "" # Stores intermediate compiled SQL
+    compiled_mf_sql: str = ""
     error_context: str = ""
     final_data: str = ""
     retries: int = 0
 
-class SQLGenerationFlow(Flow[SQLState]):
-    @start()
-    async def fetch_schema(self):
-        log_ts("🌊 [Flow] Step 1: Fetching Schema...")
-        crew_instance = SQLAgentCrew()
-        crew = Crew(
-            agents=[crew_instance.schema_analyst()],
-            tasks=[crew_instance.fetch_schema_task()],
-            verbose=True
-        )
-        result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
-        self.state.db_schema = result.raw
-
-    @listen(or_(fetch_schema, "retry_sql"))
-    async def draft_sql(self):
-        log_ts(f"🌊 [Flow] Step 2: Drafting SQL (Retry: {self.state.retries})...")
-        crew_instance = SQLAgentCrew()
-        crew = Crew(
-            agents=[crew_instance.sql_developer()],
-            tasks=[crew_instance.draft_sql_task()],
-            verbose=True
-        )
-        result = await crew.kickoff_async(inputs={
-            "user_question": self.state.user_question,
-            "db_schema": self.state.db_schema,
-            "error_context": self.state.error_context
-        })
-        import re
-        self.state.sql_query = re.sub(r"```sql|```", "", result.raw).strip()
-
-    @router(draft_sql)
-    async def execute_and_validate(self):
-        log_ts("🌊 [Flow] Step 3: Executing SQL against Impala...")
-        crew_instance = SQLAgentCrew()
-        crew = Crew(
-            agents=[crew_instance.sql_executor()],
-            tasks=[crew_instance.execute_sql_task()],
-            verbose=True
-        )
-        result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
-        raw_output = result.raw
-        
-        error_keywords = ["Engine Error", "AnalysisException", "Syntax error", "ParseException"]
-        if any(err in raw_output for err in error_keywords) and self.state.retries < 3:
-            log_ts(f"⚠️ [Flow] Impala Error Detected! Routing back to Agent 2. Error: {raw_output[:50]}...")
-            self.state.error_context = raw_output
-            self.state.retries += 1
-            return "retry_sql"
-            
-        self.state.final_data = raw_output
-        return "complete"
-
-class MetricFlowGenerationFlow(Flow[SQLState]):
-    @start()
-    async def mf_fetch_schema(self):
-        log_ts("🌊 [MF Flow] Step 1: Fetching MetricFlow Catalog...")
-        crew_inst = MetricFlowAgentCrew()
-        crew = Crew(agents=[crew_inst.mf_schema_analyst()], tasks=[crew_inst.mf_fetch_schema_task()], verbose=True)
-        result = await crew.kickoff_async(inputs={"user_question": self.state.user_question})
-        self.state.db_schema = result.raw
-
-    @listen(or_(mf_fetch_schema, "retry_mf"))
-    async def mf_draft_payload(self):
-        log_ts(f"🌊 [MF Flow] Step 2: Drafting JSON Payload (Retry: {self.state.retries})...")
-        crew_inst = MetricFlowAgentCrew()
-        crew = Crew(agents=[crew_inst.mf_payload_developer()], tasks=[crew_inst.mf_draft_payload_task()], verbose=True)
-        result = await crew.kickoff_async(inputs={
-            "user_question": self.state.user_question,
-            "db_schema": self.state.db_schema,
-            "error_context": self.state.error_context
-        })
-        
-        if hasattr(result, "pydantic") and result.pydantic:
-            self.state.sql_query = result.pydantic.model_dump_json()
-        else:
-            self.state.sql_query = re.sub(r"```(?:json)?|```", "", result.raw).strip()
-            
-        log_ts(f"📦 Validated Payload Prepared: {self.state.sql_query}")
-
-    @router(mf_draft_payload)
-    async def mf_compile_sql(self):
-        log_ts("🌊 [MF Flow] Step 3: Compiling JSON into Impala SQL...")
-        crew_inst = MetricFlowAgentCrew()
-        crew = Crew(agents=[crew_inst.mf_executor()], tasks=[crew_inst.mf_execute_task()], verbose=True)
-        result = await crew.kickoff_async(inputs={"sql_query": self.state.sql_query})
-        raw_output = result.raw
-        
-        # 🔁 Retry mechanism intact for compilation failures
-        error_keywords = ["MetricFlow API Error", "Syntax error", "Failed", "ERROR:"]
-        if any(err in raw_output for err in error_keywords) and self.state.retries < 3:
-            log_ts(f"⚠️ [MF Flow] Compilation Error Detected! Routing back to Developer (Retry {self.state.retries + 1})...")
-            self.state.error_context = raw_output
-            self.state.retries += 1
-            return "retry_mf"
-            
-        self.state.compiled_mf_sql = raw_output
-        return "execute_impala"
-
-    @listen("execute_impala")
-    async def mf_execute_impala(self):
-        log_ts("🌊 [MF Flow] Step 4: Executing Compiled SQL against Impala...")
-        
-        # 🚀 REUSING THE STANDARD SQL EXECUTOR AGENT
-        sql_crew_inst = SQLAgentCrew()
-        crew = Crew(
-            agents=[sql_crew_inst.sql_executor()], 
-            tasks=[sql_crew_inst.execute_sql_task()], 
-            verbose=True
-        )
-        
-        result = await crew.kickoff_async(inputs={"sql_query": self.state.compiled_mf_sql})
-        self.state.final_data = result.raw
-
-# --- 5. EXPOSED ASYNC WORKFLOWS ---
-async def run_sql_agent(user_question: str):
-    log_ts("🚀 SQLGenerationFlow Execution Initiated")
-    flow = SQLGenerationFlow()
-    flow.state.user_question = user_question
+async def run_universal_agent(job_type: str, user_question: str) -> dict:
+    log_ts(f"🚀 Universal Execution Initiated for '{job_type}'")
     
-    await flow.kickoff_async()
-    log_ts("🎉 SQLGenerationFlow Execution Finished")
-    return flow.state
+    workflows = load_yaml("workflows.yaml")
+    agents_cfg = load_yaml("agents.yaml")
+    tasks_cfg = load_yaml("tasks.yaml")
+    
+    workflow = workflows.get(job_type)
+    if not workflow:
+        raise ValueError(f"Unknown workflow type: {job_type}")
 
-async def run_rag_agent(user_question: str) -> str:
-    log_ts("🚀 RAGAgentCrew Execution Initiated")
-    result = await RAGAgentCrew().crew().kickoff_async(inputs={"user_question": user_question})
-    log_ts("🎉 RAGAgentCrew Execution Finished")
-    return str(result)
+    state = UniversalState(user_question=user_question)
+    tasks_to_run = workflow["tasks"]
+    retry_logic = workflow.get("retry_logic")
+    output_mapping = workflow.get("output_mapping", {})
 
-async def run_metricflow_agent(user_question: str):
-    log_ts("🚀 MetricFlowGenerationFlow Execution Initiated")
-    flow = MetricFlowGenerationFlow()
-    flow.state.user_question = user_question
-    await flow.kickoff_async()
-    log_ts("🎉 MetricFlowGenerationFlow Execution Finished")
-    return flow.state
+    current_task_idx = 0
+    while current_task_idx < len(tasks_to_run):
+        task_name = tasks_to_run[current_task_idx]
+        log_ts(f"🌊 [Flow] Executing Task: {task_name} (Retry: {state.retries})")
+
+        # Instantiate dynamic Agent
+        t_cfg = tasks_cfg[task_name]
+        a_cfg = agents_cfg[t_cfg["agent"]]
+
+        agent = Agent(
+            role=a_cfg["role"],
+            goal=a_cfg["goal"],
+            backstory=a_cfg["backstory"],
+            llm=LLM_REGISTRY[a_cfg.get("llm", "GLOBAL_LLM")],
+            tools=[TOOL_REGISTRY[t] for t in a_cfg.get("tools", [])],
+            step_callback=agent_step_callback,
+            memory=False
+        )
+
+        # Interpolate variables into prompt
+        task_desc = t_cfg["description"].format(
+            user_question=state.user_question,
+            db_schema=state.db_schema,
+            error_context=state.error_context,
+            sql_query=state.sql_query
+        )
+
+        task = Task(
+            description=task_desc,
+            expected_output=t_cfg["expected_output"],
+            agent=agent,
+            callback=task_completion_callback
+        )
+
+        # Run Task
+        crew = Crew(agents=[agent], tasks=[task], verbose=True)
+        result = await crew.kickoff_async()
+        raw_output = result.raw
+
+        # Internal State Mapping routing
+        if task_name in ["fetch_schema_task", "mf_fetch_schema_task"]:
+            state.db_schema = raw_output
+        elif task_name in ["draft_sql_task", "mf_draft_payload_task"]:
+            state.sql_query = re.sub(r"```(?:sql|json)?|```", "", raw_output).strip()
+        elif task_name == "mf_execute_task":
+            state.compiled_mf_sql = raw_output
+        elif task_name in ["execute_sql_task", "evaluate_policy_task"]:
+            state.final_data = raw_output
+
+        # Retry Logic Interceptor
+        if retry_logic and current_task_idx > 0:
+            err_keywords = retry_logic.get("error_keywords", [])
+            if any(err in raw_output for err in err_keywords) and state.retries < retry_logic.get("max_retries", 3):
+                log_ts(f"⚠️ [Flow] Error Detected! Routing back. Error: {raw_output[:50]}...")
+                state.error_context = raw_output
+                state.retries += 1
+                current_task_idx = tasks_to_run.index(retry_logic["route_back_to"])
+                continue
+
+        state.error_context = ""
+        current_task_idx += 1
+
+    log_ts(f"🎉 Universal Execution Finished for '{job_type}'")
+
+    # Map to final payload according to workflows.yaml
+    final_payload = {}
+    for frontend_key, state_attr in output_mapping.items():
+        final_payload[frontend_key] = getattr(state, state_attr, None)
+    
+    return final_payload

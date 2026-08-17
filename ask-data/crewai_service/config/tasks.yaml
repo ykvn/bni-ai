@@ -1,13 +1,12 @@
 fetch_schema_task:
+  agent: schema_analyst
   description: >
     Retrieve the live database schema for the user query: '{user_question}'
-    
-    INSTRUCTION:
-    Execute the `get_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
-  expected_output: >
-    The exact, raw tool response string returned by `get_database_schema`.
+    INSTRUCTION: Execute the `get_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
+  expected_output: "The exact, raw tool response string returned by `get_database_schema`."
 
 draft_sql_task:
+  agent: sql_developer
   description: >
     Process the user query: '{user_question}'
 
@@ -19,36 +18,33 @@ draft_sql_task:
 
     INSTRUCTIONS:
     Write a valid Cloudera Impala SELECT query based on the schema above.
-    If PREVIOUS ERROR TO FIX contains an Impala error, correct your SQL syntax (e.g., use JOINs instead of subquery UNIONs).
-    
-    OPERATIONAL GUARDRAILS:
-    - TABLE MATCHING: You MUST strictly use the actual table and column names provided in the retrieved schema context. DO NOT invent generic table names outside the retrieved schema context.
-    - NO FAKE ALIASING (CRITICAL): If the user asks for a specific metric, concept, or column that DOES NOT explicitly exist in the provided schema, DO NOT use 'AS' to alias an unrelated column to pretend it exists.
+    If PREVIOUS ERROR TO FIX contains an Impala error, correct your SQL syntax.
+    - TABLE MATCHING: You MUST strictly use the actual table and column names provided.
     - READ ONLY: Only write SELECT statements.
-  expected_output: >
-    Output ONLY the raw Cloudera Impala SELECT statement. Do not wrap it in markdown code blocks (```sql), do not use JSON, and do not include conversational commentary.
+  expected_output: "Output ONLY the raw Cloudera Impala SELECT statement."
 
 execute_sql_task:
+  agent: sql_executor
   description: >
     Execute the following Cloudera Impala SELECT query:
     {sql_query}
 
     INSTRUCTION:
     Call the `execute_banking_query` tool immediately, passing the exact SQL query string provided above. Do not think or explain.
-  expected_output: >
-    The exact raw JSON output or error string returned by the `execute_banking_query` tool.
+  expected_output: "The exact raw JSON output or error string returned by the `execute_banking_query` tool."
 
 mf_fetch_schema_task:
+  agent: mf_schema_analyst
   description: >
     Find the relevant MetricFlow metrics, dimensions, and entities to answer this question: '{user_question}'
     
     INSTRUCTIONS:
     1. Call the `search_mf_catalog` tool with the user question.
     2. Confirm that the catalog items were retrieved successfully.
-  expected_output: >
-    A brief statement confirming that the relevant metrics and dimensions were retrieved.
+  expected_output: "A brief statement confirming that the relevant metrics and dimensions were retrieved."
 
 mf_draft_payload_task:
+  agent: mf_payload_developer
   description: >
     Draft a valid dbt MetricFlow JSON query payload for the user question: '{user_question}'
 
@@ -59,43 +55,27 @@ mf_draft_payload_task:
     {error_context}
 
     INSTRUCTIONS:
-    1. EXACT CATALOG NAMES: Copy the exact metric and dimension names provided in the catalog. Do not alter, re-prefix, or shorten dimension paths (e.g., use 'customer_id__bank_name' or 'customer_id__join_date').
-    
-    2. TIME GRANULARITY MATCHING: If filtering by time in 'where' using a modifier (__year, __month, __day), you MUST include the exact same dimension and suffix in 'group_by'.
-       - BAD:  group_by: ["customer_id__join_date"], where: "customer_id__join_date__year = 2023"
-       - GOOD: group_by: ["customer_id__join_date__year"], where: "customer_id__join_date__year = '2023-01-01'"
-
-    3. QUOTED DATE VALUES: MetricFlow truncates time dimensions into timestamps. Always wrap date values in single quotes using start-of-period date strings:
-       - Year filter (e.g. 2023): Use 'YYYY-01-01' -> "customer_id__join_date__year = '2023-01-01'"
-       - Month filter (e.g. May 2023): Use 'YYYY-MM-01' -> "customer_id__join_date__month = '2023-05-01'"
-       - Day / Exact Date filter (e.g. May 15, 2023): Use 'YYYY-MM-DD' -> "customer_id__join_date__day = '2023-05-15'"
-
-    EXAMPLES:
-    - User: "What is the max loan balance for customers who joined in 2023?"
-      Payload: { "metrics": ["cai_loans_outstanding_balance_max_metric"], "group_by": ["customer_id__join_date__year"], "where": "customer_id__join_date__year = '2023-01-01'" }
-    - User: "Total savings balance per bank"
-      Payload: { "metrics": ["cai_savings_balance_sum_metric"], "group_by": ["customer_id__bank_name"], "where": null }
-
-  expected_output: >
-    A structured MetricFlowQueryPayload containing metrics, group_by, and optional where fields.
+    1. EXACT CATALOG NAMES: Copy the exact metric and dimension names provided in the catalog.
+    2. TIME GRANULARITY MATCHING: If filtering by time in 'where' using a modifier, include the exact same dimension in 'group_by'.
+    3. QUOTED DATE VALUES: MetricFlow truncates time dimensions into timestamps. Wrap date values in single quotes.
+  expected_output: "A structured JSON MetricFlow query payload."
 
 mf_execute_task:
+  agent: mf_executor
   description: >
     Compile the MetricFlow JSON payload into raw Impala SQL:
     {sql_query}
 
     INSTRUCTION:
-    You MUST Call the `compile_mf_sql` tool immediately. It will return a raw Impala SQL string.
-    Return that exact SQL string. Do not hallucinate or execute the query.
-  expected_output: >
-    The exact raw Impala SQL string returned by the `compile_mf_sql` tool.
+    You MUST Call the `compile_mf_sql` tool immediately. Return that exact SQL string. Do not hallucinate or execute the query.
+  expected_output: "The exact raw Impala SQL string returned by the `compile_mf_sql` tool."
 
 evaluate_policy_task:
+  agent: compliance_officer
   description: >
     Answer the following corporate policy question: '{user_question}'
 
     INSTRUCTIONS:
     1. Use the `search_policy_documents` tool to query the enterprise knowledge base.
     2. Formulate a conversational text response based ONLY on the retrieved manuals.
-  expected_output: >
-    A clear conversational text response ready for UI display.
+  expected_output: "A clear conversational text response ready for UI display."

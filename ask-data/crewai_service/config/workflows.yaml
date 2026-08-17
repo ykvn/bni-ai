@@ -1,0 +1,34 @@
+sql:
+  tasks:
+    - fetch_schema_task
+    - draft_sql_task
+    - execute_sql_task
+  retry_logic:
+    error_keywords: ["Engine Error", "AnalysisException", "Syntax error", "ParseException"]
+    max_retries: 3
+    route_back_to: draft_sql_task
+  output_mapping:
+    predicted_sql: sql_query
+    final_data: final_data
+
+semantic:
+  tasks:
+    - mf_fetch_schema_task
+    - mf_draft_payload_task
+    - mf_execute_task
+    - execute_sql_task
+  retry_logic:
+    error_keywords: ["MetricFlow API Error", "Syntax error", "Failed", "ERROR:"]
+    max_retries: 3
+    route_back_to: mf_draft_payload_task
+  output_mapping:
+    predicted_sql: sql_query
+    compiled_mf_sql: compiled_mf_sql
+    final_data: final_data
+
+rag:
+  tasks:
+    - evaluate_policy_task
+  retry_logic: null
+  output_mapping:
+    response: final_data
