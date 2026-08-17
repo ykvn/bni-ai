@@ -1,0 +1,29 @@
+get_database_schema:
+  description: "CRITICAL FIRST STEP: Retrieves table names and columns based on the user query."
+  args:
+    - "user_question"
+
+search_golden_queries:
+  description: "Searches verified SQL templates matching the user's intent."
+  args:
+    - "user_question"
+
+execute_banking_query:
+  description: "Executes Impala SQL. Returns raw JSON rows or an error message if syntax is wrong."
+  args:
+    - "sql_query"
+
+search_policy_documents:
+  description: "Searches enterprise banking manuals, SOPs, and compliance guidelines."
+  args:
+    - "query"
+
+search_mf_catalog:
+  description: "Searches the dbt MetricFlow semantic catalog for relevant metrics and dimensions based on the user's question. ALWAYS use this before drafting a MetricFlow JSON payload to retrieve the exact metric names and dimension paths."
+  args:
+    - "user_question"
+
+compile_mf_sql:
+  description: "Sends a JSON query payload to the dbt MetricFlow API to compile into SQL. The payload MUST be a valid JSON string containing 'metrics' and 'group_by' arrays."
+  args:
+    - "json_payload"

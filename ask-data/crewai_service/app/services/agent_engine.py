@@ -4,8 +4,9 @@ import re
 import yaml
 from datetime import datetime
 from pathlib import Path
+from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, create_model
 from crewai import Agent, Crew, Task, LLM
 from crewai.tools import tool
 from mcp import ClientSession
@@ -15,6 +16,7 @@ from shared.cml_auth import build_cml_headers
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
 def log_ts(msg: str):
+    """Prints log messages with precise millisecond timestamps."""
     ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
     print(f"⏱️ [{ts}] {msg}", flush=True)
 
@@ -25,11 +27,32 @@ def agent_step_callback(agent_action):
     if hasattr(agent_action, 'tool'):
         log_ts(f"🤖 AGENT ACTION: Triggering Tool '{agent_action.tool}'")
 
+def load_yaml(file_name: str) -> dict:
+    path = _CONFIG_DIR / file_name
+    if not path.exists(): return {}
+    with open(path, 'r') as f:
+        return yaml.safe_load(f) or {}
+
 os.environ["OPENAI_API_KEY"] = os.environ.get("CML_TOKEN") or os.environ.get("LITELLM_API_KEY", "sk-default")
 os.environ["OPENAI_API_BASE"] = os.environ.get("LITELLM_PROXY_URL") or os.environ.get("LITELLM_APP_URL", "")
 os.environ["OPENAI_MODEL_NAME"] = f"openai/{os.environ.get('CML_MODEL_NAME', '')}"
 
-# --- 1. LLM PROFILES ---
+# --- 1. PYDANTIC SCHEMAS ---
+class MetricFlowQueryPayload(BaseModel):
+    metrics: List[str] = Field(
+        ..., 
+        description="List of metric names to query, e.g. ['cai_savings_balance_sum_metric']"
+    )
+    group_by: List[str] = Field(
+        default_factory=list, 
+        description="List of entity dimensions using double-underscore notation, e.g. ['customer_id__bank_name']"
+    )
+    where: Optional[str] = Field(
+        default=None, 
+        description="Optional MetricFlow where filter string, e.g. 'metric_time__year = 2025'"
+    )
+
+# --- 2. LLM PROFILES ---
 LLM_REGISTRY = {
     "GLOBAL_LLM": LLM(
         model=f"openai/{os.getenv('CML_MODEL_NAME')}",
@@ -48,7 +71,7 @@ LLM_REGISTRY = {
     )
 }
 
-# --- 2. MCP TOOLS ---
+# --- 3. DYNAMIC MCP TOOLS REGISTRY ---
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:
     start_time = datetime.now()
     log_ts(f"🔌 MCP Call Started: '{tool_name}'")
@@ -65,44 +88,31 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
             log_ts(f"🏁 MCP Call Completed: '{tool_name}' (Took {duration:.2f}s)")
             return res.content[0].text if res and res.content else ""
 
-@tool("get_database_schema")
-async def mcp_get_database_schema(user_question: str) -> str:
-    return await call_mcp("get_database_schema", {"user_question": user_question})
+def create_dynamic_tool(name: str, desc: str, expected_args: list):
+    """Factory function to generate CrewAI tools with STRICT schemas and tool invocation logging"""
+    schema_fields = {arg_name: (str, ...) for arg_name in expected_args}
+    DynamicSchema = create_model(f"{name}Schema", **schema_fields)
 
-@tool("search_golden_queries")
-async def mcp_search_golden_queries(user_question: str) -> str:
-    return await call_mcp("search_golden_queries", {"user_question": user_question})
+    @tool(name, args_schema=DynamicSchema)
+    async def _dynamic_tool(**kwargs) -> str:
+        # Re-inserted tool invocation log trace
+        log_ts(f"🛠️ Tool Invoked: '{name}'")
+        return await call_mcp(name, arguments=kwargs)
+    
+    _dynamic_tool.description = desc
+    return _dynamic_tool
 
-@tool("execute_banking_query")
-async def mcp_execute_banking_query(sql_query: str) -> str:
-    return await call_mcp("execute_banking_query", {"sql_query": sql_query})
+TOOL_REGISTRY = {}
+tools_cfg = load_yaml("tools.yaml")
 
-@tool("search_policy_documents")
-async def mcp_search_policy_documents(query: str) -> str:
-    return await call_mcp("search_policy_documents", {"query": query})
+for t_name, t_config in tools_cfg.items():
+    TOOL_REGISTRY[t_name] = create_dynamic_tool(
+        name=t_name, 
+        desc=t_config.get("description", ""),
+        expected_args=t_config.get("args", [])
+    )
 
-@tool("search_mf_catalog")
-async def mcp_search_mf_catalog(user_question: str) -> str:
-    return await call_mcp("search_mf_catalog", {"user_question": user_question})
-
-@tool("compile_mf_sql")
-async def mcp_compile_mf_sql(json_payload: str) -> str:
-    return await call_mcp("compile_mf_sql", {"json_payload": json_payload})
-
-TOOL_REGISTRY = {
-    "get_database_schema": mcp_get_database_schema,
-    "search_golden_queries": mcp_search_golden_queries,
-    "execute_banking_query": mcp_execute_banking_query,
-    "search_policy_documents": mcp_search_policy_documents,
-    "search_mf_catalog": mcp_search_mf_catalog,
-    "compile_mf_sql": mcp_compile_mf_sql
-}
-
-# --- 3. DYNAMIC WORKFLOW ENGINE ---
-def load_yaml(file_name: str) -> dict:
-    with open(_CONFIG_DIR / file_name, 'r') as f:
-        return yaml.safe_load(f)
-
+# --- 4. DYNAMIC WORKFLOW ENGINE ---
 class UniversalState(BaseModel):
     user_question: str = ""
     db_schema: str = ""
@@ -133,7 +143,6 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
         task_name = tasks_to_run[current_task_idx]
         log_ts(f"🌊 [Flow] Executing Task: {task_name} (Retry: {state.retries})")
 
-        # Instantiate dynamic Agent
         t_cfg = tasks_cfg[task_name]
         a_cfg = agents_cfg[t_cfg["agent"]]
 
@@ -142,36 +151,48 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
             goal=a_cfg["goal"],
             backstory=a_cfg["backstory"],
             llm=LLM_REGISTRY[a_cfg.get("llm", "GLOBAL_LLM")],
-            tools=[TOOL_REGISTRY[t] for t in a_cfg.get("tools", [])],
+            tools=[TOOL_REGISTRY[t] for t in a_cfg.get("tools", []) if t in TOOL_REGISTRY],
             step_callback=agent_step_callback,
             memory=False
         )
 
-        # Interpolate variables into prompt
+        # Correctly pass either compiled_mf_sql or sql_query to the prompt template
+        active_sql = state.compiled_mf_sql if (job_type == "semantic" and task_name == "execute_sql_task") else state.sql_query
+
         task_desc = t_cfg["description"].format(
             user_question=state.user_question,
             db_schema=state.db_schema,
             error_context=state.error_context,
-            sql_query=state.sql_query
+            sql_query=active_sql
         )
+
+        # Dynamic output schema assignment for MetricFlow payload drafting
+        extra_task_args = {}
+        if task_name == "mf_draft_payload_task":
+            extra_task_args["output_pydantic"] = MetricFlowQueryPayload
 
         task = Task(
             description=task_desc,
             expected_output=t_cfg["expected_output"],
             agent=agent,
-            callback=task_completion_callback
+            callback=task_completion_callback,
+            **extra_task_args
         )
 
-        # Run Task
         crew = Crew(agents=[agent], tasks=[task], verbose=True)
         result = await crew.kickoff_async()
         raw_output = result.raw
 
-        # Internal State Mapping routing
+        # Internal State Mapping
         if task_name in ["fetch_schema_task", "mf_fetch_schema_task"]:
             state.db_schema = raw_output
-        elif task_name in ["draft_sql_task", "mf_draft_payload_task"]:
-            state.sql_query = re.sub(r"```(?:sql|json)?|```", "", raw_output).strip()
+        elif task_name == "draft_sql_task":
+            state.sql_query = re.sub(r"```sql|```", "", raw_output).strip()
+        elif task_name == "mf_draft_payload_task":
+            if hasattr(result, "pydantic") and result.pydantic:
+                state.sql_query = result.pydantic.model_dump_json()
+            else:
+                state.sql_query = re.sub(r"```(?:json)?|```", "", raw_output).strip()
         elif task_name == "mf_execute_task":
             state.compiled_mf_sql = raw_output
         elif task_name in ["execute_sql_task", "evaluate_policy_task"]:
@@ -192,7 +213,6 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
 
     log_ts(f"🎉 Universal Execution Finished for '{job_type}'")
 
-    # Map to final payload according to workflows.yaml
     final_payload = {}
     for frontend_key, state_attr in output_mapping.items():
         final_payload[frontend_key] = getattr(state, state_attr, None)
