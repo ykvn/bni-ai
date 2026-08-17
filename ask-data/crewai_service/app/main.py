@@ -1,7 +1,6 @@
 import uuid
 import json
 import asyncio
-from typing import Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from crewai_service.app.core import job_db
@@ -11,12 +10,11 @@ app = FastAPI(title="CrewAI Agent Microservice Engine")
 
 class ProcessRequest(BaseModel):
     question: str
-    type: Literal["sql", "rag", "semantic"] = "sql"
+    type: str = "sql"  # ✅ Changed from Literal to str for future-proof workflow types
 
 @app.on_event("startup")
 async def startup_event():
     job_db.init_db()
-    # Spawns the worker loop as a non-blocking background task within FastAPI's event loop
     asyncio.create_task(run_worker_loop())
 
 @app.get("/")
@@ -61,11 +59,6 @@ def get_task_status(job_id: str):
 
 @app.delete("/cancel/{job_id}")
 def cancel_task(job_id: str):
-    """
-    Cancels a running or pending job. If the job is currently being processed
-    by the worker, the underlying asyncio task is cancelled. If the job is
-    still pending, it is marked as 'cancelled' so the worker loop skips it.
-    """
     cancelled = cancel_job(job_id)
     if not cancelled:
         job = job_db.get_job(job_id)
