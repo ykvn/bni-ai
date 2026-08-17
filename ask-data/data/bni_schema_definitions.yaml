@@ -4,7 +4,7 @@ database_type: "Cloudera Impala"
 database_name: "test"
 
 tables:
-  - name: customer_group
+  - name: dm_customer.customer_group
     description: ""
     columns:
       - name: nama_principal
@@ -29,7 +29,7 @@ tables:
         type: "STRING"
         description: "Flag Diamond"
 
-  - name: customer_performance
+  - name: dm_customer.customer_performance
     description: ""
     columns:
       - name: total_reksadana
@@ -139,6 +139,7 @@ tables:
         description: "Total CC"
       - name: mdm_id
         type: "VARCHAR(50)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: avg_balance_mtd_fleksi
         type: "DECIMAL(22,3)"
@@ -159,7 +160,7 @@ tables:
         type: "VARCHAR(1)"
         description: "Flag Pendaftaran Agen46"
 
-  - name: customer_beneficial_owner_individu
+  - name: dm_customer.customer_beneficial_owner_individu
     description: ""
     columns:
       - name: bo_id_type
@@ -176,6 +177,7 @@ tables:
         description: "Atribut yang mencatat informasi bo dana tahun own dalam operasional perbankan."
       - name: bo_id_number
         type: "VARCHAR(20)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) bo nomor yang menjadi kunci referensi data."
       - name: as_of_date
         type: "DATE"
@@ -214,7 +216,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Penanda/indikator bo dom tax ln yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
 
-  - name: customer_kplus
+  - name: dm_customer.customer_kplus
     description: ""
     columns:
       - name: emailcc
@@ -234,6 +236,7 @@ tables:
         description: "Warga negara Peserta"
       - name: mdm_id
         type: "VARCHAR(100)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: nationality
         type: "VARCHAR(100)"
@@ -266,7 +269,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Nama sektor ekonomi atau industri yang mencerminkan aktivitas utama bisnis pihak terkait."
 
-  - name: customer_icons
+  - name: dm_customer.customer_icons
     description: ""
     columns:
       - name: segment_maverick
@@ -343,12 +346,13 @@ tables:
         description: "Flag Politically Exposed Person (PEP) yang selanjutnya disingkat sebagai PEP adalah orang yang memiliki atau pernah memiliki kewenangan publik diantaranya adalah penyelenggara negara sebagaimana dimaksud dalam peraturan perundangundangan yang mengatur tentang penyelenggara negara, dan/atau orang yang tercatat atau pernah tercatat sebagai anggora partai politik yang memiliki pengaruh terhadap kebijakan dan operasional partai politik, baik yang berkewarganegaraan Indonesia maupun yang berkewarganegaraan asing."
       - name: mdm_id
         type: "VARCHAR(100)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: exporter_type
         type: "VARCHAR(100)"
         description: "Jenis Pengekspor"
 
-  - name: customer_beneficial_owner
+  - name: dm_customer.customer_beneficial_owner
     description: ""
     columns:
       - name: bo_id_type_desc
@@ -392,12 +396,13 @@ tables:
         description: "Posisi periode dari data yang ditampilkan"
       - name: bo_id_number
         type: "VARCHAR(20)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) bo nomor yang menjadi kunci referensi data."
       - name: bo_birth_date
         type: "DATE"
         description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
 
-  - name: customer_dplk
+  - name: dm_customer.customer_dplk
     description: ""
     columns:
       - name: home_add_rtrw_ktp
@@ -429,6 +434,7 @@ tables:
         description: "Nomor Identitas Pemberi Dana"
       - name: mdm_id
         type: "VARCHAR(50)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: cust_birth_date
         type: "DATE"
@@ -452,7 +458,7 @@ tables:
         type: "VARCHAR(200)"
         description: "Kode Pos Kantor"
 
-  - name: customer_creditcard
+  - name: dm_customer.customer_creditcard
     description: ""
     columns:
       - name: cr_var_na_length_1
@@ -547,6 +553,7 @@ tables:
         description: ""
       - name: mdm_id
         type: "VARCHAR(100)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: cr_crlimit_temp_eff_dte
         type: "DATE"
@@ -564,7 +571,7 @@ tables:
         type: "DECIMAL(5,0)"
         description: "Jenis Identitas"
 
-  - name: customer_identification
+  - name: dm_customer.customer_identification
     description: ""
     columns:
       - name: id_issue_date
@@ -580,7 +587,7 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: customer_business_management
+  - name: dm_customer.customer_business_management
     description: ""
     columns:
       - name: bm_tax_id
@@ -611,7 +618,7 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: customer_performance_pms3d
+  - name: dm_customer.customer_performance_pms3d
     description: ""
     columns:
       - name: amount_ftp_scmr_ytd_dpk
@@ -675,7 +682,7 @@ tables:
         type: "DECIMAL(18,2)"
         description: "Jumlah Uang Tunai di MTD"
 
-  - name: connect_monitoring_leads
+  - name: dm_campaign.connect_monitoring_leads
     description: ""
     columns:
       - name: as_of_date
@@ -685,7 +692,7 @@ tables:
         type: "VARCHAR(3)"
         description: "Area"
 
-  - name: digisales_monitoring_leads_valuechain
+  - name: dm_campaign.digisales_monitoring_leads_valuechain
     description: ""
     columns:
       - name: as_of_date
@@ -707,11 +714,12 @@ tables:
         type: "VARCHAR(250)"
         description: "Alasan dibatalkan"
 
-  - name: customer_wms
+  - name: dm_customer.customer_wms
     description: ""
     columns:
       - name: mdm_id
         type: "VARCHAR(100)"
+        primary_key: true
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: sid_mutual_fund
         type: "VARCHAR(100)"
@@ -750,7 +758,7 @@ tables:
         type: "VARCHAR(100)"
         description: "NPWP adalah nomor pokok wajib pajak bagi perorangan maupun badan usaha yang\ndikeluarkan oleh Kantor Pelayanan Pajak."
 
-  - name: xref_customer
+  - name: dm_customer.xref_customer
     description: ""
     columns:
       - name: source_data
@@ -758,9 +766,10 @@ tables:
         description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
       - name: mdm_id
         type: "VARCHAR(100)"
+        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
-  - name: digisales_monitoring_leads
+  - name: dm_campaign.digisales_monitoring_leads
     description: ""
     columns:
       - name: alasanfollowup
@@ -770,7 +779,7 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: customer_performance_transaction
+  - name: dm_customer.customer_performance_transaction
     description: ""
     columns:
       - name: register_smsbank_date
@@ -870,7 +879,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Flag  Register SMS Bank"
 
-  - name: bnimove_monitoring_leads
+  - name: dm_campaign.bnimove_monitoring_leads
     description: ""
     columns:
       - name: sektor_ekonomi_cd
@@ -883,14 +892,14 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: rmtools_funding
+  - name: dm_campaign.rmtools_funding
     description: ""
     columns:
       - name: as_of_date
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: rmtools_lending_retail
+  - name: dm_campaign.rmtools_lending_retail
     description: ""
     columns:
       - name: marital_status
@@ -906,7 +915,7 @@ tables:
         type: "STRING"
         description: "Unknown"
 
-  - name: rmtools_lending_corporate
+  - name: dm_campaign.rmtools_lending_corporate
     description: ""
     columns:
       - name: 3d
@@ -919,14 +928,14 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: bin_card
+  - name: dm_card.bin_card
     description: ""
     columns:
       - name: bank_name
         type: "VARCHAR(1000)"
         description: "Nama Bank"
 
-  - name: card
+  - name: dm_card.card
     description: ""
     columns:
       - name: subbranch_name
@@ -940,9 +949,10 @@ tables:
         description: "Posisi periode dari data yang ditampilkan"
       - name: mdm_id
         type: "VARCHAR(100)"
+        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
-  - name: performance_creditcard_new
+  - name: dm_card.performance_creditcard_new
     description: ""
     columns:
       - name: expiry_date
@@ -959,36 +969,24 @@ tables:
         description: "Posisi periode dari data yang ditampilkan"
       - name: mdm_id
         type: "VARCHAR(30)"
+        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
-  - name: performance_creditcard
+  - name: dm_card.performance_creditcard
     description: ""
     columns:
       - name: as_of_date
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: indopex
+  - name: dm_finance.indopex
     description: ""
     columns:
       - name: as_of_date
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: interest_expense_daily
-    description: ""
-    columns:
-      - name: gl_account_id_dpk
-        type: "INT"
-        description: "Identifikasi akun GL untuk Dana Pihak Ketiga"
-      - name: flag_source
-        type: "VARCHAR(15)"
-        description: "Penanda sumber asal data"
-      - name: as_of_date
-        type: "DATE"
-        description: "Posisi periode dari data yang ditampilkan"
-
-  - name: interest_expense_ytd
+  - name: dm_finance.interest_expense_daily
     description: ""
     columns:
       - name: gl_account_id_dpk
@@ -1001,7 +999,20 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: interest_income_daily
+  - name: dm_finance.interest_expense_ytd
+    description: ""
+    columns:
+      - name: gl_account_id_dpk
+        type: "INT"
+        description: "Identifikasi akun GL untuk Dana Pihak Ketiga"
+      - name: flag_source
+        type: "VARCHAR(15)"
+        description: "Penanda sumber asal data"
+      - name: as_of_date
+        type: "DATE"
+        description: "Posisi periode dari data yang ditampilkan"
+
+  - name: dm_finance.interest_income_daily
     description: ""
     columns:
       - name: as_of_date
@@ -1011,7 +1022,7 @@ tables:
         type: "VARCHAR(15)"
         description: "Penanda sumber asal data"
 
-  - name: interest_income_ytd
+  - name: dm_finance.interest_income_ytd
     description: ""
     columns:
       - name: processing_time
@@ -1024,14 +1035,14 @@ tables:
         type: "VARCHAR(100)"
         description: "Indeks utama yang digunakan sebagai acuan"
 
-  - name: ledger_statement
+  - name: dm_finance.ledger_statement
     description: ""
     columns:
       - name: as_of_date
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: mart_jurnal_transaksi
+  - name: dm_finance.mart_jurnal_transaksi
     description: ""
     columns:
       - name: entered_debit
@@ -1083,7 +1094,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Identifikasi sumber asal data"
 
-  - name: mart_ledger_statement
+  - name: dm_finance.mart_ledger_statement
     description: ""
     columns:
       - name: subbranch_name
@@ -1096,7 +1107,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Pengidentifikasi unik (ID) counterparty yang menjadi kunci referensi data."
 
-  - name: opex
+  - name: dm_finance.opex
     description: ""
     columns:
       - name: as_of_date
@@ -1106,14 +1117,14 @@ tables:
         type: "STRING"
         description: "Identifikasi sumber asal data"
 
-  - name: recovery
+  - name: dm_finance.recovery
     description: ""
     columns:
       - name: tahun
         type: "INT"
         description: "Tahun pelaporan data"
 
-  - name: dpk_dn_daily
+  - name: dm_funding.dpk_dn_daily
     description: ""
     columns:
       - name: flag_rate
@@ -1129,7 +1140,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Penanda untuk pengelompokan kategori data"
 
-  - name: funding
+  - name: dm_funding.funding
     description: ""
     columns:
       - name: acct_close_date
@@ -1163,7 +1174,7 @@ tables:
         type: "VARCHAR(50)"
         description: "Area"
 
-  - name: dpk_nrealtime
+  - name: dm_funding.dpk_nrealtime
     description: ""
     columns:
       - name: subbranch_name
@@ -1176,7 +1187,7 @@ tables:
         type: "STRING"
         description: "Penanda untuk pengelompokan kategori data"
 
-  - name: funding_deposito
+  - name: dm_funding.funding_deposito
     description: ""
     columns:
       - name: saldo_rate
@@ -1195,7 +1206,7 @@ tables:
         type: "DATE"
         description: "Tanggal Pembaruan Akun"
 
-  - name: funding_cof
+  - name: dm_funding.funding_cof
     description: ""
     columns:
       - name: avg_r_ytd
@@ -1217,7 +1228,7 @@ tables:
         type: "DECIMAL(38,3)"
         description: "Rata-rata saldo reguler dari awal bulan sampai tanggal laporan"
 
-  - name: funding_giro
+  - name: dm_funding.funding_giro
     description: ""
     columns:
       - name: flag_rate
@@ -1236,7 +1247,7 @@ tables:
         type: "VARCHAR(5)"
         description: "Flag BNI Direct"
 
-  - name: funding_tabungan
+  - name: dm_funding.funding_tabungan
     description: ""
     columns:
       - name: flag_rate
@@ -1252,14 +1263,14 @@ tables:
         type: "VARCHAR(5)"
         description: "Flag Mbank"
 
-  - name: funding_movement
+  - name: dm_funding.funding_movement
     description: ""
     columns:
       - name: as_of_date
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: humanresource
+  - name: dm_humanresource.humanresource
     description: ""
     columns:
       - name: email_pribadi
@@ -1329,7 +1340,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Unit"
 
-  - name: teller
+  - name: dm_humanresource.teller
     description: ""
     columns:
       - name: ca_desc
@@ -1357,11 +1368,12 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: account_dplk
+  - name: dm_investment.account_dplk
     description: ""
     columns:
       - name: mdm_id
         type: "VARCHAR(100)"
+        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: as_of_date
         type: "DATE"
@@ -1376,7 +1388,7 @@ tables:
         type: "STRING"
         description: "Atribut yang mencatat informasi pembukaan wilayah dalam operasional perbankan."
 
-  - name: elo_incoming
+  - name: dm_lending.elo_incoming
     description: ""
     columns:
       - name: jns_pendapatan
@@ -1467,7 +1479,7 @@ tables:
         type: "DATE"
         description: "Tanggal pencairan dana"
 
-  - name: aum_daily_pms
+  - name: dm_investment.aum_daily_pms
     description: ""
     columns:
       - name: marital_status
@@ -1489,14 +1501,14 @@ tables:
         type: "DATE"
         description: "Posisi periode dari data yang ditampilkan"
 
-  - name: hapusbuku
+  - name: dm_lending.hapusbuku
     description: ""
     columns:
       - name: tahun
         type: "INT"
         description: "Tahun pelaporan data"
 
-  - name: lending
+  - name: dm_lending.lending
     description: ""
     columns:
       - name: jenis_sk_bunga
@@ -1570,6 +1582,7 @@ tables:
         description: "Interest Income Daily"
       - name: mdm_id
         type: "STRING"
+        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: no_hp_wondr
         type: "STRING"
@@ -1584,7 +1597,7 @@ tables:
         type: "VARCHAR(30)"
         description: "Hasil klasifikasi output pada level 2"
 
-  - name: bni_investment
+  - name: dm_investment.bni_investment
     description: ""
     columns:
       - name: open_region_code
@@ -1601,6 +1614,7 @@ tables:
         description: "Posisi periode dari data yang ditampilkan"
       - name: mdm_id
         type: "VARCHAR(100)"
+        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: acct_close_date
         type: "DATE"
@@ -1624,7 +1638,7 @@ tables:
         type: "DATE"
         description: "Tanggal bo kelahiran yang mencatat kapan hal tersebut terjadi atau berlaku."
 
-  - name: ncl
+  - name: dm_lending.ncl
     description: ""
     columns:
       - name: as_of_date
@@ -1634,7 +1648,7 @@ tables:
         type: "STRING"
         description: "Penanda umum untuk klasifikasi atau status data"
 
-  - name: aum_daily
+  - name: dm_investment.aum_daily
     description: ""
     columns:
       - name: bni_birth_date
@@ -1653,7 +1667,7 @@ tables:
         type: "VARCHAR(25)"
         description: "Status bo status pernikahan yang menunjukkan kondisi atau tahapan terkini."
 
-  - name: collateral
+  - name: dm_lending.collateral
     description: ""
     columns:
       - name: type_seq
@@ -1777,7 +1791,7 @@ tables:
         type: "DECIMAL(18,4)"
         description: "Klaim Lainnya"
 
-  - name: channel_atm
+  - name: dm_transaction.channel_atm
     description: ""
     columns:
       - name: propinsi
@@ -1790,7 +1804,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Nama subbranch yang mengidentifikasi entitas tersebut secara deskriptif."
 
-  - name: channel_branch
+  - name: dm_transaction.channel_branch
     description: ""
     columns:
       - name: provinsi_name
@@ -1803,7 +1817,7 @@ tables:
         type: "DATE"
         description: "Tanggal data diproses oleh sistem"
 
-  - name: channel_agent46
+  - name: dm_transaction.channel_agent46
     description: ""
     columns:
       - name: as_of_date
@@ -1813,7 +1827,7 @@ tables:
         type: "STRING"
         description: "User yang melakukan approval"
 
-  - name: channel_merchant_android
+  - name: dm_transaction.channel_merchant_android
     description: ""
     columns:
       - name: provinsi
@@ -1823,7 +1837,7 @@ tables:
         type: "VARCHAR(1000)"
         description: "Atribut yang mencatat informasi grup mcc dalam operasional perbankan."
 
-  - name: channel_teller
+  - name: dm_transaction.channel_teller
     description: ""
     columns:
       - name: ca_desc
@@ -1836,7 +1850,7 @@ tables:
         type: "SMALLINT"
         description: "CA"
 
-  - name: channel_merchant
+  - name: dm_transaction.channel_merchant
     description: ""
     columns:
       - name: assesment_34
@@ -2332,7 +2346,7 @@ tables:
         type: "INT"
         description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
 
-  - name: channel_merchant_qris
+  - name: dm_transaction.channel_merchant_qris
     description: ""
     columns:
       - name: pos1
@@ -2384,7 +2398,7 @@ tables:
         type: "VARCHAR(1000)"
         description: "Atribut yang mencatat informasi grup mcc dalam operasional perbankan."
 
-  - name: master_merchant
+  - name: dm_transaction.master_merchant
     description: ""
     columns:
       - name: assesment_7
@@ -2874,7 +2888,7 @@ tables:
         type: "INT"
         description: "Atribut yang mencatat informasi nomor bulletins dalam operasional perbankan."
 
-  - name: transaction_cta_batch
+  - name: dm_transaction.transaction_cta_batch
     description: ""
     columns:
       - name: row_no
@@ -2902,7 +2916,7 @@ tables:
         type: "STRING"
         description: "Pengidentifikasi unik (ID) terminal yang menjadi kunci referensi data."
 
-  - name: transaction_dpk
+  - name: dm_transaction.transaction_dpk
     description: ""
     columns:
       - name: customer_name_destination
@@ -2912,7 +2926,7 @@ tables:
         type: "STRING"
         description: "Nama Bank tujuan"
 
-  - name: transaction_dpk_batch
+  - name: dm_transaction.transaction_dpk_batch
     description: ""
     columns:
       - name: balance_idr_01
@@ -3003,7 +3017,7 @@ tables:
         type: "STRING"
         description: "Atribut yang mencatat informasi bo deskripsi dalam operasional perbankan."
 
-  - name: transaction_dpk_all
+  - name: dm_transaction.transaction_dpk_all
     description: ""
     columns:
       - name: description_21
@@ -3097,7 +3111,7 @@ tables:
         type: "STRING"
         description: "Nomor urut baris data"
 
-  - name: transaction_gen_batch
+  - name: dm_transaction.transaction_gen_batch
     description: ""
     columns:
       - name: description_36
@@ -3125,7 +3139,7 @@ tables:
         type: "TIMESTAMP"
         description: "Waktu data dimuat ke dalam sistem data warehouse"
 
-  - name: transaction_dpk_nearrealtime
+  - name: dm_transaction.transaction_dpk_nearrealtime
     description: ""
     columns:
       - name: description_36_1
@@ -3210,7 +3224,7 @@ tables:
         type: "DECIMAL(38,3)"
         description: "Saldo"
 
-  - name: trxchannel
+  - name: dm_transaction.trxchannel
     description: ""
     columns:
       - name: machine_acquirer
@@ -3244,7 +3258,7 @@ tables:
         type: "VARCHAR(2)"
         description: "Penanda/indikator bsu yang menunjukkan kondisi, kategori, atau keikutsertaan tertentu."
 
-  - name: transaction_loan_batch
+  - name: dm_transaction.transaction_loan_batch
     description: ""
     columns:
       - name: load_timestamp
@@ -3278,7 +3292,7 @@ tables:
         type: "TIMESTAMP"
         description: "Waktu data dimuat ke dalam sistem data warehouse"
 
-  - name: transaction_mvtrx
+  - name: dm_transaction.transaction_mvtrx
     description: ""
     columns:
       - name: mcc
@@ -3288,7 +3302,7 @@ tables:
         type: "DATE"
         description: "Tanggal data diproses oleh sistem"
 
-  - name: transaction_tapcash
+  - name: dm_transaction.transaction_tapcash
     description: ""
     columns:
       - name: as_of_date
@@ -3301,7 +3315,7 @@ tables:
         type: "VARCHAR(100)"
         description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
 
-  - name: trxchannel_cico
+  - name: dm_transaction.trxchannel_cico
     description: ""
     columns:
       - name: as_of_date
