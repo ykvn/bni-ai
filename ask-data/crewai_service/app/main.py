@@ -1,12 +1,26 @@
 import uuid
 import json
 import asyncio
+import yaml
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from crewai_service.app.core import job_db
 from crewai_service.app.worker import run_worker_loop, cancel_job
 
 app = FastAPI(title="CrewAI Agent Microservice Engine")
+
+_WORKFLOWS_PATH = Path(__file__).resolve().parent.parent / "config" / "workflows.yaml"
+
+
+def _known_workflow_types() -> set:
+    """Workflow types supported by the agent engine, driven by workflows.yaml."""
+    if not _WORKFLOWS_PATH.exists():
+        return set()
+    with open(_WORKFLOWS_PATH, "r") as f:
+        data = yaml.safe_load(f) or {}
+    return set(data.keys())
+
 
 class ProcessRequest(BaseModel):
     question: str
@@ -27,6 +41,13 @@ def process_task(payload: ProcessRequest):
     user_question = payload.question.strip() if payload.question else ""
     if not user_question:
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    known_types = _known_workflow_types()
+    if known_types and payload.type not in known_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown job type '{payload.type}'. Supported types: {sorted(known_types)}"
+        )
 
     job_id = str(uuid.uuid4())
     job_info = job_db.create_job(job_id=job_id, question=user_question, qtype=payload.type)

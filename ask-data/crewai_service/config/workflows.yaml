@@ -6,7 +6,8 @@ sql:
   retry_logic:
     error_keywords: ["Engine Error", "AnalysisException", "Syntax error", "ParseException"]
     max_retries: 3
-    route_back_to: draft_sql_task
+    route_back_to:
+      execute_sql_task: draft_sql_task
   output_mapping:
     predicted_sql: sql_query
     final_data: final_data
@@ -18,9 +19,10 @@ semantic:
     - mf_execute_task
     - execute_sql_task
   retry_logic:
-    error_keywords: ["MetricFlow API Error", "Syntax error", "Failed", "ERROR:"]
+    error_keywords: ["MetricFlow API Error", "Syntax error", "ParseException"]
     max_retries: 3
-    route_back_to: mf_draft_payload_task
+    route_back_to:
+      mf_execute_task: mf_draft_payload_task
   output_mapping:
     predicted_sql: sql_query
     compiled_mf_sql: compiled_mf_sql

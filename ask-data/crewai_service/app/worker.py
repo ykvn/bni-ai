@@ -16,6 +16,29 @@ def _is_cancelled(job_id: str) -> bool:
     job = job_db.get_job(job_id)
     return job is not None and job.get("status") == "cancelled"
 
+
+_ROW_LIST_KEYS = ("data", "rows", "results", "result", "records")
+
+
+def _extract_records(parsed) -> list:
+    """Best-effort extraction of a tabular record list from parsed JSON.
+    Handles a bare list of rows, a dict wrapping a list under common keys
+    (data/rows/results/result/records), or a single flat row object. Returns
+    an empty list for non-tabular objects (e.g. error/metadata payloads), so
+    row_count is not inflated by a wrapper or error object."""
+    if isinstance(parsed, list):
+        return parsed
+    if isinstance(parsed, dict):
+        for key in _ROW_LIST_KEYS:
+            val = parsed.get(key)
+            if isinstance(val, list):
+                return val
+        # A flat object of only scalar values is treated as a single row.
+        if parsed and all(not isinstance(v, (dict, list)) for v in parsed.values()):
+            return [parsed]
+        return []
+    return []
+
 async def _process_single_job(job: dict):
     job_id = job["job_id"]
     user_question = job["question"]
@@ -42,11 +65,8 @@ async def _process_single_job(job: dict):
                 clean_json = re.sub(r"```(?:json)?|```", "", raw_data).strip()
                 parsed = json.loads(clean_json)
                 
-                if isinstance(parsed, list):
-                    records = parsed
-                elif isinstance(parsed, dict):
-                    records = parsed.get("data", [parsed])
-            except json.JSONDecodeError:
+                records = _extract_records(parsed)
+            except (ValueError, TypeError):
                 # Fallback: If it couldn't parse, treat it as conversational text
                 if not agent_response:
                     agent_response = raw_data
@@ -94,13 +114,16 @@ async def run_worker_loop(max_concurrent_jobs: int = 5):
 
     while True:
         try:
-            job = job_db.fetch_next_pending_job()
+            job = job_db.claim_pending_job()
             if not job:
                 await asyncio.sleep(0.5)
                 continue
 
             job_id = job["job_id"]
-            job_db.update_job_status(job_id, status="processing")
+            # Cancel may have raced between the claim and task creation (no task
+            # exists yet for cancel_job() to find). Don't dispatch a cancelled job.
+            if _is_cancelled(job_id):
+                continue
 
             task = asyncio.create_task(worker_task(job))
             _active_tasks[job_id] = task

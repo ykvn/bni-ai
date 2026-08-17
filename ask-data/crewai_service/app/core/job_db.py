@@ -52,14 +52,28 @@ def get_job(job_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def fetch_next_pending_job() -> Optional[Dict[str, Any]]:
+def claim_pending_job() -> Optional[Dict[str, Any]]:
+    """Atomically fetches the oldest pending job and marks it 'processing' in a
+    single transaction. Returns None if there is no pending job, or if the job's
+    status changed (e.g. it was cancelled) between the read and the guarded
+    UPDATE, so a 'cancelled' status is never overwritten by the claim."""
     with sqlite3.connect(_DB_PATH, timeout=60) as conn:
         conn.row_factory = sqlite3.Row
-        cursor = conn.execute("SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1")
-        row = cursor.fetchone()
-        if row:
-            return dict(row)
-    return None
+        row = conn.execute(
+            "SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return None
+        job = dict(row)
+        cursor = conn.execute(
+            "UPDATE jobs SET status = 'processing', updated_at = CURRENT_TIMESTAMP "
+            "WHERE job_id = ? AND status = 'pending'",
+            (job["job_id"],)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return None
+        return job
 
 
 def update_job_status(job_id: str, status: str, result: Optional[str] = None, error: Optional[str] = None):

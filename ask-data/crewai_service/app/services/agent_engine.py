@@ -33,6 +33,92 @@ def load_yaml(file_name: str) -> dict:
     with open(path, 'r') as f:
         return yaml.safe_load(f) or {}
 
+
+# Placeholder substitution that tolerates literal braces and unknown tokens
+# (unlike str.format, which raises KeyError/IndexError on them). Only known
+# {key} placeholders are replaced; everything else is preserved verbatim.
+_PLACEHOLDER_RE = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def safe_format(template: str, **values) -> str:
+    def _replace(match):
+        key = match.group(1)
+        if key in values and values[key] is not None:
+            return str(values[key])
+        return match.group(0)  # unknown placeholder -> keep as-is
+    return _PLACEHOLDER_RE.sub(_replace, template)
+
+
+def validate_workflow_configs() -> List[str]:
+    """Cross-check all YAML configs against each other and the runtime registries.
+    Returns a list of human-readable configuration errors (empty when valid)."""
+    errors: List[str] = []
+
+    workflows = load_yaml("workflows.yaml")
+    agents = load_yaml("agents.yaml")
+    tasks = load_yaml("tasks.yaml")
+
+    known_agents = set(agents.keys())
+    known_tasks = set(tasks.keys())
+    known_llms = set(LLM_REGISTRY.keys())
+    known_tools = set(TOOL_REGISTRY.keys())
+
+    # Agents: llm + tools must resolve
+    for agent_name, agent_cfg in agents.items():
+        llm = agent_cfg.get("llm", "GLOBAL_LLM")
+        if llm not in known_llms:
+            errors.append(f"agent '{agent_name}' references unknown llm '{llm}'")
+        for tool_name in agent_cfg.get("tools", []):
+            if tool_name not in known_tools:
+                errors.append(f"agent '{agent_name}' references unknown tool '{tool_name}'")
+
+    # Tasks: agent must resolve
+    for task_name, task_cfg in tasks.items():
+        agent = task_cfg.get("agent")
+        if agent not in known_agents:
+            errors.append(f"task '{task_name}' references unknown agent '{agent}'")
+
+    # Workflows: tasks + retry routing must resolve
+    for wf_name, wf_cfg in workflows.items():
+        wf_tasks = wf_cfg.get("tasks")
+        if not isinstance(wf_tasks, list) or not wf_tasks:
+            errors.append(f"workflow '{wf_name}' has no non-empty 'tasks' list")
+            continue
+        for task_name in wf_tasks:
+            if task_name not in known_tasks:
+                errors.append(f"workflow '{wf_name}' references unknown task '{task_name}'")
+
+        rbt = (wf_cfg.get("retry_logic") or {}).get("route_back_to")
+        if isinstance(rbt, dict):
+            for source_task, target_task in rbt.items():
+                if target_task is not None and target_task not in wf_tasks:
+                    errors.append(
+                        f"workflow '{wf_name}' route_back_to[{source_task}] references "
+                        f"unknown task '{target_task}'"
+                    )
+        elif rbt is not None and rbt not in wf_tasks:
+            errors.append(f"workflow '{wf_name}' route_back_to references unknown task '{rbt}'")
+
+    # LLM model name must resolve; a missing CML_MODEL_NAME silently produces a
+    # broken model string like "openai/" or "openai/None".
+    if not os.environ.get("CML_MODEL_NAME", "").strip():
+        errors.append(
+            "CML_MODEL_NAME is not set; the LLM would use a broken model name. "
+            "Set CML_MODEL_NAME (CML) or map LITELLM_MODEL_NAME."
+        )
+
+    return errors
+
+
+def ensure_valid_configs():
+    """Fail fast at startup with a clear message when the YAML config is inconsistent."""
+    errors = validate_workflow_configs()
+    if errors:
+        raise RuntimeError(
+            "CrewAI workflow config validation failed:\n"
+            + "\n".join(f"  - {e}" for e in errors)
+        )
+
 os.environ["OPENAI_API_KEY"] = os.environ.get("CML_TOKEN") or os.environ.get("LITELLM_API_KEY", "sk-default")
 os.environ["OPENAI_API_BASE"] = os.environ.get("LITELLM_PROXY_URL") or os.environ.get("LITELLM_APP_URL", "")
 os.environ["OPENAI_MODEL_NAME"] = f"openai/{os.environ.get('CML_MODEL_NAME', '')}"
@@ -77,16 +163,28 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
     log_ts(f"🔌 MCP Call Started: '{tool_name}'")
     url = f"{os.getenv('MCP_SERVER_URL', '').rstrip('/')}/sse"
     headers = build_cml_headers(os.getenv("CML_TOKEN"))
-    async with sse_client(
-        url=url, headers=headers, 
-        httpx_client_factory=lambda **kw: httpx.AsyncClient(verify=False, follow_redirects=True, **kw)
-    ) as (read_stream, write_stream):
-        async with ClientSession(read_stream, write_stream) as session:
-            await session.initialize()
-            res = await session.call_tool(tool_name, arguments=arguments or {})
-            duration = (datetime.now() - start_time).total_seconds()
-            log_ts(f"🏁 MCP Call Completed: '{tool_name}' (Took {duration:.2f}s)")
-            return res.content[0].text if res and res.content else ""
+    try:
+        # These context managers close the underlying SSE + HTTP connections on
+        # normal exit, errors, AND cancellation, so no connections leak when a
+        # job is cancelled mid-call.
+        async with sse_client(
+            url=url, headers=headers,
+            httpx_client_factory=lambda **kw: httpx.AsyncClient(verify=False, follow_redirects=True, **kw)
+        ) as (read_stream, write_stream):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                res = await session.call_tool(tool_name, arguments=arguments or {})
+        content = res.content[0].text if res and res.content else ""
+    except Exception as e:
+        # Report MCP failures back to the agent as tool output so it can react /
+        # retry instead of crashing the whole job. asyncio.CancelledError is a
+        # BaseException in Py3.8+, so it is NOT caught here and still propagates.
+        content = f"__MCP_ERROR__ {tool_name}: {e}"
+        log_ts(f"❌ MCP Call Failed: '{tool_name}': {e}")
+    finally:
+        duration = (datetime.now() - start_time).total_seconds()
+        log_ts(f"🏁 MCP Call Finished: '{tool_name}' (Took {duration:.2f}s)")
+    return content
 
 def create_dynamic_tool(name: str, desc: str, expected_args: list):
     """Factory function to generate CrewAI tools with STRICT schemas and tool invocation logging"""
@@ -159,7 +257,8 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
         # Correctly pass either compiled_mf_sql or sql_query to the prompt template
         active_sql = state.compiled_mf_sql if (job_type == "semantic" and task_name == "execute_sql_task") else state.sql_query
 
-        task_desc = t_cfg["description"].format(
+        task_desc = safe_format(
+            t_cfg["description"],
             user_question=state.user_question,
             db_schema=state.db_schema,
             error_context=state.error_context,
@@ -199,13 +298,23 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
             state.final_data = raw_output
 
         # Retry Logic Interceptor
-        if retry_logic and current_task_idx > 0:
+        if retry_logic:
             err_keywords = retry_logic.get("error_keywords", [])
             if any(err in raw_output for err in err_keywords) and state.retries < retry_logic.get("max_retries", 3):
                 log_ts(f"⚠️ [Flow] Error Detected! Routing back. Error: {raw_output[:50]}...")
                 state.error_context = raw_output
                 state.retries += 1
-                current_task_idx = tasks_to_run.index(retry_logic["route_back_to"])
+                # Route back to the task that should regenerate the faulty output.
+                # route_back_to may be a single task name (applies to every task) or
+                # a per-task mapping. If a task's target is None/unset, retry it in
+                # place (bounded by max_retries) so non-recoverable errors (e.g.
+                # Impala execution failures) surface instead of looping into the
+                # wrong remediation context. The first task always retries in place.
+                if current_task_idx > 0:
+                    rbt = retry_logic.get("route_back_to")
+                    route_target = rbt.get(task_name) if isinstance(rbt, dict) else rbt
+                    if route_target is not None and route_target in tasks_to_run:
+                        current_task_idx = tasks_to_run.index(route_target)
                 continue
 
         state.error_context = ""
@@ -218,3 +327,6 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
         final_payload[frontend_key] = getattr(state, state_attr, None)
     
     return final_payload
+
+
+ensure_valid_configs()

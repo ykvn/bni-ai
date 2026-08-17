@@ -38,10 +38,8 @@ mf_fetch_schema_task:
   description: >
     Find the relevant MetricFlow metrics, dimensions, and entities to answer this question: '{user_question}'
     
-    INSTRUCTIONS:
-    1. Call the `search_mf_catalog` tool with the user question.
-    2. Confirm that the catalog items were retrieved successfully.
-  expected_output: "A brief statement confirming that the relevant metrics and dimensions were retrieved."
+    INSTRUCTION: Execute the `search_mf_catalog` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
+  expected_output: "The exact, raw tool response string returned by `search_mf_catalog`."
 
 mf_draft_payload_task:
   agent: mf_payload_developer
