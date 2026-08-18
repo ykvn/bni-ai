@@ -358,7 +358,7 @@ def build_ui() -> object:
 
         # ---------------- SQL Question tab ----------------
         with gr.Tab("SQL Question"):
-            gr.Markdown("### 🧮 Zero SQL Assistant\nAsk for bank data. The question is converted to SQL and executed against the data warehouse.")
+            gr.Markdown("### 🧮 Zero SQL Assistant\nAsk for bank data. The question is converted to SQL and executed against the Datalake.")
             sql_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
             sql_type = gr.State("sql")
 
@@ -420,7 +420,7 @@ def build_ui() -> object:
 
         # ---------------- Semantic SQL Question tab ----------------
         with gr.Tab("SQL Question (Semantic)"):
-            gr.Markdown("### 🧠 Semantic SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to a JSON payload and executed against the MetricFlow Semantic Layer.")
+            gr.Markdown("### 🧠 Semantic SQL Assistant\nAsk for aggregates, balances, or reports. The question is converted to a JSON payload and executed against the Datalake through MetricFlow Semantic Layer.")
             semantic_question = gr.Textbox(label="Question", lines=3, placeholder="e.g. Berapa total simpanan nasabah di Surabaya bulan ini?")
             semantic_type = gr.State("semantic")
 
