@@ -1,22 +1,7 @@
 [
   {
-    "user_intent": "Show customers who have a birthday this week",
-    "sql_template": "SELECT customer_id, first_name, last_name, birth_date FROM cai_customers WHERE weekofyear(birth_date) = weekofyear(current_date());",
+    "user_intent": "Tampilkan nasabah aktif",
+    "sql_template": "SELECT * FROM dm_customer.customer_icons WHERE cust_status = 'AKTIF';",
     "complexity": "simple"
-  },
-  {
-    "user_intent": "Show deposits approaching maturity in the next 7 days",
-    "sql_template": "SELECT deposit_id, customer_id, principal_amount, maturity_date FROM cai_deposits WHERE maturity_date BETWEEN current_date() AND days_add(current_date(), 7);",
-    "complexity": "simple"
-  },
-  {
-    "user_intent": "Show active customers with their savings balance",
-    "sql_template": "SELECT c.customer_id, c.first_name, c.last_name, s.balance FROM cai_customers c INNER JOIN cai_savings s ON c.customer_id = s.customer_id WHERE s.status = 'ACTIVE';",
-    "complexity": "medium"
-  },
-  {
-    "user_intent": "Show top 5 customers with highest savings balance",
-    "sql_template": "SELECT c.customer_id, c.first_name, c.last_name, s.balance FROM cai_customers c INNER JOIN cai_savings s ON c.customer_id = s.customer_id ORDER BY s.balance DESC LIMIT 5;",
-    "complexity": "medium"
   }
 ]

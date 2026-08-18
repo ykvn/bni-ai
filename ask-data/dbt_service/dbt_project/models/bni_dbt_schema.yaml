@@ -13,632 +13,3718 @@ semantic_models:
     expr: date_day
     type_params:
       time_granularity: day
-- name: cai_customers
-  model: ref('cai_customers')
+- name: trxchannel
+  model: ref('trxchannel')
   entities:
-  - name: customer_id
-    type: primary
-    expr: customer_id
-  dimensions:
-  - name: first_name
-    type: categorical
-    expr: first_name
-    description: The customer's first name.
-  - name: last_name
-    type: categorical
-    expr: last_name
-    description: The customer's last name or surname.
-  - name: email
-    type: categorical
-    expr: email
-    description: The electronic email address of the account holder.
-  - name: birth_date
-    type: time
-    expr: birth_date
-    description: Date of birth. Crucial for calculating age or identifying upcoming
-      birthdays.
-    type_params:
-      time_granularity: day
-  - name: bank_name
-    type: categorical
-    expr: bank_name
-    description: 'The banking institution name (e.g., ''ABC'', ''BNI''). Filter by
-      this when queries specify a particular bank''s customers. [LLM Context: Mode:
-      DYNAMIC_SQL_INDEX | Value Mappings: [BNI (Synonyms: Bank Negara Indonesia, BNI,
-      Bank BNI, PT Bank Negara Indonesia) - Core bank entity designation.]]'
-  - name: join_date
-    type: time
-    expr: join_date
-    description: The exact date the customer first registered an account with the
-      bank.
-    type_params:
-      time_granularity: day
-  measures: []
-- name: cai_savings
-  model: ref('cai_savings')
-  entities:
-  - name: savings_id
-    type: primary
-    expr: savings_id
-  - name: customer_id
+  - name: cif_key
     type: foreign
-    expr: customer_id
+    expr: cif_key
   - name: account_number
     type: foreign
     expr: account_number
+  - name: target_account_number
+    type: foreign
+    expr: target_account_number
   dimensions:
-  - name: balance
-    type: categorical
-    expr: balance
-    description: Current liquid money available. Use this for 'total savings' or 'wealthiest
-      customers' metrics.
-  - name: interest_rate
-    type: categorical
-    expr: interest_rate
-    description: The annual percentage yield interest tracking rate assigned to this
-      savings account.
-  - name: status
-    type: categorical
-    expr: status
-    description: 'Account state. Expected values are ''ACTIVE'' or ''DORMANT''. [LLM
-      Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, DORMANT] | Value Mappings: [ACTIVE
-      (Synonyms: aktif, live, berjalan, active, lancar) - Account operating normally.;
-      DORMANT (Synonyms: pasif, mati, dormant, non-aktif, 180 hari) - Inactive account.]]'
-  - name: dbt_dummy_time
+  - name: as_of_date
     type: time
-    expr: CAST('2020-01-01' AS TIMESTAMP)
+    expr: as_of_date
+    description: Tanggal Data
     type_params:
       time_granularity: day
-  measures:
-  - name: cai_savings_balance_sum
-    expr: balance
-    agg: sum
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_savings_balance_average
-    expr: balance
-    agg: average
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_savings_balance_min
-    expr: balance
-    agg: min
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_savings_balance_max
-    expr: balance
-    agg: max
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_savings_interest_rate_average
-    expr: interest_rate
-    agg: average
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_savings_interest_rate_min
-    expr: interest_rate
-    agg: min
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_savings_interest_rate_max
-    expr: interest_rate
-    agg: max
-    agg_time_dimension: dbt_dummy_time
-- name: cai_deposits
-  model: ref('cai_deposits')
-  entities:
-  - name: deposit_id
-    type: primary
-    expr: deposit_id
-  - name: customer_id
-    type: foreign
-    expr: customer_id
-  - name: account_number
-    type: foreign
-    expr: account_number
-  dimensions:
-  - name: principal_amount
-    type: categorical
-    expr: principal_amount
-    description: The initial locked investment asset amount.
-  - name: maturity_date
+  - name: trx_datetime
     type: time
-    expr: maturity_date
-    description: The date when the fixed deposit expires and pays out. Check this
-      for 'approaching maturity' questions.
+    expr: trx_datetime
+    description: Waktu Transaksi
     type_params:
       time_granularity: day
-  - name: interest_rate
+  - name: issuer_bank_name
     type: categorical
-    expr: interest_rate
-    description: The fixed contract interest rate paid out at maturity.
-  - name: status
+    expr: issuer_bank_name
+    description: Bank Pengirim
+  - name: issuer_name
     type: categorical
-    expr: status
-    description: 'The current status state of the investment term (e.g., ''ACTIVE'').
-      [LLM Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, MATURED, CANCELLED]]'
-  measures:
-  - name: cai_deposits_principal_amount_sum
-    expr: principal_amount
-    agg: sum
-    agg_time_dimension: maturity_date
-  - name: cai_deposits_principal_amount_average
-    expr: principal_amount
-    agg: average
-    agg_time_dimension: maturity_date
-  - name: cai_deposits_principal_amount_min
-    expr: principal_amount
-    agg: min
-    agg_time_dimension: maturity_date
-  - name: cai_deposits_principal_amount_max
-    expr: principal_amount
-    agg: max
-    agg_time_dimension: maturity_date
-  - name: cai_deposits_interest_rate_average
-    expr: interest_rate
-    agg: average
-    agg_time_dimension: maturity_date
-  - name: cai_deposits_interest_rate_min
-    expr: interest_rate
-    agg: min
-    agg_time_dimension: maturity_date
-  - name: cai_deposits_interest_rate_max
-    expr: interest_rate
-    agg: max
-    agg_time_dimension: maturity_date
-- name: cai_loans
-  model: ref('cai_loans')
-  entities:
-  - name: loan_id
-    type: primary
-    expr: loan_id
-  - name: customer_id
-    type: foreign
-    expr: customer_id
-  dimensions:
-  - name: loan_type
+    expr: issuer_name
+    description: Nama Pengirim
+  - name: open_region
     type: categorical
-    expr: loan_type
-    description: 'Type of loan facility (e.g., ''Home'', ''Auto'', ''Personal'').
-      [LLM Context: Mode: STATIC_ENUM | Allowed: [Home, Auto, Personal] | Value Mappings:
-      [Home (Synonyms: KPR, rumah, kredit pemilikan rumah, property, home loan) -
-      Mortgage/Home financing facility.; Auto (Synonyms: KMT, mobil, kendaraan, motor,
-      auto loan) - Vehicle loan facility.; Personal (Synonyms: KTA, tanpa agunan,
-      personal loan, perorangan) - Unsecured personal loan facility.]]'
-  - name: principal_amount
+    expr: open_region
+    description: Region Pembuka Rekening
+  - name: open_branch
     type: categorical
-    expr: principal_amount
-    description: The original total borrowed credit capital sum.
-  - name: outstanding_balance
+    expr: open_branch
+    description: Branch Pembuka Rekening
+  - name: open_sub_branch
     type: categorical
-    expr: outstanding_balance
-    description: The remaining debt balance amount the customer still owes the bank.
-  - name: maturity_date
-    type: time
-    expr: maturity_date
-    description: The final payoff deadline date for the loan obligation.
-    type_params:
-      time_granularity: day
-  - name: status
+    expr: open_sub_branch
+    description: KCP Pembuka Rekening
+  - name: atm_card_number
     type: categorical
-    expr: status
-    description: 'Operational loan indicator flag status state (e.g., ''ACTIVE'').
-      [LLM Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, PAID_OFF, DEFAULTED]]'
-  measures:
-  - name: cai_loans_principal_amount_sum
-    expr: principal_amount
-    agg: sum
-    agg_time_dimension: maturity_date
-  - name: cai_loans_principal_amount_average
-    expr: principal_amount
-    agg: average
-    agg_time_dimension: maturity_date
-  - name: cai_loans_principal_amount_min
-    expr: principal_amount
-    agg: min
-    agg_time_dimension: maturity_date
-  - name: cai_loans_principal_amount_max
-    expr: principal_amount
-    agg: max
-    agg_time_dimension: maturity_date
-  - name: cai_loans_outstanding_balance_sum
-    expr: outstanding_balance
-    agg: sum
-    agg_time_dimension: maturity_date
-  - name: cai_loans_outstanding_balance_average
-    expr: outstanding_balance
-    agg: average
-    agg_time_dimension: maturity_date
-  - name: cai_loans_outstanding_balance_min
-    expr: outstanding_balance
-    agg: min
-    agg_time_dimension: maturity_date
-  - name: cai_loans_outstanding_balance_max
-    expr: outstanding_balance
-    agg: max
-    agg_time_dimension: maturity_date
-- name: cai_credit_cards
-  model: ref('cai_credit_cards')
-  entities:
-  - name: card_id
-    type: primary
-    expr: card_id
-  - name: customer_id
-    type: foreign
-    expr: customer_id
-  dimensions:
-  - name: card_number
+    expr: atm_card_number
+    description: Nomor Rekening ATM
+  - name: terminal_id
     type: categorical
-    expr: card_number
-    description: The unique plastic card PAN number format identifier sequence.
-  - name: credit_limit
+    expr: terminal_id
+    description: ID Terminal
+  - name: switcher_atm
     type: categorical
-    expr: credit_limit
-    description: The maximum revolving credit threshold limit extended to the customer.
-  - name: current_balance
+    expr: switcher_atm
+    description: Switcher ATM
+  - name: machine_acquirer
     type: categorical
-    expr: current_balance
-    description: The active amount spent and currently owed on the credit card balance.
-  - name: expiry_date
-    type: time
-    expr: expiry_date
-    description: The operational expiration timeline date of the card.
-    type_params:
-      time_granularity: day
-  - name: status
+    expr: machine_acquirer
+    description: Acquirer Mesin
+  - name: journal_no
     type: categorical
-    expr: status
-    description: 'Revolving line risk indicators. Expected values are ''ACTIVE'' or
-      ''WARNING''. [LLM Context: Mode: STATIC_ENUM | Allowed: [ACTIVE, WARNING, BLOCKED]]'
-  measures:
-  - name: cai_credit_cards_credit_limit_sum
-    expr: credit_limit
-    agg: sum
-    agg_time_dimension: expiry_date
-  - name: cai_credit_cards_credit_limit_average
-    expr: credit_limit
-    agg: average
-    agg_time_dimension: expiry_date
-  - name: cai_credit_cards_current_balance_sum
-    expr: current_balance
-    agg: sum
-    agg_time_dimension: expiry_date
-  - name: cai_credit_cards_current_balance_average
-    expr: current_balance
-    agg: average
-    agg_time_dimension: expiry_date
-  - name: cai_credit_cards_current_balance_min
-    expr: current_balance
-    agg: min
-    agg_time_dimension: expiry_date
-  - name: cai_credit_cards_current_balance_max
-    expr: current_balance
-    agg: max
-    agg_time_dimension: expiry_date
-- name: cai_transactions
-  model: ref('cai_transactions')
-  entities:
-  - name: transaction_id
-    type: primary
-    expr: transaction_id
-  - name: account_number
-    type: foreign
-    expr: account_number
-  dimensions:
+    expr: journal_no
+    description: No Jurnal Transaksi
   - name: amount
     type: categorical
     expr: amount
-    description: The absolute numerical money value of the execution.
-  - name: transaction_type
+    description: Nilai Transaksi
+  - name: channel
     type: categorical
-    expr: transaction_type
-    description: 'Accounting ledger category direction. Expected values are ''DEBIT''
-      (withdrawals/charges) or ''CREDIT'' (deposits/payroll). [LLM Context: Mode:
-      STATIC_ENUM | Allowed: [DEBIT, CREDIT] | Value Mappings: [DEBIT (Synonyms: debit,
-      penarikan, tarik tunai, transfer keluar, potongan) - Outflow ledger posting.;
-      CREDIT (Synonyms: kredit, setoran, masuk, payroll, gaji, topup) - Inflow ledger
-      posting.]]'
-  - name: transaction_timestamp
-    type: time
-    expr: transaction_timestamp
-    description: The complete system timestamp tracker of when the execution posted
-      to the ledger.
-    type_params:
-      time_granularity: day
-  - name: description
+    expr: channel
+    description: Channel Transaksi
+  - name: trx_region
     type: categorical
-    expr: description
-    description: The descriptive transaction text annotation (e.g., 'ATM Withdrawal',
-      'Payroll Transfer').
+    expr: trx_region
+    description: Region Transaksi
+  - name: trx_branch
+    type: categorical
+    expr: trx_branch
+    description: Branch Pemroses Transaksi
+  - name: trx_sub_branch
+    type: categorical
+    expr: trx_sub_branch
+    description: KCP Pemroses Transaksi
+  - name: chargeable
+    type: categorical
+    expr: chargeable
+    description: Flag Chargeble
+  - name: trx_code
+    type: categorical
+    expr: trx_code
+    description: Kode Transaksi
+  - name: trx_type
+    type: categorical
+    expr: trx_type
+    description: Tipe Transaksi
+  - name: trx_desc
+    type: categorical
+    expr: trx_desc
+    description: Deskripsi Transaksi
+  - name: trx_group
+    type: categorical
+    expr: trx_group
+    description: Group Transaksi
+  - name: trx_category
+    type: categorical
+    expr: trx_category
+    description: Kategori Transaksi
+  - name: source_data
+    type: categorical
+    expr: source_data
+    description: Source Data
+  - name: industri
+    type: categorical
+    expr: industri
+    description: Industri Pengirim
+  - name: target_cif
+    type: categorical
+    expr: target_cif
+    description: CIF Penerima
+  - name: destination_bankname
+    type: categorical
+    expr: destination_bankname
+    description: Bank Penerima
+  - name: destination_name
+    type: categorical
+    expr: destination_name
+    description: Nama Penerima
+  - name: bsu_flag
+    type: categorical
+    expr: bsu_flag
+    description: FLAG BSU
+  - name: jenis_trx
+    type: categorical
+    expr: jenis_trx
+    description: Jenis Transaksi
+  - name: sub_jenis_trx
+    type: categorical
+    expr: sub_jenis_trx
+    description: Sub Jenis Transaksi
+  - name: trx_classification
+    type: categorical
+    expr: trx_classification
+    description: Klasifikasi Transaksi
+  - name: biller_target
+    type: categorical
+    expr: biller_target
+    description: Target Biller
+  - name: currency
+    type: categorical
+    expr: currency
+    description: Mata Uang
+  - name: amount_ori
+    type: categorical
+    expr: amount_ori
+    description: Jumlah Asli (Sebelum Convert Ke IDR)
   measures:
-  - name: cai_transactions_amount_sum
+  - name: trxchannel_amount_sum
     expr: amount
     agg: sum
-    agg_time_dimension: transaction_timestamp
-  - name: cai_transactions_amount_average
+    agg_time_dimension: as_of_date
+  - name: trxchannel_amount_average
     expr: amount
     agg: average
-    agg_time_dimension: transaction_timestamp
-  - name: cai_transactions_amount_min
+    agg_time_dimension: as_of_date
+  - name: trxchannel_amount_min
     expr: amount
     agg: min
-    agg_time_dimension: transaction_timestamp
-  - name: cai_transactions_amount_max
+    agg_time_dimension: as_of_date
+  - name: trxchannel_amount_max
     expr: amount
     agg: max
-    agg_time_dimension: transaction_timestamp
-- name: cai_branch_performance
-  model: ref('cai_branch_performance')
+    agg_time_dimension: as_of_date
+  - name: trxchannel_amount_ori_sum
+    expr: amount_ori
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: trxchannel_amount_ori_average
+    expr: amount_ori
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: trxchannel_amount_ori_min
+    expr: amount_ori
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: trxchannel_amount_ori_max
+    expr: amount_ori
+    agg: max
+    agg_time_dimension: as_of_date
+- name: customer_icons
+  model: ref('customer_icons')
   entities:
-  - name: branch_id
+  - name: cif_key
     type: primary
-    expr: branch_id
+    expr: cif_key
   dimensions:
-  - name: branch_name
+  - name: mdm_id
     type: categorical
-    expr: branch_name
-    description: 'The clean geographical or municipal name designation of the branch
-      location. [LLM Context: Mode: DYNAMIC_SQL_INDEX]'
-  - name: region
+    expr: mdm_id
+    description: MDM ID
+  - name: source_data
     type: categorical
-    expr: region
-    description: 'The broader provincial administrative territory area grouping (e.g.,
-      ''DKI Jakarta''). [LLM Context: Mode: DYNAMIC_SQL_INDEX]'
-  - name: total_active_customers
+    expr: source_data
+    description: Source Data
+  - name: customer_name
     type: categorical
-    expr: total_active_customers
-    description: Total client profile count actively assigned to this node.
-  - name: monthly_target_achieved
+    expr: customer_name
+    description: Nama Nasabah
+  - name: company_name
     type: categorical
-    expr: monthly_target_achieved
-    description: Performance target milestone percentage index ranking tracker.
-  - name: dbt_dummy_time
+    expr: company_name
+    description: Nama Perusahaan
+  - name: business_entity_type
+    type: categorical
+    expr: business_entity_type
+    description: Jenis Entitas Bisnis
+  - name: cif_open_date
     type: time
-    expr: CAST('2020-01-01' AS TIMESTAMP)
+    expr: cif_open_date
+    description: Tanggal Pembukaan CIF
+    type_params:
+      time_granularity: day
+  - name: cif_open_region_code
+    type: categorical
+    expr: cif_open_region_code
+    description: Region Pembukaan CIF (KODE)
+  - name: cif_open_region
+    type: categorical
+    expr: cif_open_region
+    description: Region Pembukaan CIF (KODE)
+  - name: cif_open_branch_code
+    type: categorical
+    expr: cif_open_branch_code
+    description: Kode Branch Pembuka
+  - name: cif_open_branch
+    type: categorical
+    expr: cif_open_branch
+    description: Branch Pembuka CIF
+  - name: cust_source_status
+    type: categorical
+    expr: cust_source_status
+    description: Source Status
+  - name: cust_status
+    type: categorical
+    expr: cust_status
+    description: Status Customer
+  - name: cust_type_code
+    type: categorical
+    expr: cust_type_code
+    description: Kode Type
+  - name: cust_type
+    type: categorical
+    expr: cust_type
+    description: Tipe Customer
+  - name: pemerintah_flag
+    type: categorical
+    expr: pemerintah_flag
+    description: Flag Pemerintah
+  - name: bansos_flag
+    type: categorical
+    expr: bansos_flag
+    description: Flag Bansos
+  - name: program_pemerintah_flag
+    type: categorical
+    expr: program_pemerintah_flag
+    description: Flag Program Pemerintah
+  - name: burekol_flag
+    type: categorical
+    expr: burekol_flag
+    description: Flag BUREKOL
+  - name: debtor_flag
+    type: categorical
+    expr: debtor_flag
+    description: Flag Debitur
+  - name: has_been_debtor_flag
+    type: categorical
+    expr: has_been_debtor_flag
+    description: Sudah Pernah Menjadi Debitur (FLAG)
+  - name: has_been_paylater_flag
+    type: categorical
+    expr: has_been_paylater_flag
+    description: Sudah Pernah Paylater (FLAG)
+  - name: pep_flag
+    type: categorical
+    expr: pep_flag
+    description: Flag Politically Expose Person
+  - name: emerald_flag
+    type: categorical
+    expr: emerald_flag
+    description: Flag Emerald
+  - name: cust_sex_code
+    type: categorical
+    expr: cust_sex_code
+    description: Kode Kelamin Nasabah
+  - name: cust_birth_place
+    type: categorical
+    expr: cust_birth_place
+    description: Tempat Lahir Nasabah
+  - name: cust_birth_date
+    type: time
+    expr: cust_birth_date
+    description: Tanggal Lahir Nasabah
+    type_params:
+      time_granularity: day
+  - name: cust_age
+    type: categorical
+    expr: cust_age
+    description: Umur Nasabah
+  - name: cust_religion
+    type: categorical
+    expr: cust_religion
+    description: Agama Nasabah
+  - name: citizen_country_code
+    type: categorical
+    expr: citizen_country_code
+    description: Kode Negara Nasabah
+  - name: resident_country_code
+    type: categorical
+    expr: resident_country_code
+    description: Kode Domisili
+  - name: cust_id_type
+    type: categorical
+    expr: cust_id_type
+    description: Type ID
+  - name: cust_id_number
+    type: categorical
+    expr: cust_id_number
+    description: Nomor KTP Nasabah
+  - name: cust_id_issue_date
+    type: time
+    expr: cust_id_issue_date
+    description: Tanggal Pengeluaran KTP
+    type_params:
+      time_granularity: day
+  - name: cust_id_issue_place
+    type: categorical
+    expr: cust_id_issue_place
+    description: Tempat KTP
+  - name: cust_tax_id
+    type: categorical
+    expr: cust_tax_id
+    description: NPWP
+  - name: cust_mother_maiden_name
+    type: categorical
+    expr: cust_mother_maiden_name
+    description: Nama Gadis Ibu Kandung
+  - name: cust_segment_cif
+    type: categorical
+    expr: cust_segment_cif
+    description: Segment Nasabah
+  - name: cust_marital_code
+    type: categorical
+    expr: cust_marital_code
+    description: Kode Menikah Nasabah
+  - name: cust_education
+    type: categorical
+    expr: cust_education
+    description: Edukasi Nasabah
+  - name: cust_hobby
+    type: categorical
+    expr: cust_hobby
+    description: Hobby Nasabah
+  - name: cust_email
+    type: categorical
+    expr: cust_email
+    description: Email Nasabah
+  - name: phone_no_res
+    type: categorical
+    expr: phone_no_res
+    description: nan
+  - name: phone_no_bus
+    type: categorical
+    expr: phone_no_bus
+    description: nan
+  - name: fax_no
+    type: categorical
+    expr: fax_no
+    description: No Fax Nasabah
+  - name: hp_no_ktp
+    type: categorical
+    expr: hp_no_ktp
+    description: nan
+  - name: hp_no_wondr
+    type: categorical
+    expr: hp_no_wondr
+    description: nan
+  - name: hp_no_mbank
+    type: categorical
+    expr: hp_no_mbank
+    description: nan
+  - name: home_add_street
+    type: categorical
+    expr: home_add_street
+    description: Alamat Nasabah (Jalan)
+  - name: home_add_rtrw
+    type: categorical
+    expr: home_add_rtrw
+    description: Alamat Nasabah (RT/RW)
+  - name: home_add_kelurahan
+    type: categorical
+    expr: home_add_kelurahan
+    description: Alamat Nasabah (Keluarahan)
+  - name: home_add_kecamatan
+    type: categorical
+    expr: home_add_kecamatan
+    description: Alamat Nasabah (Kecamatan)
+  - name: home_postcode
+    type: categorical
+    expr: home_postcode
+    description: Kode Pos Nasabah
+  - name: home_city
+    type: categorical
+    expr: home_city
+    description: Kota Nasabah
+  - name: office_address_1
+    type: categorical
+    expr: office_address_1
+    description: Alamat Kantor 1 Nasabah
+  - name: office_address_2
+    type: categorical
+    expr: office_address_2
+    description: Alamat Kantor 2 Nasabah
+  - name: office_postcode
+    type: categorical
+    expr: office_postcode
+    description: Kode Pos Kantor
+  - name: occupation
+    type: categorical
+    expr: occupation
+    description: Pekerjaan Nasabah
+  - name: working_place
+    type: categorical
+    expr: working_place
+    description: Tempat Bekerja Nasabah
+  - name: businessman_flag
+    type: categorical
+    expr: businessman_flag
+    description: Flag Pembisnis
+  - name: profession_flag
+    type: categorical
+    expr: profession_flag
+    description: Flag Profesi
+  - name: business_fields
+    type: categorical
+    expr: business_fields
+    description: nan
+  - name: legal_entity
+    type: categorical
+    expr: legal_entity
+    description: Entitas Legal
+  - name: cust_risk_level
+    type: categorical
+    expr: cust_risk_level
+    description: Level Resiko
+  - name: cust_income
+    type: categorical
+    expr: cust_income
+    description: Pendapatan
+  - name: cust_rental_income
+    type: categorical
+    expr: cust_rental_income
+    description: nan
+  - name: cust_other_income
+    type: categorical
+    expr: cust_other_income
+    description: nan
+  - name: channel_open_cif
+    type: categorical
+    expr: channel_open_cif
+    description: Channel Pembuka CIF
+  - name: npp_cs
+    type: categorical
+    expr: npp_cs
+    description: nan
+  - name: kln
+    type: categorical
+    expr: kln
+    description: nan
+  - name: segment_div_owner
+    type: categorical
+    expr: segment_div_owner
+    description: Segment Nasabah ( Divisi Pemegang Nasabah)
+  - name: sub_segment
+    type: categorical
+    expr: sub_segment
+    description: Sub Segment Nasabah
+  - name: dir_owner
+    type: categorical
+    expr: dir_owner
+    description: Dir Owner Nasabah
+  - name: segment
+    type: categorical
+    expr: segment
+    description: Nasabah
+  - name: sentra_code
+    type: categorical
+    expr: sentra_code
+    description: Sentra Code Nasabah
+  - name: channel_type
+    type: categorical
+    expr: channel_type
+    description: Channel Type Nasabah
+  - name: segment_maverick
+    type: categorical
+    expr: segment_maverick
+    description: Segment Maverick Nasabah
+  - name: ntb_etb_flag
+    type: categorical
+    expr: ntb_etb_flag
+    description: Ntb Nasabah ( Etbisi Pemegang Nasabah)
+  - name: rm_dana_code
+    type: categorical
+    expr: rm_dana_code
+    description: Rm Nasabah ( Danaisi Pemegang Nasabah)
+  - name: rm_kredit_code
+    type: categorical
+    expr: rm_kredit_code
+    description: Rm Nasabah ( Kreditisi Pemegang Nasabah)
+  - name: relation_with_bank
+    type: categorical
+    expr: relation_with_bank
+    description: Relation Nasabah ( Withisi Pemegang Nasabah)
+  - name: bi_owner_code
+    type: categorical
+    expr: bi_owner_code
+    description: Bi Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: corp_group_code
+    type: categorical
+    expr: corp_group_code
+    description: Corp Nasabah ( Groupisi Pemegang Nasabah)
+  - name: cif_rm_code
+    type: categorical
+    expr: cif_rm_code
+    description: Cif Nasabah ( Rmisi Pemegang Nasabah)
+  - name: terrorism_related_flag
+    type: categorical
+    expr: terrorism_related_flag
+    description: Terrorism Nasabah ( Relatedisi Pemegang Nasabah)
+  - name: campaign_flag
+    type: categorical
+    expr: campaign_flag
+    description: Campaign Flag Nasabah
+  - name: share_data_flag
+    type: categorical
+    expr: share_data_flag
+    description: Share Nasabah ( Dataisi Pemegang Nasabah)
+  - name: esg_flag
+    type: categorical
+    expr: esg_flag
+    description: Esg Flag Nasabah
+  - name: xpora_location
+    type: categorical
+    expr: xpora_location
+    description: Xpora Location Nasabah
+  - name: exporter_type
+    type: categorical
+    expr: exporter_type
+    description: Exporter Type Nasabah
+  - name: cust_user_define_code
+    type: categorical
+    expr: cust_user_define_code
+    description: Cust Nasabah ( User_Defineisi Pemegang Nasabah)
+  - name: sector_economi
+    type: categorical
+    expr: sector_economi
+    description: Sector Economi Nasabah
+  - name: consent_marketing
+    type: categorical
+    expr: consent_marketing
+    description: Consent Marketing Nasabah
+  - name: consent_data_sharing
+    type: categorical
+    expr: consent_data_sharing
+    description: Consent Nasabah ( Dataisi Pemegang Nasabah)
+  - name: cust_status_bisnis
+    type: categorical
+    expr: cust_status_bisnis
+    description: Cust Nasabah ( Statusisi Pemegang Nasabah)
+  - name: consent_marketing_before
+    type: categorical
+    expr: consent_marketing_before
+    description: Consent Nasabah ( Marketingisi Pemegang Nasabah)
+  - name: consent_data_sharing_before
+    type: categorical
+    expr: consent_data_sharing_before
+    description: Consent Nasabah ( Data_Sharingisi Pemegang Nasabah)
+  - name: channel_consent_name
+    type: categorical
+    expr: channel_consent_name
+    description: Channel Nasabah ( Consentisi Pemegang Nasabah)
+  - name: channel_consent_name_before
+    type: categorical
+    expr: channel_consent_name_before
+    description: Channel Nasabah ( Consent_Nameisi Pemegang Nasabah)
+  - name: consent_date
+    type: time
+    expr: consent_date
+    description: Consent Date Nasabah
     type_params:
       time_granularity: day
   measures:
-  - name: cai_branch_performance_total_active_customers_sum
-    expr: total_active_customers
+  - name: customer_icons_cust_age_sum
+    expr: cust_age
     agg: sum
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_branch_performance_total_active_customers_average
-    expr: total_active_customers
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_age_average
+    expr: cust_age
     agg: average
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_branch_performance_monthly_target_achieved_average
-    expr: monthly_target_achieved
-    agg: average
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_branch_performance_monthly_target_achieved_min
-    expr: monthly_target_achieved
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_age_min
+    expr: cust_age
     agg: min
-    agg_time_dimension: dbt_dummy_time
-  - name: cai_branch_performance_monthly_target_achieved_max
-    expr: monthly_target_achieved
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_age_max
+    expr: cust_age
     agg: max
-    agg_time_dimension: dbt_dummy_time
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_income_sum
+    expr: cust_income
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_income_average
+    expr: cust_income
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_income_min
+    expr: cust_income
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_income_max
+    expr: cust_income
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_rental_income_sum
+    expr: cust_rental_income
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_rental_income_average
+    expr: cust_rental_income
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_rental_income_min
+    expr: cust_rental_income
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_rental_income_max
+    expr: cust_rental_income
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_other_income_sum
+    expr: cust_other_income
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_other_income_average
+    expr: cust_other_income
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_other_income_min
+    expr: cust_other_income
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: customer_icons_cust_other_income_max
+    expr: cust_other_income
+    agg: max
+    agg_time_dimension: cif_open_date
+- name: funding
+  model: ref('funding')
+  entities:
+  - name: account_number
+    type: primary
+    expr: account_number
+  - name: cif_key
+    type: foreign
+    expr: cif_key
+  dimensions:
+  - name: cust_type_code
+    type: categorical
+    expr: cust_type_code
+    description: Cust Nasabah ( Typeisi Pemegang Nasabah)
+  - name: cust_type
+    type: categorical
+    expr: cust_type
+    description: Cust Type Nasabah
+  - name: cif_open_region_code
+    type: categorical
+    expr: cif_open_region_code
+    description: Cif Nasabah ( Open_Regionisi Pemegang Nasabah)
+  - name: cif_open_region
+    type: categorical
+    expr: cif_open_region
+    description: Cif Nasabah ( Openisi Pemegang Nasabah)
+  - name: cif_open_branch_code
+    type: categorical
+    expr: cif_open_branch_code
+    description: Cif Nasabah ( Open_Branchisi Pemegang Nasabah)
+  - name: cif_open_branch
+    type: categorical
+    expr: cif_open_branch
+    description: Cif Nasabah ( Openisi Pemegang Nasabah)
+  - name: cif_open_date
+    type: time
+    expr: cif_open_date
+    description: Cif Nasabah ( Openisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: nama_nasabah
+    type: categorical
+    expr: nama_nasabah
+    description: Nama Nasabah Nasabah
+  - name: company_name
+    type: categorical
+    expr: company_name
+    description: Company Name Nasabah
+  - name: flag_cust_bansos
+    type: categorical
+    expr: flag_cust_bansos
+    description: Flag Nasabah ( Custisi Pemegang Nasabah)
+  - name: flag_cif_burekol
+    type: categorical
+    expr: flag_cif_burekol
+    description: Flag Nasabah ( Cifisi Pemegang Nasabah)
+  - name: pekerjaan
+    type: categorical
+    expr: pekerjaan
+    description: Pekerjaan Nasabah ( Pekisi Pemegang Nasabah)
+  - name: segment_div_owner
+    type: categorical
+    expr: segment_div_owner
+    description: Segment Nasabah ( Divisi Pemegang Nasabah)
+  - name: sub_segment
+    type: categorical
+    expr: sub_segment
+    description: Sub Segment Nasabah
+  - name: account_type
+    type: categorical
+    expr: account_type
+    description: Account Type Nasabah
+  - name: sub_category
+    type: categorical
+    expr: sub_category
+    description: Sub Category Nasabah
+  - name: product_name
+    type: categorical
+    expr: product_name
+    description: Product Name Nasabah
+  - name: currency
+    type: categorical
+    expr: currency
+    description: Nasabah
+  - name: currency_type
+    type: categorical
+    expr: currency_type
+    description: Currency Type Nasabah
+  - name: acct_open_region_code
+    type: categorical
+    expr: acct_open_region_code
+    description: Acct Nasabah ( Open_Regionisi Pemegang Nasabah)
+  - name: acct_open_region
+    type: categorical
+    expr: acct_open_region
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+  - name: acct_open_branch_code
+    type: categorical
+    expr: acct_open_branch_code
+    description: Acct Nasabah ( Open_Branchisi Pemegang Nasabah)
+  - name: acct_open_branch
+    type: categorical
+    expr: acct_open_branch
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+  - name: acct_open_subbranch_code
+    type: categorical
+    expr: acct_open_subbranch_code
+    description: Acct Nasabah ( Open_Subbranchisi Pemegang Nasabah)
+  - name: acct_open_subbranch
+    type: categorical
+    expr: acct_open_subbranch
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+  - name: acct_open_date
+    type: time
+    expr: acct_open_date
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: acct_renewal_date
+    type: time
+    expr: acct_renewal_date
+    description: Acct Nasabah ( Renewalisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: acct_close_date
+    type: time
+    expr: acct_close_date
+    description: Acct Nasabah ( Closeisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: gl_account_id
+    type: categorical
+    expr: gl_account_id
+    description: Gl Nasabah ( Accountisi Pemegang Nasabah)
+  - name: gl_description
+    type: categorical
+    expr: gl_description
+    description: Gl Description Nasabah
+  - name: market_segment_cd
+    type: categorical
+    expr: market_segment_cd
+    description: Market Nasabah ( Segmentisi Pemegang Nasabah)
+  - name: account_status
+    type: categorical
+    expr: account_status
+    description: Account Status Nasabah
+  - name: account_status_desc
+    type: categorical
+    expr: account_status_desc
+    description: Account Nasabah ( Statusisi Pemegang Nasabah)
+  - name: org_term
+    type: categorical
+    expr: org_term
+    description: Org Term Nasabah
+  - name: org_term_mult
+    type: categorical
+    expr: org_term_mult
+    description: Org Nasabah ( Termisi Pemegang Nasabah)
+  - name: maturity_date
+    type: time
+    expr: maturity_date
+    description: Maturity Date Nasabah
+    type_params:
+      time_granularity: day
+  - name: flag_rate
+    type: categorical
+    expr: flag_rate
+    description: Flag Rate Nasabah
+  - name: rate
+    type: categorical
+    expr: rate
+    description: Nasabah
+  - name: cur_book_bal
+    type: categorical
+    expr: cur_book_bal
+    description: Cur Nasabah ( Bookisi Pemegang Nasabah)
+  - name: cur_book_bal_idr
+    type: categorical
+    expr: cur_book_bal_idr
+    description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  - name: amortisi_idr
+    type: categorical
+    expr: amortisi_idr
+    description: Amortisi Idr Nasabah
+  - name: ending_balance
+    type: categorical
+    expr: ending_balance
+    description: Ending Balance Nasabah
+  - name: affiliated_acct_no
+    type: categorical
+    expr: affiliated_acct_no
+    description: Affiliated Nasabah ( Acctisi Pemegang Nasabah)
+  - name: open_acct_resn
+    type: categorical
+    expr: open_acct_resn
+    description: Open Nasabah ( Acctisi Pemegang Nasabah)
+  - name: src_of_fund
+    type: categorical
+    expr: src_of_fund
+    description: Src Nasabah ( Ofisi Pemegang Nasabah)
+  - name: debtor_flag
+    type: categorical
+    expr: debtor_flag
+    description: Debtor Flag Nasabah
+  - name: flag_acct_burekol
+    type: categorical
+    expr: flag_acct_burekol
+    description: Flag Nasabah ( Acctisi Pemegang Nasabah)
+  - name: dhe_flag
+    type: categorical
+    expr: dhe_flag
+    description: Dhe Flag Nasabah
+  - name: flag_kategori
+    type: categorical
+    expr: flag_kategori
+    description: Flag Kategori Nasabah
+  - name: flag_kategori_acct
+    type: categorical
+    expr: flag_kategori_acct
+    description: Flag Nasabah ( Kategoriisi Pemegang Nasabah)
+  - name: flag_product
+    type: categorical
+    expr: flag_product
+    description: Flag Product Nasabah
+  - name: group_product
+    type: categorical
+    expr: group_product
+    description: Group Product Nasabah
+  - name: bi_owner_code
+    type: categorical
+    expr: bi_owner_code
+    description: Bi Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: sentra_code
+    type: categorical
+    expr: sentra_code
+    description: Sentra Code Nasabah
+  - name: channel_owner_l1
+    type: categorical
+    expr: channel_owner_l1
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: channel_owner_l2
+    type: categorical
+    expr: channel_owner_l2
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: channel_owner_l3
+    type: categorical
+    expr: channel_owner_l3
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: product_div_owner
+    type: categorical
+    expr: product_div_owner
+    description: Product Nasabah ( Divisi Pemegang Nasabah)
+  - name: area
+    type: categorical
+    expr: area
+    description: Nasabah
+  - name: cab_sentra
+    type: categorical
+    expr: cab_sentra
+    description: Cab Sentra Nasabah
+  - name: avg_book_bal_mtd
+    type: categorical
+    expr: avg_book_bal_mtd
+    description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  - name: avg_book_bal_mtd_idr
+    type: categorical
+    expr: avg_book_bal_mtd_idr
+    description: Avg Nasabah ( Book_Bal_Mtdisi Pemegang Nasabah)
+  - name: avg_book_bal_ytd
+    type: categorical
+    expr: avg_book_bal_ytd
+    description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  - name: avg_book_bal_ytd_idr
+    type: categorical
+    expr: avg_book_bal_ytd_idr
+    description: Avg Nasabah ( Book_Bal_Ytdisi Pemegang Nasabah)
+  - name: cur_book_bal_mtd
+    type: categorical
+    expr: cur_book_bal_mtd
+    description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  - name: cur_book_bal_idr_mtd
+    type: categorical
+    expr: cur_book_bal_idr_mtd
+    description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  - name: cur_book_bal_ytd
+    type: categorical
+    expr: cur_book_bal_ytd
+    description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  - name: cur_book_bal_idr_ytd
+    type: categorical
+    expr: cur_book_bal_idr_ytd
+    description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  - name: cur_book_bal_yoy
+    type: categorical
+    expr: cur_book_bal_yoy
+    description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  - name: cur_book_bal_idr_yoy
+    type: categorical
+    expr: cur_book_bal_idr_yoy
+    description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  - name: flag_rekening_bansos
+    type: categorical
+    expr: flag_rekening_bansos
+    description: Flag Nasabah ( Rekeningisi Pemegang Nasabah)
+  - name: flag_tabungan_reguler_berbayar
+    type: categorical
+    expr: flag_tabungan_reguler_berbayar
+    description: Flag Nasabah ( Tabungan_Regulerisi Pemegang Nasabah)
+  - name: source_data
+    type: categorical
+    expr: source_data
+    description: Source Data Nasabah
+  - name: ie_daily
+    type: categorical
+    expr: ie_daily
+    description: Ie Daily Nasabah
+  - name: ie_mtd
+    type: categorical
+    expr: ie_mtd
+    description: Ie Mtd Nasabah
+  - name: ie_pms_eom
+    type: categorical
+    expr: ie_pms_eom
+    description: Ie Nasabah ( Pmsisi Pemegang Nasabah)
+  - name: teller_id
+    type: categorical
+    expr: teller_id
+    description: Teller Id Nasabah
+  - name: teller_name
+    type: categorical
+    expr: teller_name
+    description: Teller Name Nasabah
+  - name: rm_funding_code
+    type: categorical
+    expr: rm_funding_code
+    description: Rm Nasabah ( Fundingisi Pemegang Nasabah)
+  - name: rm_funding_name
+    type: categorical
+    expr: rm_funding_name
+    description: Rm Nasabah ( Fundingisi Pemegang Nasabah)
+  - name: user_define_code
+    type: categorical
+    expr: user_define_code
+    description: User Nasabah ( Defineisi Pemegang Nasabah)
+  - name: product_dpk_l1
+    type: categorical
+    expr: product_dpk_l1
+    description: Product Nasabah ( Dpkisi Pemegang Nasabah)
+  - name: product_dpk_l2
+    type: categorical
+    expr: product_dpk_l2
+    description: Product Nasabah ( Dpkisi Pemegang Nasabah)
+  - name: product_dpk_l3
+    type: categorical
+    expr: product_dpk_l3
+    description: Product Nasabah ( Dpkisi Pemegang Nasabah)
+  - name: acct_close_reason
+    type: categorical
+    expr: acct_close_reason
+    description: Acct Nasabah ( Closeisi Pemegang Nasabah)
+  - name: channel_open_acct
+    type: categorical
+    expr: channel_open_acct
+    description: Channel Nasabah ( Openisi Pemegang Nasabah)
+  - name: jenis_badan_hukum
+    type: categorical
+    expr: jenis_badan_hukum
+    description: Jenis Nasabah ( Badanisi Pemegang Nasabah)
+  - name: ending_balance_mtd
+    type: categorical
+    expr: ending_balance_mtd
+    description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  - name: ending_balance_idr_mtd
+    type: categorical
+    expr: ending_balance_idr_mtd
+    description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  - name: ending_balance_ytd
+    type: categorical
+    expr: ending_balance_ytd
+    description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  - name: ending_balance_idr_ytd
+    type: categorical
+    expr: ending_balance_idr_ytd
+    description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  - name: ending_balance_yoy
+    type: categorical
+    expr: ending_balance_yoy
+    description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  - name: ending_balance_idr_yoy
+    type: categorical
+    expr: ending_balance_idr_yoy
+    description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  - name: saldo_dsra
+    type: categorical
+    expr: saldo_dsra
+    description: Saldo Dsra Nasabah
+  - name: saldo_dspa
+    type: categorical
+    expr: saldo_dspa
+    description: Saldo Dspa Nasabah
+  - name: lt_trx_date
+    type: time
+    expr: lt_trx_date
+    description: Lt Nasabah ( Trxisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: blocked_balance
+    type: categorical
+    expr: blocked_balance
+    description: Blocked Balance Nasabah
+  - name: channel_owner_mirror
+    type: categorical
+    expr: channel_owner_mirror
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  measures:
+  - name: funding_rate_sum
+    expr: rate
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_rate_average
+    expr: rate
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_rate_min
+    expr: rate
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_rate_max
+    expr: rate
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_sum
+    expr: cur_book_bal
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_average
+    expr: cur_book_bal
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_min
+    expr: cur_book_bal
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_max
+    expr: cur_book_bal
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_sum
+    expr: cur_book_bal_idr
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_average
+    expr: cur_book_bal_idr
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_min
+    expr: cur_book_bal_idr
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_max
+    expr: cur_book_bal_idr
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_amortisi_idr_sum
+    expr: amortisi_idr
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_amortisi_idr_average
+    expr: amortisi_idr
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_amortisi_idr_min
+    expr: amortisi_idr
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_amortisi_idr_max
+    expr: amortisi_idr
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_sum
+    expr: ending_balance
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_average
+    expr: ending_balance
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_min
+    expr: ending_balance
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_max
+    expr: ending_balance
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_sum
+    expr: avg_book_bal_mtd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_average
+    expr: avg_book_bal_mtd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_min
+    expr: avg_book_bal_mtd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_max
+    expr: avg_book_bal_mtd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_idr_sum
+    expr: avg_book_bal_mtd_idr
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_idr_average
+    expr: avg_book_bal_mtd_idr
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_idr_min
+    expr: avg_book_bal_mtd_idr
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_mtd_idr_max
+    expr: avg_book_bal_mtd_idr
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_sum
+    expr: avg_book_bal_ytd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_average
+    expr: avg_book_bal_ytd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_min
+    expr: avg_book_bal_ytd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_max
+    expr: avg_book_bal_ytd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_idr_sum
+    expr: avg_book_bal_ytd_idr
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_idr_average
+    expr: avg_book_bal_ytd_idr
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_idr_min
+    expr: avg_book_bal_ytd_idr
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_avg_book_bal_ytd_idr_max
+    expr: avg_book_bal_ytd_idr
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_mtd_sum
+    expr: cur_book_bal_mtd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_mtd_average
+    expr: cur_book_bal_mtd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_mtd_min
+    expr: cur_book_bal_mtd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_mtd_max
+    expr: cur_book_bal_mtd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_mtd_sum
+    expr: cur_book_bal_idr_mtd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_mtd_average
+    expr: cur_book_bal_idr_mtd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_mtd_min
+    expr: cur_book_bal_idr_mtd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_mtd_max
+    expr: cur_book_bal_idr_mtd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_ytd_sum
+    expr: cur_book_bal_ytd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_ytd_average
+    expr: cur_book_bal_ytd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_ytd_min
+    expr: cur_book_bal_ytd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_ytd_max
+    expr: cur_book_bal_ytd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_ytd_sum
+    expr: cur_book_bal_idr_ytd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_ytd_average
+    expr: cur_book_bal_idr_ytd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_ytd_min
+    expr: cur_book_bal_idr_ytd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_ytd_max
+    expr: cur_book_bal_idr_ytd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_yoy_sum
+    expr: cur_book_bal_yoy
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_yoy_average
+    expr: cur_book_bal_yoy
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_yoy_min
+    expr: cur_book_bal_yoy
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_yoy_max
+    expr: cur_book_bal_yoy
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_yoy_sum
+    expr: cur_book_bal_idr_yoy
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_yoy_average
+    expr: cur_book_bal_idr_yoy
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_yoy_min
+    expr: cur_book_bal_idr_yoy
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_cur_book_bal_idr_yoy_max
+    expr: cur_book_bal_idr_yoy
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_daily_sum
+    expr: ie_daily
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_daily_average
+    expr: ie_daily
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_daily_min
+    expr: ie_daily
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_daily_max
+    expr: ie_daily
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_mtd_sum
+    expr: ie_mtd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_mtd_average
+    expr: ie_mtd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_mtd_min
+    expr: ie_mtd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_mtd_max
+    expr: ie_mtd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_pms_eom_sum
+    expr: ie_pms_eom
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_pms_eom_average
+    expr: ie_pms_eom
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_pms_eom_min
+    expr: ie_pms_eom
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ie_pms_eom_max
+    expr: ie_pms_eom
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_mtd_sum
+    expr: ending_balance_mtd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_mtd_average
+    expr: ending_balance_mtd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_mtd_min
+    expr: ending_balance_mtd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_mtd_max
+    expr: ending_balance_mtd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_mtd_sum
+    expr: ending_balance_idr_mtd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_mtd_average
+    expr: ending_balance_idr_mtd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_mtd_min
+    expr: ending_balance_idr_mtd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_mtd_max
+    expr: ending_balance_idr_mtd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_ytd_sum
+    expr: ending_balance_ytd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_ytd_average
+    expr: ending_balance_ytd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_ytd_min
+    expr: ending_balance_ytd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_ytd_max
+    expr: ending_balance_ytd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_ytd_sum
+    expr: ending_balance_idr_ytd
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_ytd_average
+    expr: ending_balance_idr_ytd
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_ytd_min
+    expr: ending_balance_idr_ytd
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_ytd_max
+    expr: ending_balance_idr_ytd
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_yoy_sum
+    expr: ending_balance_yoy
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_yoy_average
+    expr: ending_balance_yoy
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_yoy_min
+    expr: ending_balance_yoy
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_yoy_max
+    expr: ending_balance_yoy
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_yoy_sum
+    expr: ending_balance_idr_yoy
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_yoy_average
+    expr: ending_balance_idr_yoy
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_yoy_min
+    expr: ending_balance_idr_yoy
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_ending_balance_idr_yoy_max
+    expr: ending_balance_idr_yoy
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dsra_sum
+    expr: saldo_dsra
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dsra_average
+    expr: saldo_dsra
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dsra_min
+    expr: saldo_dsra
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dsra_max
+    expr: saldo_dsra
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dspa_sum
+    expr: saldo_dspa
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dspa_average
+    expr: saldo_dspa
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dspa_min
+    expr: saldo_dspa
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_saldo_dspa_max
+    expr: saldo_dspa
+    agg: max
+    agg_time_dimension: cif_open_date
+  - name: funding_blocked_balance_sum
+    expr: blocked_balance
+    agg: sum
+    agg_time_dimension: cif_open_date
+  - name: funding_blocked_balance_average
+    expr: blocked_balance
+    agg: average
+    agg_time_dimension: cif_open_date
+  - name: funding_blocked_balance_min
+    expr: blocked_balance
+    agg: min
+    agg_time_dimension: cif_open_date
+  - name: funding_blocked_balance_max
+    expr: blocked_balance
+    agg: max
+    agg_time_dimension: cif_open_date
+- name: lending
+  model: ref('lending')
+  entities:
+  - name: account_number
+    type: primary
+    expr: account_number
+  - name: cif_key
+    type: foreign
+    expr: cif_key
+  dimensions:
+  - name: as_of_date
+    type: time
+    expr: as_of_date
+    description: As Nasabah ( Ofisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: mdm_id
+    type: categorical
+    expr: mdm_id
+    description: Mdm Id Nasabah
+  - name: account_number_affiliated
+    type: categorical
+    expr: account_number_affiliated
+    description: Account Nasabah ( Numberisi Pemegang Nasabah)
+  - name: cust_type_code
+    type: categorical
+    expr: cust_type_code
+    description: Cust Nasabah ( Typeisi Pemegang Nasabah)
+  - name: cust_type
+    type: categorical
+    expr: cust_type
+    description: Cust Type Nasabah
+  - name: cif_open_region_code
+    type: categorical
+    expr: cif_open_region_code
+    description: Cif Nasabah ( Open_Regionisi Pemegang Nasabah)
+  - name: cif_open_region
+    type: categorical
+    expr: cif_open_region
+    description: Cif Nasabah ( Openisi Pemegang Nasabah)
+  - name: cif_open_branch_code
+    type: categorical
+    expr: cif_open_branch_code
+    description: Cif Nasabah ( Open_Branchisi Pemegang Nasabah)
+  - name: cif_open_branch
+    type: categorical
+    expr: cif_open_branch
+    description: Cif Nasabah ( Openisi Pemegang Nasabah)
+  - name: cif_open_date
+    type: time
+    expr: cif_open_date
+    description: Cif Nasabah ( Openisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: nama_nasabah
+    type: categorical
+    expr: nama_nasabah
+    description: Nama Nasabah Nasabah
+  - name: company_name
+    type: categorical
+    expr: company_name
+    description: Company Name Nasabah
+  - name: flag_cust_bansos
+    type: categorical
+    expr: flag_cust_bansos
+    description: Flag Nasabah ( Custisi Pemegang Nasabah)
+  - name: flag_cif_burekol
+    type: categorical
+    expr: flag_cif_burekol
+    description: Flag Nasabah ( Cifisi Pemegang Nasabah)
+  - name: pekerjaan
+    type: categorical
+    expr: pekerjaan
+    description: Pekerjaan Nasabah ( Pekisi Pemegang Nasabah)
+  - name: segment_div_owner
+    type: categorical
+    expr: segment_div_owner
+    description: Segment Nasabah ( Divisi Pemegang Nasabah)
+  - name: sub_segment
+    type: categorical
+    expr: sub_segment
+    description: Sub Segment Nasabah
+  - name: account_type
+    type: categorical
+    expr: account_type
+    description: Account Type Nasabah
+  - name: sub_category
+    type: categorical
+    expr: sub_category
+    description: Sub Category Nasabah
+  - name: product_name
+    type: categorical
+    expr: product_name
+    description: Product Name Nasabah
+  - name: currency
+    type: categorical
+    expr: currency
+    description: Nasabah
+  - name: currency_type
+    type: categorical
+    expr: currency_type
+    description: Currency Type Nasabah
+  - name: acct_open_region_code
+    type: categorical
+    expr: acct_open_region_code
+    description: Acct Nasabah ( Open_Regionisi Pemegang Nasabah)
+  - name: acct_open_region
+    type: categorical
+    expr: acct_open_region
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+  - name: acct_open_branch_code
+    type: categorical
+    expr: acct_open_branch_code
+    description: Acct Nasabah ( Open_Branchisi Pemegang Nasabah)
+  - name: acct_open_branch
+    type: categorical
+    expr: acct_open_branch
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+  - name: acct_open_subbranch_code
+    type: categorical
+    expr: acct_open_subbranch_code
+    description: Acct Nasabah ( Open_Subbranchisi Pemegang Nasabah)
+  - name: acct_open_subbranch
+    type: categorical
+    expr: acct_open_subbranch
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+  - name: acct_open_date
+    type: time
+    expr: acct_open_date
+    description: Acct Nasabah ( Openisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: acct_close_date
+    type: time
+    expr: acct_close_date
+    description: Acct Nasabah ( Closeisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: gl_account_id
+    type: categorical
+    expr: gl_account_id
+    description: Gl Nasabah ( Accountisi Pemegang Nasabah)
+  - name: gl_description
+    type: categorical
+    expr: gl_description
+    description: Gl Description Nasabah
+  - name: account_status
+    type: categorical
+    expr: account_status
+    description: Account Status Nasabah
+  - name: account_status_desc
+    type: categorical
+    expr: account_status_desc
+    description: Account Nasabah ( Statusisi Pemegang Nasabah)
+  - name: sentra_name
+    type: categorical
+    expr: sentra_name
+    description: Sentra Name Nasabah
+  - name: segmen
+    type: categorical
+    expr: segmen
+    description: Nasabah
+  - name: sentra_code
+    type: categorical
+    expr: sentra_code
+    description: Sentra Code Nasabah
+  - name: remap_sentra
+    type: categorical
+    expr: remap_sentra
+    description: Remap Sentra Nasabah
+  - name: loan_purpose_cd
+    type: categorical
+    expr: loan_purpose_cd
+    description: Loan Nasabah ( Purposeisi Pemegang Nasabah)
+  - name: economic_sector_cd
+    type: categorical
+    expr: economic_sector_cd
+    description: Economic Nasabah ( Sectorisi Pemegang Nasabah)
+  - name: pk_akhir_dt
+    type: time
+    expr: pk_akhir_dt
+    description: Pk Nasabah ( Akhirisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: pk_awal_dt
+    type: time
+    expr: pk_awal_dt
+    description: Pk Nasabah ( Awalisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: lst_mnt_date
+    type: time
+    expr: lst_mnt_date
+    description: Lst Nasabah ( Mntisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: restructuring_cd
+    type: categorical
+    expr: restructuring_cd
+    description: Restructuring Cd Nasabah
+  - name: grace_periode_term
+    type: categorical
+    expr: grace_periode_term
+    description: Grace Nasabah ( Periodeisi Pemegang Nasabah)
+  - name: credit_application_no
+    type: categorical
+    expr: credit_application_no
+    description: Credit Nasabah ( Applicationisi Pemegang Nasabah)
+  - name: approve_date
+    type: time
+    expr: approve_date
+    description: Approve Date Nasabah
+    type_params:
+      time_granularity: day
+  - name: loan_approval_no
+    type: categorical
+    expr: loan_approval_no
+    description: Loan Nasabah ( Approvalisi Pemegang Nasabah)
+  - name: funding_type
+    type: categorical
+    expr: funding_type
+    description: Funding Type Nasabah
+  - name: next_loan_review_date
+    type: time
+    expr: next_loan_review_date
+    description: Next Nasabah ( Loan_Reviewisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: settlement_date
+    type: time
+    expr: settlement_date
+    description: Settlement Date Nasabah
+    type_params:
+      time_granularity: day
+  - name: maturity_date
+    type: time
+    expr: maturity_date
+    description: Maturity Date Nasabah
+    type_params:
+      time_granularity: day
+  - name: org_term
+    type: categorical
+    expr: org_term
+    description: Org Term Nasabah
+  - name: org_term_mult
+    type: categorical
+    expr: org_term_mult
+    description: Org Nasabah ( Termisi Pemegang Nasabah)
+  - name: rm_code
+    type: categorical
+    expr: rm_code
+    description: Rm Code Nasabah
+  - name: loan_principal_idr
+    type: categorical
+    expr: loan_principal_idr
+    description: Loan Nasabah ( Principalisi Pemegang Nasabah)
+  - name: baki_debet
+    type: categorical
+    expr: baki_debet
+    description: Baki Debet Nasabah
+  - name: psak_adj_dma
+    type: categorical
+    expr: psak_adj_dma
+    description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  - name: psak_adj_acc
+    type: categorical
+    expr: psak_adj_acc
+    description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  - name: avg_loan_principal_psak_mtd
+    type: categorical
+    expr: avg_loan_principal_psak_mtd
+    description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  - name: avg_loan_principal_psak_ytd
+    type: categorical
+    expr: avg_loan_principal_psak_ytd
+    description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  - name: max_credit
+    type: categorical
+    expr: max_credit
+    description: Max Credit Nasabah
+  - name: commitment_bal
+    type: categorical
+    expr: commitment_bal
+    description: Commitment Bal Nasabah
+  - name: commitment_bal_idr
+    type: categorical
+    expr: commitment_bal_idr
+    description: Commitment Nasabah ( Balisi Pemegang Nasabah)
+  - name: org_credit_limit
+    type: categorical
+    expr: org_credit_limit
+    description: Org Nasabah ( Creditisi Pemegang Nasabah)
+  - name: add_credit_limit
+    type: categorical
+    expr: add_credit_limit
+    description: Add Nasabah ( Creditisi Pemegang Nasabah)
+  - name: avg_loan_principal_ytd
+    type: categorical
+    expr: avg_loan_principal_ytd
+    description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  - name: avg_loan_principal_ytd_idr
+    type: categorical
+    expr: avg_loan_principal_ytd_idr
+    description: Avg Nasabah ( Loan_Principal_Ytdisi Pemegang Nasabah)
+  - name: avg_loan_principal_mtd
+    type: categorical
+    expr: avg_loan_principal_mtd
+    description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  - name: avg_loan_principal_mtd_idr
+    type: categorical
+    expr: avg_loan_principal_mtd_idr
+    description: Avg Nasabah ( Loan_Principal_Mtdisi Pemegang Nasabah)
+  - name: angsuran_bunga
+    type: categorical
+    expr: angsuran_bunga
+    description: Angsuran Bunga Nasabah
+  - name: angsuran_pokok
+    type: categorical
+    expr: angsuran_pokok
+    description: Angsuran Pokok Nasabah
+  - name: del_cur_days
+    type: categorical
+    expr: del_cur_days
+    description: Del Nasabah ( Curisi Pemegang Nasabah)
+  - name: last_arrears_date
+    type: time
+    expr: last_arrears_date
+    description: Last Nasabah ( Arrearsisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: worst_collectibility
+    type: categorical
+    expr: worst_collectibility
+    description: Worst Collectibility Nasabah
+  - name: collectibility
+    type: categorical
+    expr: collectibility
+    description: Collectibility Nasabah ( Bilisi Pemegang Nasabah)
+  - name: written_off_date
+    type: time
+    expr: written_off_date
+    description: Written Nasabah ( Offisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
+  - name: product_div_owner
+    type: categorical
+    expr: product_div_owner
+    description: Product Nasabah ( Divisi Pemegang Nasabah)
+  - name: business_div_owner
+    type: categorical
+    expr: business_div_owner
+    description: Business Nasabah ( Divisi Pemegang Nasabah)
+  - name: output_l1
+    type: categorical
+    expr: output_l1
+    description: Output L Nasabah
+  - name: output_l2
+    type: categorical
+    expr: output_l2
+    description: Output L Nasabah
+  - name: output_l3
+    type: categorical
+    expr: output_l3
+    description: Output L Nasabah
+  - name: lst_worst_coll
+    type: categorical
+    expr: lst_worst_coll
+    description: Lst Nasabah ( Worstisi Pemegang Nasabah)
+  - name: cur_book_bal_idr
+    type: categorical
+    expr: cur_book_bal_idr
+    description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  - name: cur_book_bal
+    type: categorical
+    expr: cur_book_bal
+    description: Cur Nasabah ( Bookisi Pemegang Nasabah)
+  - name: outstanding
+    type: categorical
+    expr: outstanding
+    description: Outstanding Nasabah ( Ingisi Pemegang Nasabah)
+  - name: channel_owner_l1
+    type: categorical
+    expr: channel_owner_l1
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: channel_owner_l2
+    type: categorical
+    expr: channel_owner_l2
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: channel_owner_l3
+    type: categorical
+    expr: channel_owner_l3
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: channel_owner_mirror
+    type: categorical
+    expr: channel_owner_mirror
+    description: Channel Nasabah ( Ownerisi Pemegang Nasabah)
+  - name: channel_type_mirror
+    type: categorical
+    expr: channel_type_mirror
+    description: Channel Nasabah ( Typeisi Pemegang Nasabah)
+  - name: dspa_balance
+    type: categorical
+    expr: dspa_balance
+    description: Dspa Balance Nasabah
+  - name: dsra_balance
+    type: categorical
+    expr: dsra_balance
+    description: Dsra Balance Nasabah
+  - name: loan_purpose_desc
+    type: categorical
+    expr: loan_purpose_desc
+    description: Loan Nasabah ( Purposeisi Pemegang Nasabah)
+  - name: market_segment_desc
+    type: categorical
+    expr: market_segment_desc
+    description: Market Nasabah ( Segmentisi Pemegang Nasabah)
+  - name: ii_daily
+    type: categorical
+    expr: ii_daily
+    description: Ii Daily Nasabah
+  - name: ii_monthly
+    type: categorical
+    expr: ii_monthly
+    description: Ii Monthly Nasabah
+  - name: short_name
+    type: categorical
+    expr: short_name
+    description: Short Name Nasabah
+  measures:
+  - name: lending_loan_principal_idr_sum
+    expr: loan_principal_idr
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_loan_principal_idr_average
+    expr: loan_principal_idr
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_loan_principal_idr_min
+    expr: loan_principal_idr
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_loan_principal_idr_max
+    expr: loan_principal_idr
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_baki_debet_sum
+    expr: baki_debet
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_baki_debet_average
+    expr: baki_debet
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_baki_debet_min
+    expr: baki_debet
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_baki_debet_max
+    expr: baki_debet
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_dma_sum
+    expr: psak_adj_dma
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_dma_average
+    expr: psak_adj_dma
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_dma_min
+    expr: psak_adj_dma
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_dma_max
+    expr: psak_adj_dma
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_acc_sum
+    expr: psak_adj_acc
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_acc_average
+    expr: psak_adj_acc
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_acc_min
+    expr: psak_adj_acc
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_psak_adj_acc_max
+    expr: psak_adj_acc
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_mtd_sum
+    expr: avg_loan_principal_psak_mtd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_mtd_average
+    expr: avg_loan_principal_psak_mtd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_mtd_min
+    expr: avg_loan_principal_psak_mtd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_mtd_max
+    expr: avg_loan_principal_psak_mtd
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_ytd_sum
+    expr: avg_loan_principal_psak_ytd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_ytd_average
+    expr: avg_loan_principal_psak_ytd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_ytd_min
+    expr: avg_loan_principal_psak_ytd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_psak_ytd_max
+    expr: avg_loan_principal_psak_ytd
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_max_credit_sum
+    expr: max_credit
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_max_credit_average
+    expr: max_credit
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_max_credit_min
+    expr: max_credit
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_max_credit_max
+    expr: max_credit
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_sum
+    expr: commitment_bal
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_average
+    expr: commitment_bal
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_min
+    expr: commitment_bal
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_max
+    expr: commitment_bal
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_idr_sum
+    expr: commitment_bal_idr
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_idr_average
+    expr: commitment_bal_idr
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_idr_min
+    expr: commitment_bal_idr
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_commitment_bal_idr_max
+    expr: commitment_bal_idr
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_org_credit_limit_sum
+    expr: org_credit_limit
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_org_credit_limit_average
+    expr: org_credit_limit
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_org_credit_limit_min
+    expr: org_credit_limit
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_org_credit_limit_max
+    expr: org_credit_limit
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_add_credit_limit_sum
+    expr: add_credit_limit
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_add_credit_limit_average
+    expr: add_credit_limit
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_add_credit_limit_min
+    expr: add_credit_limit
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_add_credit_limit_max
+    expr: add_credit_limit
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_sum
+    expr: avg_loan_principal_ytd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_average
+    expr: avg_loan_principal_ytd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_min
+    expr: avg_loan_principal_ytd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_max
+    expr: avg_loan_principal_ytd
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_idr_sum
+    expr: avg_loan_principal_ytd_idr
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_idr_average
+    expr: avg_loan_principal_ytd_idr
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_idr_min
+    expr: avg_loan_principal_ytd_idr
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_ytd_idr_max
+    expr: avg_loan_principal_ytd_idr
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_sum
+    expr: avg_loan_principal_mtd
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_average
+    expr: avg_loan_principal_mtd
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_min
+    expr: avg_loan_principal_mtd
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_max
+    expr: avg_loan_principal_mtd
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_idr_sum
+    expr: avg_loan_principal_mtd_idr
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_idr_average
+    expr: avg_loan_principal_mtd_idr
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_idr_min
+    expr: avg_loan_principal_mtd_idr
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_avg_loan_principal_mtd_idr_max
+    expr: avg_loan_principal_mtd_idr
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_bunga_sum
+    expr: angsuran_bunga
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_bunga_average
+    expr: angsuran_bunga
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_bunga_min
+    expr: angsuran_bunga
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_bunga_max
+    expr: angsuran_bunga
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_pokok_sum
+    expr: angsuran_pokok
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_pokok_average
+    expr: angsuran_pokok
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_pokok_min
+    expr: angsuran_pokok
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_angsuran_pokok_max
+    expr: angsuran_pokok
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_idr_sum
+    expr: cur_book_bal_idr
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_idr_average
+    expr: cur_book_bal_idr
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_idr_min
+    expr: cur_book_bal_idr
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_idr_max
+    expr: cur_book_bal_idr
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_sum
+    expr: cur_book_bal
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_average
+    expr: cur_book_bal
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_min
+    expr: cur_book_bal
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_cur_book_bal_max
+    expr: cur_book_bal
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_outstanding_sum
+    expr: outstanding
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_outstanding_average
+    expr: outstanding
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_outstanding_min
+    expr: outstanding
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_outstanding_max
+    expr: outstanding
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_dspa_balance_sum
+    expr: dspa_balance
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_dspa_balance_average
+    expr: dspa_balance
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_dspa_balance_min
+    expr: dspa_balance
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_dspa_balance_max
+    expr: dspa_balance
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_dsra_balance_sum
+    expr: dsra_balance
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_dsra_balance_average
+    expr: dsra_balance
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_dsra_balance_min
+    expr: dsra_balance
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_dsra_balance_max
+    expr: dsra_balance
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_sum
+    expr: ii_daily
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_average
+    expr: ii_daily
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_min
+    expr: ii_daily
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_ii_daily_max
+    expr: ii_daily
+    agg: max
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_sum
+    expr: ii_monthly
+    agg: sum
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_average
+    expr: ii_monthly
+    agg: average
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_min
+    expr: ii_monthly
+    agg: min
+    agg_time_dimension: as_of_date
+  - name: lending_ii_monthly_max
+    expr: ii_monthly
+    agg: max
+    agg_time_dimension: as_of_date
+- name: MAPPING_GROUP_WHS
+  model: ref('MAPPING_GROUP_WHS')
+  entities:
+  - name: cif_principal
+    type: foreign
+    expr: cif_principal
+  dimensions:
+  - name: group_principal
+    type: categorical
+    expr: group_principal
+    description: Group Principal Nasabah
+  - name: segment_div_owner
+    type: categorical
+    expr: segment_div_owner
+    description: Segment Nasabah ( Divisi Pemegang Nasabah)
+  - name: as_of_date
+    type: categorical
+    expr: as_of_date
+    description: As Nasabah ( Ofisi Pemegang Nasabah)
+  measures: []
 metrics:
-- name: cai_savings_balance_sum_metric
-  label: Cai_Savings Balance Sum
-  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
-    customers' metrics.
+- name: trxchannel_amount_sum_metric
+  label: Trxchannel Amount Sum
+  description: Nilai Transaksi
   type: simple
   type_params:
-    measure: cai_savings_balance_sum
-- name: cai_savings_balance_average_metric
-  label: Cai_Savings Balance Average
-  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
-    customers' metrics.
+    measure: trxchannel_amount_sum
+- name: trxchannel_amount_average_metric
+  label: Trxchannel Amount Average
+  description: Nilai Transaksi
   type: simple
   type_params:
-    measure: cai_savings_balance_average
-- name: cai_savings_balance_min_metric
-  label: Cai_Savings Balance Min
-  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
-    customers' metrics.
+    measure: trxchannel_amount_average
+- name: trxchannel_amount_min_metric
+  label: Trxchannel Amount Min
+  description: Nilai Transaksi
   type: simple
   type_params:
-    measure: cai_savings_balance_min
-- name: cai_savings_balance_max_metric
-  label: Cai_Savings Balance Max
-  description: Current liquid money available. Use this for 'total savings' or 'wealthiest
-    customers' metrics.
+    measure: trxchannel_amount_min
+- name: trxchannel_amount_max_metric
+  label: Trxchannel Amount Max
+  description: Nilai Transaksi
   type: simple
   type_params:
-    measure: cai_savings_balance_max
-- name: cai_savings_interest_rate_average_metric
-  label: Cai_Savings Interest_Rate Average
-  description: The annual percentage yield interest tracking rate assigned to this
-    savings account.
+    measure: trxchannel_amount_max
+- name: trxchannel_amount_ori_sum_metric
+  label: Trxchannel Amount_Ori Sum
+  description: Jumlah Asli (Sebelum Convert Ke IDR)
   type: simple
   type_params:
-    measure: cai_savings_interest_rate_average
-- name: cai_savings_interest_rate_min_metric
-  label: Cai_Savings Interest_Rate Min
-  description: The annual percentage yield interest tracking rate assigned to this
-    savings account.
+    measure: trxchannel_amount_ori_sum
+- name: trxchannel_amount_ori_average_metric
+  label: Trxchannel Amount_Ori Average
+  description: Jumlah Asli (Sebelum Convert Ke IDR)
   type: simple
   type_params:
-    measure: cai_savings_interest_rate_min
-- name: cai_savings_interest_rate_max_metric
-  label: Cai_Savings Interest_Rate Max
-  description: The annual percentage yield interest tracking rate assigned to this
-    savings account.
+    measure: trxchannel_amount_ori_average
+- name: trxchannel_amount_ori_min_metric
+  label: Trxchannel Amount_Ori Min
+  description: Jumlah Asli (Sebelum Convert Ke IDR)
   type: simple
   type_params:
-    measure: cai_savings_interest_rate_max
-- name: cai_deposits_principal_amount_sum_metric
-  label: Cai_Deposits Principal_Amount Sum
-  description: The initial locked investment asset amount.
+    measure: trxchannel_amount_ori_min
+- name: trxchannel_amount_ori_max_metric
+  label: Trxchannel Amount_Ori Max
+  description: Jumlah Asli (Sebelum Convert Ke IDR)
   type: simple
   type_params:
-    measure: cai_deposits_principal_amount_sum
-- name: cai_deposits_principal_amount_average_metric
-  label: Cai_Deposits Principal_Amount Average
-  description: The initial locked investment asset amount.
+    measure: trxchannel_amount_ori_max
+- name: customer_icons_cust_age_sum_metric
+  label: Customer_Icons Cust_Age Sum
+  description: Umur Nasabah
   type: simple
   type_params:
-    measure: cai_deposits_principal_amount_average
-- name: cai_deposits_principal_amount_min_metric
-  label: Cai_Deposits Principal_Amount Min
-  description: The initial locked investment asset amount.
+    measure: customer_icons_cust_age_sum
+- name: customer_icons_cust_age_average_metric
+  label: Customer_Icons Cust_Age Average
+  description: Umur Nasabah
   type: simple
   type_params:
-    measure: cai_deposits_principal_amount_min
-- name: cai_deposits_principal_amount_max_metric
-  label: Cai_Deposits Principal_Amount Max
-  description: The initial locked investment asset amount.
+    measure: customer_icons_cust_age_average
+- name: customer_icons_cust_age_min_metric
+  label: Customer_Icons Cust_Age Min
+  description: Umur Nasabah
   type: simple
   type_params:
-    measure: cai_deposits_principal_amount_max
-- name: cai_deposits_interest_rate_average_metric
-  label: Cai_Deposits Interest_Rate Average
-  description: The fixed contract interest rate paid out at maturity.
+    measure: customer_icons_cust_age_min
+- name: customer_icons_cust_age_max_metric
+  label: Customer_Icons Cust_Age Max
+  description: Umur Nasabah
   type: simple
   type_params:
-    measure: cai_deposits_interest_rate_average
-- name: cai_deposits_interest_rate_min_metric
-  label: Cai_Deposits Interest_Rate Min
-  description: The fixed contract interest rate paid out at maturity.
+    measure: customer_icons_cust_age_max
+- name: customer_icons_cust_income_sum_metric
+  label: Customer_Icons Cust_Income Sum
+  description: Pendapatan
   type: simple
   type_params:
-    measure: cai_deposits_interest_rate_min
-- name: cai_deposits_interest_rate_max_metric
-  label: Cai_Deposits Interest_Rate Max
-  description: The fixed contract interest rate paid out at maturity.
+    measure: customer_icons_cust_income_sum
+- name: customer_icons_cust_income_average_metric
+  label: Customer_Icons Cust_Income Average
+  description: Pendapatan
   type: simple
   type_params:
-    measure: cai_deposits_interest_rate_max
-- name: cai_loans_principal_amount_sum_metric
-  label: Cai_Loans Principal_Amount Sum
-  description: The original total borrowed credit capital sum.
+    measure: customer_icons_cust_income_average
+- name: customer_icons_cust_income_min_metric
+  label: Customer_Icons Cust_Income Min
+  description: Pendapatan
   type: simple
   type_params:
-    measure: cai_loans_principal_amount_sum
-- name: cai_loans_principal_amount_average_metric
-  label: Cai_Loans Principal_Amount Average
-  description: The original total borrowed credit capital sum.
+    measure: customer_icons_cust_income_min
+- name: customer_icons_cust_income_max_metric
+  label: Customer_Icons Cust_Income Max
+  description: Pendapatan
   type: simple
   type_params:
-    measure: cai_loans_principal_amount_average
-- name: cai_loans_principal_amount_min_metric
-  label: Cai_Loans Principal_Amount Min
-  description: The original total borrowed credit capital sum.
+    measure: customer_icons_cust_income_max
+- name: customer_icons_cust_rental_income_sum_metric
+  label: Customer_Icons Cust_Rental_Income Sum
+  description: nan
   type: simple
   type_params:
-    measure: cai_loans_principal_amount_min
-- name: cai_loans_principal_amount_max_metric
-  label: Cai_Loans Principal_Amount Max
-  description: The original total borrowed credit capital sum.
+    measure: customer_icons_cust_rental_income_sum
+- name: customer_icons_cust_rental_income_average_metric
+  label: Customer_Icons Cust_Rental_Income Average
+  description: nan
   type: simple
   type_params:
-    measure: cai_loans_principal_amount_max
-- name: cai_loans_outstanding_balance_sum_metric
-  label: Cai_Loans Outstanding_Balance Sum
-  description: The remaining debt balance amount the customer still owes the bank.
+    measure: customer_icons_cust_rental_income_average
+- name: customer_icons_cust_rental_income_min_metric
+  label: Customer_Icons Cust_Rental_Income Min
+  description: nan
   type: simple
   type_params:
-    measure: cai_loans_outstanding_balance_sum
-- name: cai_loans_outstanding_balance_average_metric
-  label: Cai_Loans Outstanding_Balance Average
-  description: The remaining debt balance amount the customer still owes the bank.
+    measure: customer_icons_cust_rental_income_min
+- name: customer_icons_cust_rental_income_max_metric
+  label: Customer_Icons Cust_Rental_Income Max
+  description: nan
   type: simple
   type_params:
-    measure: cai_loans_outstanding_balance_average
-- name: cai_loans_outstanding_balance_min_metric
-  label: Cai_Loans Outstanding_Balance Min
-  description: The remaining debt balance amount the customer still owes the bank.
+    measure: customer_icons_cust_rental_income_max
+- name: customer_icons_cust_other_income_sum_metric
+  label: Customer_Icons Cust_Other_Income Sum
+  description: nan
   type: simple
   type_params:
-    measure: cai_loans_outstanding_balance_min
-- name: cai_loans_outstanding_balance_max_metric
-  label: Cai_Loans Outstanding_Balance Max
-  description: The remaining debt balance amount the customer still owes the bank.
+    measure: customer_icons_cust_other_income_sum
+- name: customer_icons_cust_other_income_average_metric
+  label: Customer_Icons Cust_Other_Income Average
+  description: nan
   type: simple
   type_params:
-    measure: cai_loans_outstanding_balance_max
-- name: cai_credit_cards_credit_limit_sum_metric
-  label: Cai_Credit_Cards Credit_Limit Sum
-  description: The maximum revolving credit threshold limit extended to the customer.
+    measure: customer_icons_cust_other_income_average
+- name: customer_icons_cust_other_income_min_metric
+  label: Customer_Icons Cust_Other_Income Min
+  description: nan
   type: simple
   type_params:
-    measure: cai_credit_cards_credit_limit_sum
-- name: cai_credit_cards_credit_limit_average_metric
-  label: Cai_Credit_Cards Credit_Limit Average
-  description: The maximum revolving credit threshold limit extended to the customer.
+    measure: customer_icons_cust_other_income_min
+- name: customer_icons_cust_other_income_max_metric
+  label: Customer_Icons Cust_Other_Income Max
+  description: nan
   type: simple
   type_params:
-    measure: cai_credit_cards_credit_limit_average
-- name: cai_credit_cards_current_balance_sum_metric
-  label: Cai_Credit_Cards Current_Balance Sum
-  description: The active amount spent and currently owed on the credit card balance.
+    measure: customer_icons_cust_other_income_max
+- name: funding_rate_sum_metric
+  label: Funding Rate Sum
+  description: Nasabah
   type: simple
   type_params:
-    measure: cai_credit_cards_current_balance_sum
-- name: cai_credit_cards_current_balance_average_metric
-  label: Cai_Credit_Cards Current_Balance Average
-  description: The active amount spent and currently owed on the credit card balance.
+    measure: funding_rate_sum
+- name: funding_rate_average_metric
+  label: Funding Rate Average
+  description: Nasabah
   type: simple
   type_params:
-    measure: cai_credit_cards_current_balance_average
-- name: cai_credit_cards_current_balance_min_metric
-  label: Cai_Credit_Cards Current_Balance Min
-  description: The active amount spent and currently owed on the credit card balance.
+    measure: funding_rate_average
+- name: funding_rate_min_metric
+  label: Funding Rate Min
+  description: Nasabah
   type: simple
   type_params:
-    measure: cai_credit_cards_current_balance_min
-- name: cai_credit_cards_current_balance_max_metric
-  label: Cai_Credit_Cards Current_Balance Max
-  description: The active amount spent and currently owed on the credit card balance.
+    measure: funding_rate_min
+- name: funding_rate_max_metric
+  label: Funding Rate Max
+  description: Nasabah
   type: simple
   type_params:
-    measure: cai_credit_cards_current_balance_max
-- name: cai_transactions_amount_sum_metric
-  label: Cai_Transactions Amount Sum
-  description: The absolute numerical money value of the execution.
+    measure: funding_rate_max
+- name: funding_cur_book_bal_sum_metric
+  label: Funding Cur_Book_Bal Sum
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_transactions_amount_sum
-- name: cai_transactions_amount_average_metric
-  label: Cai_Transactions Amount Average
-  description: The absolute numerical money value of the execution.
+    measure: funding_cur_book_bal_sum
+- name: funding_cur_book_bal_average_metric
+  label: Funding Cur_Book_Bal Average
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_transactions_amount_average
-- name: cai_transactions_amount_min_metric
-  label: Cai_Transactions Amount Min
-  description: The absolute numerical money value of the execution.
+    measure: funding_cur_book_bal_average
+- name: funding_cur_book_bal_min_metric
+  label: Funding Cur_Book_Bal Min
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_transactions_amount_min
-- name: cai_transactions_amount_max_metric
-  label: Cai_Transactions Amount Max
-  description: The absolute numerical money value of the execution.
+    measure: funding_cur_book_bal_min
+- name: funding_cur_book_bal_max_metric
+  label: Funding Cur_Book_Bal Max
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_transactions_amount_max
-- name: cai_branch_performance_total_active_customers_sum_metric
-  label: Cai_Branch_Performance Total_Active_Customers Sum
-  description: Total client profile count actively assigned to this node.
+    measure: funding_cur_book_bal_max
+- name: funding_cur_book_bal_idr_sum_metric
+  label: Funding Cur_Book_Bal_Idr Sum
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_branch_performance_total_active_customers_sum
-- name: cai_branch_performance_total_active_customers_average_metric
-  label: Cai_Branch_Performance Total_Active_Customers Average
-  description: Total client profile count actively assigned to this node.
+    measure: funding_cur_book_bal_idr_sum
+- name: funding_cur_book_bal_idr_average_metric
+  label: Funding Cur_Book_Bal_Idr Average
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_branch_performance_total_active_customers_average
-- name: cai_branch_performance_monthly_target_achieved_average_metric
-  label: Cai_Branch_Performance Monthly_Target_Achieved Average
-  description: Performance target milestone percentage index ranking tracker.
+    measure: funding_cur_book_bal_idr_average
+- name: funding_cur_book_bal_idr_min_metric
+  label: Funding Cur_Book_Bal_Idr Min
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_branch_performance_monthly_target_achieved_average
-- name: cai_branch_performance_monthly_target_achieved_min_metric
-  label: Cai_Branch_Performance Monthly_Target_Achieved Min
-  description: Performance target milestone percentage index ranking tracker.
+    measure: funding_cur_book_bal_idr_min
+- name: funding_cur_book_bal_idr_max_metric
+  label: Funding Cur_Book_Bal_Idr Max
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
   type: simple
   type_params:
-    measure: cai_branch_performance_monthly_target_achieved_min
-- name: cai_branch_performance_monthly_target_achieved_max_metric
-  label: Cai_Branch_Performance Monthly_Target_Achieved Max
-  description: Performance target milestone percentage index ranking tracker.
+    measure: funding_cur_book_bal_idr_max
+- name: funding_amortisi_idr_sum_metric
+  label: Funding Amortisi_Idr Sum
+  description: Amortisi Idr Nasabah
   type: simple
   type_params:
-    measure: cai_branch_performance_monthly_target_achieved_max
+    measure: funding_amortisi_idr_sum
+- name: funding_amortisi_idr_average_metric
+  label: Funding Amortisi_Idr Average
+  description: Amortisi Idr Nasabah
+  type: simple
+  type_params:
+    measure: funding_amortisi_idr_average
+- name: funding_amortisi_idr_min_metric
+  label: Funding Amortisi_Idr Min
+  description: Amortisi Idr Nasabah
+  type: simple
+  type_params:
+    measure: funding_amortisi_idr_min
+- name: funding_amortisi_idr_max_metric
+  label: Funding Amortisi_Idr Max
+  description: Amortisi Idr Nasabah
+  type: simple
+  type_params:
+    measure: funding_amortisi_idr_max
+- name: funding_ending_balance_sum_metric
+  label: Funding Ending_Balance Sum
+  description: Ending Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_ending_balance_sum
+- name: funding_ending_balance_average_metric
+  label: Funding Ending_Balance Average
+  description: Ending Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_ending_balance_average
+- name: funding_ending_balance_min_metric
+  label: Funding Ending_Balance Min
+  description: Ending Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_ending_balance_min
+- name: funding_ending_balance_max_metric
+  label: Funding Ending_Balance Max
+  description: Ending Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_ending_balance_max
+- name: funding_avg_book_bal_mtd_sum_metric
+  label: Funding Avg_Book_Bal_Mtd Sum
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_sum
+- name: funding_avg_book_bal_mtd_average_metric
+  label: Funding Avg_Book_Bal_Mtd Average
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_average
+- name: funding_avg_book_bal_mtd_min_metric
+  label: Funding Avg_Book_Bal_Mtd Min
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_min
+- name: funding_avg_book_bal_mtd_max_metric
+  label: Funding Avg_Book_Bal_Mtd Max
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_max
+- name: funding_avg_book_bal_mtd_idr_sum_metric
+  label: Funding Avg_Book_Bal_Mtd_Idr Sum
+  description: Avg Nasabah ( Book_Bal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_idr_sum
+- name: funding_avg_book_bal_mtd_idr_average_metric
+  label: Funding Avg_Book_Bal_Mtd_Idr Average
+  description: Avg Nasabah ( Book_Bal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_idr_average
+- name: funding_avg_book_bal_mtd_idr_min_metric
+  label: Funding Avg_Book_Bal_Mtd_Idr Min
+  description: Avg Nasabah ( Book_Bal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_idr_min
+- name: funding_avg_book_bal_mtd_idr_max_metric
+  label: Funding Avg_Book_Bal_Mtd_Idr Max
+  description: Avg Nasabah ( Book_Bal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_mtd_idr_max
+- name: funding_avg_book_bal_ytd_sum_metric
+  label: Funding Avg_Book_Bal_Ytd Sum
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_sum
+- name: funding_avg_book_bal_ytd_average_metric
+  label: Funding Avg_Book_Bal_Ytd Average
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_average
+- name: funding_avg_book_bal_ytd_min_metric
+  label: Funding Avg_Book_Bal_Ytd Min
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_min
+- name: funding_avg_book_bal_ytd_max_metric
+  label: Funding Avg_Book_Bal_Ytd Max
+  description: Avg Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_max
+- name: funding_avg_book_bal_ytd_idr_sum_metric
+  label: Funding Avg_Book_Bal_Ytd_Idr Sum
+  description: Avg Nasabah ( Book_Bal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_idr_sum
+- name: funding_avg_book_bal_ytd_idr_average_metric
+  label: Funding Avg_Book_Bal_Ytd_Idr Average
+  description: Avg Nasabah ( Book_Bal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_idr_average
+- name: funding_avg_book_bal_ytd_idr_min_metric
+  label: Funding Avg_Book_Bal_Ytd_Idr Min
+  description: Avg Nasabah ( Book_Bal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_idr_min
+- name: funding_avg_book_bal_ytd_idr_max_metric
+  label: Funding Avg_Book_Bal_Ytd_Idr Max
+  description: Avg Nasabah ( Book_Bal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_avg_book_bal_ytd_idr_max
+- name: funding_cur_book_bal_mtd_sum_metric
+  label: Funding Cur_Book_Bal_Mtd Sum
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_mtd_sum
+- name: funding_cur_book_bal_mtd_average_metric
+  label: Funding Cur_Book_Bal_Mtd Average
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_mtd_average
+- name: funding_cur_book_bal_mtd_min_metric
+  label: Funding Cur_Book_Bal_Mtd Min
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_mtd_min
+- name: funding_cur_book_bal_mtd_max_metric
+  label: Funding Cur_Book_Bal_Mtd Max
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_mtd_max
+- name: funding_cur_book_bal_idr_mtd_sum_metric
+  label: Funding Cur_Book_Bal_Idr_Mtd Sum
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_mtd_sum
+- name: funding_cur_book_bal_idr_mtd_average_metric
+  label: Funding Cur_Book_Bal_Idr_Mtd Average
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_mtd_average
+- name: funding_cur_book_bal_idr_mtd_min_metric
+  label: Funding Cur_Book_Bal_Idr_Mtd Min
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_mtd_min
+- name: funding_cur_book_bal_idr_mtd_max_metric
+  label: Funding Cur_Book_Bal_Idr_Mtd Max
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_mtd_max
+- name: funding_cur_book_bal_ytd_sum_metric
+  label: Funding Cur_Book_Bal_Ytd Sum
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_ytd_sum
+- name: funding_cur_book_bal_ytd_average_metric
+  label: Funding Cur_Book_Bal_Ytd Average
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_ytd_average
+- name: funding_cur_book_bal_ytd_min_metric
+  label: Funding Cur_Book_Bal_Ytd Min
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_ytd_min
+- name: funding_cur_book_bal_ytd_max_metric
+  label: Funding Cur_Book_Bal_Ytd Max
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_ytd_max
+- name: funding_cur_book_bal_idr_ytd_sum_metric
+  label: Funding Cur_Book_Bal_Idr_Ytd Sum
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_ytd_sum
+- name: funding_cur_book_bal_idr_ytd_average_metric
+  label: Funding Cur_Book_Bal_Idr_Ytd Average
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_ytd_average
+- name: funding_cur_book_bal_idr_ytd_min_metric
+  label: Funding Cur_Book_Bal_Idr_Ytd Min
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_ytd_min
+- name: funding_cur_book_bal_idr_ytd_max_metric
+  label: Funding Cur_Book_Bal_Idr_Ytd Max
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_ytd_max
+- name: funding_cur_book_bal_yoy_sum_metric
+  label: Funding Cur_Book_Bal_Yoy Sum
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_yoy_sum
+- name: funding_cur_book_bal_yoy_average_metric
+  label: Funding Cur_Book_Bal_Yoy Average
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_yoy_average
+- name: funding_cur_book_bal_yoy_min_metric
+  label: Funding Cur_Book_Bal_Yoy Min
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_yoy_min
+- name: funding_cur_book_bal_yoy_max_metric
+  label: Funding Cur_Book_Bal_Yoy Max
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_yoy_max
+- name: funding_cur_book_bal_idr_yoy_sum_metric
+  label: Funding Cur_Book_Bal_Idr_Yoy Sum
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_yoy_sum
+- name: funding_cur_book_bal_idr_yoy_average_metric
+  label: Funding Cur_Book_Bal_Idr_Yoy Average
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_yoy_average
+- name: funding_cur_book_bal_idr_yoy_min_metric
+  label: Funding Cur_Book_Bal_Idr_Yoy Min
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_yoy_min
+- name: funding_cur_book_bal_idr_yoy_max_metric
+  label: Funding Cur_Book_Bal_Idr_Yoy Max
+  description: Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_cur_book_bal_idr_yoy_max
+- name: funding_ie_daily_sum_metric
+  label: Funding Ie_Daily Sum
+  description: Ie Daily Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_daily_sum
+- name: funding_ie_daily_average_metric
+  label: Funding Ie_Daily Average
+  description: Ie Daily Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_daily_average
+- name: funding_ie_daily_min_metric
+  label: Funding Ie_Daily Min
+  description: Ie Daily Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_daily_min
+- name: funding_ie_daily_max_metric
+  label: Funding Ie_Daily Max
+  description: Ie Daily Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_daily_max
+- name: funding_ie_mtd_sum_metric
+  label: Funding Ie_Mtd Sum
+  description: Ie Mtd Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_mtd_sum
+- name: funding_ie_mtd_average_metric
+  label: Funding Ie_Mtd Average
+  description: Ie Mtd Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_mtd_average
+- name: funding_ie_mtd_min_metric
+  label: Funding Ie_Mtd Min
+  description: Ie Mtd Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_mtd_min
+- name: funding_ie_mtd_max_metric
+  label: Funding Ie_Mtd Max
+  description: Ie Mtd Nasabah
+  type: simple
+  type_params:
+    measure: funding_ie_mtd_max
+- name: funding_ie_pms_eom_sum_metric
+  label: Funding Ie_Pms_Eom Sum
+  description: Ie Nasabah ( Pmsisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ie_pms_eom_sum
+- name: funding_ie_pms_eom_average_metric
+  label: Funding Ie_Pms_Eom Average
+  description: Ie Nasabah ( Pmsisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ie_pms_eom_average
+- name: funding_ie_pms_eom_min_metric
+  label: Funding Ie_Pms_Eom Min
+  description: Ie Nasabah ( Pmsisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ie_pms_eom_min
+- name: funding_ie_pms_eom_max_metric
+  label: Funding Ie_Pms_Eom Max
+  description: Ie Nasabah ( Pmsisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ie_pms_eom_max
+- name: funding_ending_balance_mtd_sum_metric
+  label: Funding Ending_Balance_Mtd Sum
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_mtd_sum
+- name: funding_ending_balance_mtd_average_metric
+  label: Funding Ending_Balance_Mtd Average
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_mtd_average
+- name: funding_ending_balance_mtd_min_metric
+  label: Funding Ending_Balance_Mtd Min
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_mtd_min
+- name: funding_ending_balance_mtd_max_metric
+  label: Funding Ending_Balance_Mtd Max
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_mtd_max
+- name: funding_ending_balance_idr_mtd_sum_metric
+  label: Funding Ending_Balance_Idr_Mtd Sum
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_mtd_sum
+- name: funding_ending_balance_idr_mtd_average_metric
+  label: Funding Ending_Balance_Idr_Mtd Average
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_mtd_average
+- name: funding_ending_balance_idr_mtd_min_metric
+  label: Funding Ending_Balance_Idr_Mtd Min
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_mtd_min
+- name: funding_ending_balance_idr_mtd_max_metric
+  label: Funding Ending_Balance_Idr_Mtd Max
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_mtd_max
+- name: funding_ending_balance_ytd_sum_metric
+  label: Funding Ending_Balance_Ytd Sum
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_ytd_sum
+- name: funding_ending_balance_ytd_average_metric
+  label: Funding Ending_Balance_Ytd Average
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_ytd_average
+- name: funding_ending_balance_ytd_min_metric
+  label: Funding Ending_Balance_Ytd Min
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_ytd_min
+- name: funding_ending_balance_ytd_max_metric
+  label: Funding Ending_Balance_Ytd Max
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_ytd_max
+- name: funding_ending_balance_idr_ytd_sum_metric
+  label: Funding Ending_Balance_Idr_Ytd Sum
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_ytd_sum
+- name: funding_ending_balance_idr_ytd_average_metric
+  label: Funding Ending_Balance_Idr_Ytd Average
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_ytd_average
+- name: funding_ending_balance_idr_ytd_min_metric
+  label: Funding Ending_Balance_Idr_Ytd Min
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_ytd_min
+- name: funding_ending_balance_idr_ytd_max_metric
+  label: Funding Ending_Balance_Idr_Ytd Max
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_ytd_max
+- name: funding_ending_balance_yoy_sum_metric
+  label: Funding Ending_Balance_Yoy Sum
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_yoy_sum
+- name: funding_ending_balance_yoy_average_metric
+  label: Funding Ending_Balance_Yoy Average
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_yoy_average
+- name: funding_ending_balance_yoy_min_metric
+  label: Funding Ending_Balance_Yoy Min
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_yoy_min
+- name: funding_ending_balance_yoy_max_metric
+  label: Funding Ending_Balance_Yoy Max
+  description: Ending Nasabah ( Balanceisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_yoy_max
+- name: funding_ending_balance_idr_yoy_sum_metric
+  label: Funding Ending_Balance_Idr_Yoy Sum
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_yoy_sum
+- name: funding_ending_balance_idr_yoy_average_metric
+  label: Funding Ending_Balance_Idr_Yoy Average
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_yoy_average
+- name: funding_ending_balance_idr_yoy_min_metric
+  label: Funding Ending_Balance_Idr_Yoy Min
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_yoy_min
+- name: funding_ending_balance_idr_yoy_max_metric
+  label: Funding Ending_Balance_Idr_Yoy Max
+  description: Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: funding_ending_balance_idr_yoy_max
+- name: funding_saldo_dsra_sum_metric
+  label: Funding Saldo_Dsra Sum
+  description: Saldo Dsra Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dsra_sum
+- name: funding_saldo_dsra_average_metric
+  label: Funding Saldo_Dsra Average
+  description: Saldo Dsra Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dsra_average
+- name: funding_saldo_dsra_min_metric
+  label: Funding Saldo_Dsra Min
+  description: Saldo Dsra Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dsra_min
+- name: funding_saldo_dsra_max_metric
+  label: Funding Saldo_Dsra Max
+  description: Saldo Dsra Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dsra_max
+- name: funding_saldo_dspa_sum_metric
+  label: Funding Saldo_Dspa Sum
+  description: Saldo Dspa Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dspa_sum
+- name: funding_saldo_dspa_average_metric
+  label: Funding Saldo_Dspa Average
+  description: Saldo Dspa Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dspa_average
+- name: funding_saldo_dspa_min_metric
+  label: Funding Saldo_Dspa Min
+  description: Saldo Dspa Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dspa_min
+- name: funding_saldo_dspa_max_metric
+  label: Funding Saldo_Dspa Max
+  description: Saldo Dspa Nasabah
+  type: simple
+  type_params:
+    measure: funding_saldo_dspa_max
+- name: funding_blocked_balance_sum_metric
+  label: Funding Blocked_Balance Sum
+  description: Blocked Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_blocked_balance_sum
+- name: funding_blocked_balance_average_metric
+  label: Funding Blocked_Balance Average
+  description: Blocked Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_blocked_balance_average
+- name: funding_blocked_balance_min_metric
+  label: Funding Blocked_Balance Min
+  description: Blocked Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_blocked_balance_min
+- name: funding_blocked_balance_max_metric
+  label: Funding Blocked_Balance Max
+  description: Blocked Balance Nasabah
+  type: simple
+  type_params:
+    measure: funding_blocked_balance_max
+- name: lending_loan_principal_idr_sum_metric
+  label: Lending Loan_Principal_Idr Sum
+  description: Loan Nasabah ( Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_loan_principal_idr_sum
+- name: lending_loan_principal_idr_average_metric
+  label: Lending Loan_Principal_Idr Average
+  description: Loan Nasabah ( Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_loan_principal_idr_average
+- name: lending_loan_principal_idr_min_metric
+  label: Lending Loan_Principal_Idr Min
+  description: Loan Nasabah ( Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_loan_principal_idr_min
+- name: lending_loan_principal_idr_max_metric
+  label: Lending Loan_Principal_Idr Max
+  description: Loan Nasabah ( Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_loan_principal_idr_max
+- name: lending_baki_debet_sum_metric
+  label: Lending Baki_Debet Sum
+  description: Baki Debet Nasabah
+  type: simple
+  type_params:
+    measure: lending_baki_debet_sum
+- name: lending_baki_debet_average_metric
+  label: Lending Baki_Debet Average
+  description: Baki Debet Nasabah
+  type: simple
+  type_params:
+    measure: lending_baki_debet_average
+- name: lending_baki_debet_min_metric
+  label: Lending Baki_Debet Min
+  description: Baki Debet Nasabah
+  type: simple
+  type_params:
+    measure: lending_baki_debet_min
+- name: lending_baki_debet_max_metric
+  label: Lending Baki_Debet Max
+  description: Baki Debet Nasabah
+  type: simple
+  type_params:
+    measure: lending_baki_debet_max
+- name: lending_psak_adj_dma_sum_metric
+  label: Lending Psak_Adj_Dma Sum
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_dma_sum
+- name: lending_psak_adj_dma_average_metric
+  label: Lending Psak_Adj_Dma Average
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_dma_average
+- name: lending_psak_adj_dma_min_metric
+  label: Lending Psak_Adj_Dma Min
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_dma_min
+- name: lending_psak_adj_dma_max_metric
+  label: Lending Psak_Adj_Dma Max
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_dma_max
+- name: lending_psak_adj_acc_sum_metric
+  label: Lending Psak_Adj_Acc Sum
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_acc_sum
+- name: lending_psak_adj_acc_average_metric
+  label: Lending Psak_Adj_Acc Average
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_acc_average
+- name: lending_psak_adj_acc_min_metric
+  label: Lending Psak_Adj_Acc Min
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_acc_min
+- name: lending_psak_adj_acc_max_metric
+  label: Lending Psak_Adj_Acc Max
+  description: Psak Nasabah ( Adjisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_psak_adj_acc_max
+- name: lending_avg_loan_principal_psak_mtd_sum_metric
+  label: Lending Avg_Loan_Principal_Psak_Mtd Sum
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_mtd_sum
+- name: lending_avg_loan_principal_psak_mtd_average_metric
+  label: Lending Avg_Loan_Principal_Psak_Mtd Average
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_mtd_average
+- name: lending_avg_loan_principal_psak_mtd_min_metric
+  label: Lending Avg_Loan_Principal_Psak_Mtd Min
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_mtd_min
+- name: lending_avg_loan_principal_psak_mtd_max_metric
+  label: Lending Avg_Loan_Principal_Psak_Mtd Max
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_mtd_max
+- name: lending_avg_loan_principal_psak_ytd_sum_metric
+  label: Lending Avg_Loan_Principal_Psak_Ytd Sum
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_ytd_sum
+- name: lending_avg_loan_principal_psak_ytd_average_metric
+  label: Lending Avg_Loan_Principal_Psak_Ytd Average
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_ytd_average
+- name: lending_avg_loan_principal_psak_ytd_min_metric
+  label: Lending Avg_Loan_Principal_Psak_Ytd Min
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_ytd_min
+- name: lending_avg_loan_principal_psak_ytd_max_metric
+  label: Lending Avg_Loan_Principal_Psak_Ytd Max
+  description: Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_psak_ytd_max
+- name: lending_max_credit_sum_metric
+  label: Lending Max_Credit Sum
+  description: Max Credit Nasabah
+  type: simple
+  type_params:
+    measure: lending_max_credit_sum
+- name: lending_max_credit_average_metric
+  label: Lending Max_Credit Average
+  description: Max Credit Nasabah
+  type: simple
+  type_params:
+    measure: lending_max_credit_average
+- name: lending_max_credit_min_metric
+  label: Lending Max_Credit Min
+  description: Max Credit Nasabah
+  type: simple
+  type_params:
+    measure: lending_max_credit_min
+- name: lending_max_credit_max_metric
+  label: Lending Max_Credit Max
+  description: Max Credit Nasabah
+  type: simple
+  type_params:
+    measure: lending_max_credit_max
+- name: lending_commitment_bal_sum_metric
+  label: Lending Commitment_Bal Sum
+  description: Commitment Bal Nasabah
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_sum
+- name: lending_commitment_bal_average_metric
+  label: Lending Commitment_Bal Average
+  description: Commitment Bal Nasabah
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_average
+- name: lending_commitment_bal_min_metric
+  label: Lending Commitment_Bal Min
+  description: Commitment Bal Nasabah
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_min
+- name: lending_commitment_bal_max_metric
+  label: Lending Commitment_Bal Max
+  description: Commitment Bal Nasabah
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_max
+- name: lending_commitment_bal_idr_sum_metric
+  label: Lending Commitment_Bal_Idr Sum
+  description: Commitment Nasabah ( Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_idr_sum
+- name: lending_commitment_bal_idr_average_metric
+  label: Lending Commitment_Bal_Idr Average
+  description: Commitment Nasabah ( Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_idr_average
+- name: lending_commitment_bal_idr_min_metric
+  label: Lending Commitment_Bal_Idr Min
+  description: Commitment Nasabah ( Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_idr_min
+- name: lending_commitment_bal_idr_max_metric
+  label: Lending Commitment_Bal_Idr Max
+  description: Commitment Nasabah ( Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_commitment_bal_idr_max
+- name: lending_org_credit_limit_sum_metric
+  label: Lending Org_Credit_Limit Sum
+  description: Org Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_org_credit_limit_sum
+- name: lending_org_credit_limit_average_metric
+  label: Lending Org_Credit_Limit Average
+  description: Org Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_org_credit_limit_average
+- name: lending_org_credit_limit_min_metric
+  label: Lending Org_Credit_Limit Min
+  description: Org Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_org_credit_limit_min
+- name: lending_org_credit_limit_max_metric
+  label: Lending Org_Credit_Limit Max
+  description: Org Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_org_credit_limit_max
+- name: lending_add_credit_limit_sum_metric
+  label: Lending Add_Credit_Limit Sum
+  description: Add Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_add_credit_limit_sum
+- name: lending_add_credit_limit_average_metric
+  label: Lending Add_Credit_Limit Average
+  description: Add Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_add_credit_limit_average
+- name: lending_add_credit_limit_min_metric
+  label: Lending Add_Credit_Limit Min
+  description: Add Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_add_credit_limit_min
+- name: lending_add_credit_limit_max_metric
+  label: Lending Add_Credit_Limit Max
+  description: Add Nasabah ( Creditisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_add_credit_limit_max
+- name: lending_avg_loan_principal_ytd_sum_metric
+  label: Lending Avg_Loan_Principal_Ytd Sum
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_sum
+- name: lending_avg_loan_principal_ytd_average_metric
+  label: Lending Avg_Loan_Principal_Ytd Average
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_average
+- name: lending_avg_loan_principal_ytd_min_metric
+  label: Lending Avg_Loan_Principal_Ytd Min
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_min
+- name: lending_avg_loan_principal_ytd_max_metric
+  label: Lending Avg_Loan_Principal_Ytd Max
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_max
+- name: lending_avg_loan_principal_ytd_idr_sum_metric
+  label: Lending Avg_Loan_Principal_Ytd_Idr Sum
+  description: Avg Nasabah ( Loan_Principal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_idr_sum
+- name: lending_avg_loan_principal_ytd_idr_average_metric
+  label: Lending Avg_Loan_Principal_Ytd_Idr Average
+  description: Avg Nasabah ( Loan_Principal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_idr_average
+- name: lending_avg_loan_principal_ytd_idr_min_metric
+  label: Lending Avg_Loan_Principal_Ytd_Idr Min
+  description: Avg Nasabah ( Loan_Principal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_idr_min
+- name: lending_avg_loan_principal_ytd_idr_max_metric
+  label: Lending Avg_Loan_Principal_Ytd_Idr Max
+  description: Avg Nasabah ( Loan_Principal_Ytdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_ytd_idr_max
+- name: lending_avg_loan_principal_mtd_sum_metric
+  label: Lending Avg_Loan_Principal_Mtd Sum
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_sum
+- name: lending_avg_loan_principal_mtd_average_metric
+  label: Lending Avg_Loan_Principal_Mtd Average
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_average
+- name: lending_avg_loan_principal_mtd_min_metric
+  label: Lending Avg_Loan_Principal_Mtd Min
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_min
+- name: lending_avg_loan_principal_mtd_max_metric
+  label: Lending Avg_Loan_Principal_Mtd Max
+  description: Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_max
+- name: lending_avg_loan_principal_mtd_idr_sum_metric
+  label: Lending Avg_Loan_Principal_Mtd_Idr Sum
+  description: Avg Nasabah ( Loan_Principal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_idr_sum
+- name: lending_avg_loan_principal_mtd_idr_average_metric
+  label: Lending Avg_Loan_Principal_Mtd_Idr Average
+  description: Avg Nasabah ( Loan_Principal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_idr_average
+- name: lending_avg_loan_principal_mtd_idr_min_metric
+  label: Lending Avg_Loan_Principal_Mtd_Idr Min
+  description: Avg Nasabah ( Loan_Principal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_idr_min
+- name: lending_avg_loan_principal_mtd_idr_max_metric
+  label: Lending Avg_Loan_Principal_Mtd_Idr Max
+  description: Avg Nasabah ( Loan_Principal_Mtdisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_avg_loan_principal_mtd_idr_max
+- name: lending_angsuran_bunga_sum_metric
+  label: Lending Angsuran_Bunga Sum
+  description: Angsuran Bunga Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_bunga_sum
+- name: lending_angsuran_bunga_average_metric
+  label: Lending Angsuran_Bunga Average
+  description: Angsuran Bunga Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_bunga_average
+- name: lending_angsuran_bunga_min_metric
+  label: Lending Angsuran_Bunga Min
+  description: Angsuran Bunga Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_bunga_min
+- name: lending_angsuran_bunga_max_metric
+  label: Lending Angsuran_Bunga Max
+  description: Angsuran Bunga Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_bunga_max
+- name: lending_angsuran_pokok_sum_metric
+  label: Lending Angsuran_Pokok Sum
+  description: Angsuran Pokok Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_pokok_sum
+- name: lending_angsuran_pokok_average_metric
+  label: Lending Angsuran_Pokok Average
+  description: Angsuran Pokok Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_pokok_average
+- name: lending_angsuran_pokok_min_metric
+  label: Lending Angsuran_Pokok Min
+  description: Angsuran Pokok Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_pokok_min
+- name: lending_angsuran_pokok_max_metric
+  label: Lending Angsuran_Pokok Max
+  description: Angsuran Pokok Nasabah
+  type: simple
+  type_params:
+    measure: lending_angsuran_pokok_max
+- name: lending_cur_book_bal_idr_sum_metric
+  label: Lending Cur_Book_Bal_Idr Sum
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_idr_sum
+- name: lending_cur_book_bal_idr_average_metric
+  label: Lending Cur_Book_Bal_Idr Average
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_idr_average
+- name: lending_cur_book_bal_idr_min_metric
+  label: Lending Cur_Book_Bal_Idr Min
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_idr_min
+- name: lending_cur_book_bal_idr_max_metric
+  label: Lending Cur_Book_Bal_Idr Max
+  description: Cur Nasabah ( Book_Balisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_idr_max
+- name: lending_cur_book_bal_sum_metric
+  label: Lending Cur_Book_Bal Sum
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_sum
+- name: lending_cur_book_bal_average_metric
+  label: Lending Cur_Book_Bal Average
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_average
+- name: lending_cur_book_bal_min_metric
+  label: Lending Cur_Book_Bal Min
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_min
+- name: lending_cur_book_bal_max_metric
+  label: Lending Cur_Book_Bal Max
+  description: Cur Nasabah ( Bookisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_cur_book_bal_max
+- name: lending_outstanding_sum_metric
+  label: Lending Outstanding Sum
+  description: Outstanding Nasabah ( Ingisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_outstanding_sum
+- name: lending_outstanding_average_metric
+  label: Lending Outstanding Average
+  description: Outstanding Nasabah ( Ingisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_outstanding_average
+- name: lending_outstanding_min_metric
+  label: Lending Outstanding Min
+  description: Outstanding Nasabah ( Ingisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_outstanding_min
+- name: lending_outstanding_max_metric
+  label: Lending Outstanding Max
+  description: Outstanding Nasabah ( Ingisi Pemegang Nasabah)
+  type: simple
+  type_params:
+    measure: lending_outstanding_max
+- name: lending_dspa_balance_sum_metric
+  label: Lending Dspa_Balance Sum
+  description: Dspa Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dspa_balance_sum
+- name: lending_dspa_balance_average_metric
+  label: Lending Dspa_Balance Average
+  description: Dspa Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dspa_balance_average
+- name: lending_dspa_balance_min_metric
+  label: Lending Dspa_Balance Min
+  description: Dspa Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dspa_balance_min
+- name: lending_dspa_balance_max_metric
+  label: Lending Dspa_Balance Max
+  description: Dspa Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dspa_balance_max
+- name: lending_dsra_balance_sum_metric
+  label: Lending Dsra_Balance Sum
+  description: Dsra Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_sum
+- name: lending_dsra_balance_average_metric
+  label: Lending Dsra_Balance Average
+  description: Dsra Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_average
+- name: lending_dsra_balance_min_metric
+  label: Lending Dsra_Balance Min
+  description: Dsra Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_min
+- name: lending_dsra_balance_max_metric
+  label: Lending Dsra_Balance Max
+  description: Dsra Balance Nasabah
+  type: simple
+  type_params:
+    measure: lending_dsra_balance_max
+- name: lending_ii_daily_sum_metric
+  label: Lending Ii_Daily Sum
+  description: Ii Daily Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_daily_sum
+- name: lending_ii_daily_average_metric
+  label: Lending Ii_Daily Average
+  description: Ii Daily Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_daily_average
+- name: lending_ii_daily_min_metric
+  label: Lending Ii_Daily Min
+  description: Ii Daily Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_daily_min
+- name: lending_ii_daily_max_metric
+  label: Lending Ii_Daily Max
+  description: Ii Daily Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_daily_max
+- name: lending_ii_monthly_sum_metric
+  label: Lending Ii_Monthly Sum
+  description: Ii Monthly Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_sum
+- name: lending_ii_monthly_average_metric
+  label: Lending Ii_Monthly Average
+  description: Ii Monthly Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_average
+- name: lending_ii_monthly_min_metric
+  label: Lending Ii_Monthly Min
+  description: Ii Monthly Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_min
+- name: lending_ii_monthly_max_metric
+  label: Lending Ii_Monthly Max
+  description: Ii Monthly Nasabah
+  type: simple
+  type_params:
+    measure: lending_ii_monthly_max
