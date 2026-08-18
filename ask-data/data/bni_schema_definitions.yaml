@@ -1051,10 +1051,11 @@ tables:
         description: "Cif Principal Nasabah"
       - name: group_principal
         type: "string"
+        primary_key: true
         description: "Group Principal Nasabah"
       - name: segment_div_owner
         type: "varchar(10)"
         description: "Segment Nasabah ( Divisi Pemegang Nasabah)"
       - name: as_of_date
-        type: "string"
+        type: "date"
         description: "As Nasabah ( Ofisi Pemegang Nasabah)"

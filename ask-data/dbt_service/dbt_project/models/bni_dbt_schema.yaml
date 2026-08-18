@@ -2357,19 +2357,20 @@ semantic_models:
   - name: cif_key
     type: foreign
     expr: cif_principal
-  dimensions:
   - name: group_principal
-    type: categorical
+    type: primary
     expr: group_principal
-    description: Group Principal Nasabah
+  dimensions:
   - name: segment_div_owner
     type: categorical
     expr: segment_div_owner
     description: Segment Nasabah ( Divisi Pemegang Nasabah)
   - name: as_of_date
-    type: categorical
+    type: time
     expr: as_of_date
     description: As Nasabah ( Ofisi Pemegang Nasabah)
+    type_params:
+      time_granularity: day
   measures: []
 metrics:
 - name: trxchannel_amount_sum_metric
