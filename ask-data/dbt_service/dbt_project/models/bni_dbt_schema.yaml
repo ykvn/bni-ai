@@ -31,6 +31,9 @@ semantic_models:
   - name: target_lending_account_number
     type: foreign
     expr: target_account_number
+  - name: trxchannel_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2357,10 +2360,14 @@ semantic_models:
   - name: cif_key
     type: foreign
     expr: cif_principal
-  - name: group_principal
+  - name: mapping_group_whs_id
     type: primary
-    expr: group_principal
+    expr: '1'
   dimensions:
+  - name: group_principal
+    type: categorical
+    expr: group_principal
+    description: Group Principal Nasabah
   - name: segment_div_owner
     type: categorical
     expr: segment_div_owner

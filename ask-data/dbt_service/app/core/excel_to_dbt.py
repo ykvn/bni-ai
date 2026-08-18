@@ -185,7 +185,18 @@ CROSS JOIN numbers d
             
             # 4. Standard Dimensions
             else:
-                dim_type = "time" if "DATE" in str(col.get("Data Type", "")).upper() or "TIME" in str(col.get("Data Type", "")).upper() else "categorical"
+                col_type_str = str(col.get("Data Type", "")).upper()
+                col_name_str = raw_col_name.lower()
+                
+                # Robust time dimension detection to prevent categorical vs time conflicts
+                is_time_col = (
+                    "DATE" in col_type_str or 
+                    "TIME" in col_type_str or 
+                    col_name_str == "as_of_date" or 
+                    col_name_str.endswith("_date") or 
+                    col_name_str.endswith("_time")
+                )
+                dim_type = "time" if is_time_col else "categorical"
                 
                 meta_parts = []
                 if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
@@ -258,9 +269,10 @@ CROSS JOIN numbers d
             })
             first_time_dim = "dbt_dummy_time"
 
-        # Fallback for Impala/Flat tables: If no PK or FK is defined,
+        # Fallback for Impala/Flat tables: If no PRIMARY entity exists,
         # inject a synthetic primary entity to satisfy MetricFlow's semantic parser.
-        if not entities and (dimensions or measures):
+        has_primary_entity = any(e.get("type") == "primary" for e in entities)
+        if not has_primary_entity and (dimensions or measures):
             entities.append({
                 "name": f"{table_name}_id",
                 "type": "primary",
