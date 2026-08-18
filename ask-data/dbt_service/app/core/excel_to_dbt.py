@@ -6,6 +6,17 @@ import sys
 from pathlib import Path
 import pandas as pd
 import yaml
+import re
+
+def sanitize_dbt_name(name: str) -> str:
+    """Ensures dbt names start with a letter and contain valid characters."""
+    name = str(name).strip().lower()
+    if not name or name == 'nan':
+        return ""
+    if name[0].isdigit():
+        name = f"d_{name}"
+    name = re.sub(r'[^a-z0-9_]', '_', name)
+    return name
 
 def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
     tables_df = pd.read_excel(excel_path, sheet_name="Tables")
@@ -83,7 +94,9 @@ CROSS JOIN numbers d
         first_time_dim = None
 
         for _, col in table_cols.iterrows():
-            col_name = str(col["Column Name"]).strip()
+            raw_col_name = str(col["Column Name"]).strip()
+            safe_col_name = sanitize_dbt_name(raw_col_name)
+            
             is_pk = col.get("Is PK?", False)
             ref_fk = col.get("References (Foreign Keys)")
             custom_measures = col.get("Custom Measures (Optional)")
@@ -93,9 +106,9 @@ CROSS JOIN numbers d
             base_desc = str(col.get("Description", "")).strip()
 
             if is_pk:
-                entities.append({"name": col_name, "type": "primary", "expr": col_name})
-            elif pd.notna(ref_fk) or col_name in global_entities:
-                entities.append({"name": col_name, "type": "foreign", "expr": col_name})
+                entities.append({"name": safe_col_name, "type": "primary", "expr": raw_col_name})
+            elif pd.notna(ref_fk) or raw_col_name in global_entities:
+                entities.append({"name": safe_col_name, "type": "foreign", "expr": raw_col_name})
             else:
                 dim_type = "time" if "DATE" in str(col["Data Type"]).upper() or "TIME" in str(col["Data Type"]).upper() else "categorical"
                 
@@ -106,9 +119,9 @@ CROSS JOIN numbers d
                 if pd.notna(static_vals):
                     meta_parts.append(f"Allowed: [{str(static_vals).strip()}]")
 
-                # ✅ FIX: Map value-level Database Values, Synonyms, and Context
+                # ✅ Map value-level Database Values, Synonyms, and Context
                 if not vals_df.empty:
-                    col_mappings = vals_df[(vals_df["Table Name"] == table_name) & (vals_df["Column Name"] == col_name)]
+                    col_mappings = vals_df[(vals_df["Table Name"] == table_name) & (vals_df["Column Name"] == raw_col_name)]
                     if not col_mappings.empty:
                         value_entries = []
                         for _, mapping_row in col_mappings.iterrows():
@@ -132,16 +145,16 @@ CROSS JOIN numbers d
                     base_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
 
                 dim_obj = {
-                    "name": col_name, 
+                    "name": safe_col_name, 
                     "type": dim_type, 
-                    "expr": col_name, 
+                    "expr": raw_col_name, 
                     "description": base_desc.strip()
                 }
                 
                 if dim_type == "time":
                     dim_obj["type_params"] = {"time_granularity": "day"}
                     if not first_time_dim:
-                        first_time_dim = col_name
+                        first_time_dim = safe_col_name
                 
                 dimensions.append(dim_obj)
 
@@ -149,14 +162,14 @@ CROSS JOIN numbers d
                 aggs = [a.strip().lower() for a in str(custom_measures).split(",")]
                 for agg in aggs:
                     dbt_agg_type = "average" if agg == "avg" else agg
-                    m_name = f"{table_name}_{col_name}_{agg}"
+                    m_name = f"{table_name}_{safe_col_name}_{agg}"
                     
                     measures.append({
                         "name": m_name, 
-                        "expr": col_name, 
+                        "expr": raw_col_name, 
                         "agg": dbt_agg_type,
                         "_base_desc": base_desc,
-                        "_col_name": col_name,
+                        "_col_name": safe_col_name,
                         "_agg": agg
                     })
 
@@ -169,6 +182,15 @@ CROSS JOIN numbers d
                 "type_params": {"time_granularity": "day"}
             })
             first_time_dim = "dbt_dummy_time"
+
+        # Fallback for Impala/Flat tables: If no PK or FK is defined,
+        # inject a synthetic primary entity to satisfy MetricFlow's semantic parser.
+        if not entities and (dimensions or measures):
+            entities.append({
+                "name": f"{table_name}_id",
+                "type": "primary",
+                "expr": "1"
+            })
 
         # Attach agg_time_dimension to measures and construct metrics
         formatted_measures = []

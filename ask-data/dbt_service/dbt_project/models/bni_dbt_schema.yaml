@@ -15,7 +15,10 @@ semantic_models:
       time_granularity: day
 - name: customer_group
   model: ref('customer_group')
-  entities: []
+  entities:
+  - name: customer_group_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: nama_principal
     type: categorical
@@ -1324,7 +1327,10 @@ semantic_models:
   measures: []
 - name: customer_identification
   model: ref('customer_identification')
-  entities: []
+  entities:
+  - name: customer_identification_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: id_issue_date
     type: time
@@ -1350,7 +1356,10 @@ semantic_models:
   measures: []
 - name: customer_business_management
   model: ref('customer_business_management')
-  entities: []
+  entities:
+  - name: customer_business_management_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: bm_tax_id
     type: categorical
@@ -1397,7 +1406,10 @@ semantic_models:
   measures: []
 - name: customer_performance_pms3d
   model: ref('customer_performance_pms3d')
-  entities: []
+  entities:
+  - name: customer_performance_pms3d_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: amount_ftp_scmr_ytd_dpk
     type: categorical
@@ -1772,7 +1784,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: connect_monitoring_leads
   model: ref('connect_monitoring_leads')
-  entities: []
+  entities:
+  - name: connect_monitoring_leads_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -1787,7 +1802,10 @@ semantic_models:
   measures: []
 - name: digisales_monitoring_leads_valuechain
   model: ref('digisales_monitoring_leads_valuechain')
-  entities: []
+  entities:
+  - name: digisales_monitoring_leads_valuechain_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -1900,7 +1918,10 @@ semantic_models:
   measures: []
 - name: digisales_monitoring_leads
   model: ref('digisales_monitoring_leads')
-  entities: []
+  entities:
+  - name: digisales_monitoring_leads_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: alasanfollowup
     type: categorical
@@ -1915,7 +1936,10 @@ semantic_models:
   measures: []
 - name: customer_performance_transaction
   model: ref('customer_performance_transaction')
-  entities: []
+  entities:
+  - name: customer_performance_transaction_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: register_smsbank_date
     type: time
@@ -2124,7 +2148,10 @@ semantic_models:
     agg_time_dimension: register_smsbank_date
 - name: bnimove_monitoring_leads
   model: ref('bnimove_monitoring_leads')
-  entities: []
+  entities:
+  - name: bnimove_monitoring_leads_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: sektor_ekonomi_cd
     type: categorical
@@ -2144,7 +2171,10 @@ semantic_models:
   measures: []
 - name: rmtools_funding
   model: ref('rmtools_funding')
-  entities: []
+  entities:
+  - name: rmtools_funding_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2155,14 +2185,17 @@ semantic_models:
   measures: []
 - name: rmtools_lending_retail
   model: ref('rmtools_lending_retail')
-  entities: []
+  entities:
+  - name: rmtools_lending_retail_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: marital_status
     type: categorical
     expr: marital_status
     description: Status bo status pernikahan yang menunjukkan kondisi atau tahapan
       terkini.
-  - name: 3d_response
+  - name: d_3d_response
     type: categorical
     expr: 3d_response
     description: Unknown
@@ -2172,20 +2205,23 @@ semantic_models:
     description: Posisi periode dari data yang ditampilkan
     type_params:
       time_granularity: day
-  - name: 3d
+  - name: d_3d
     type: categorical
     expr: 3d
     description: Unknown
   measures: []
 - name: rmtools_lending_corporate
   model: ref('rmtools_lending_corporate')
-  entities: []
+  entities:
+  - name: rmtools_lending_corporate_id
+    type: primary
+    expr: '1'
   dimensions:
-  - name: 3d
+  - name: d_3d
     type: categorical
     expr: 3d
     description: Unknown
-  - name: 3d_response
+  - name: d_3d_response
     type: categorical
     expr: 3d_response
     description: Unknown
@@ -2198,7 +2234,10 @@ semantic_models:
   measures: []
 - name: bin_card
   model: ref('bin_card')
-  entities: []
+  entities:
+  - name: bin_card_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: bank_name
     type: categorical
@@ -2259,7 +2298,10 @@ semantic_models:
   measures: []
 - name: performance_creditcard
   model: ref('performance_creditcard')
-  entities: []
+  entities:
+  - name: performance_creditcard_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2270,7 +2312,10 @@ semantic_models:
   measures: []
 - name: indopex
   model: ref('indopex')
-  entities: []
+  entities:
+  - name: indopex_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2281,7 +2326,10 @@ semantic_models:
   measures: []
 - name: interest_expense_daily
   model: ref('interest_expense_daily')
-  entities: []
+  entities:
+  - name: interest_expense_daily_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: gl_account_id_dpk
     type: categorical
@@ -2300,7 +2348,10 @@ semantic_models:
   measures: []
 - name: interest_expense_ytd
   model: ref('interest_expense_ytd')
-  entities: []
+  entities:
+  - name: interest_expense_ytd_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: gl_account_id_dpk
     type: categorical
@@ -2319,7 +2370,10 @@ semantic_models:
   measures: []
 - name: interest_income_daily
   model: ref('interest_income_daily')
-  entities: []
+  entities:
+  - name: interest_income_daily_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2334,7 +2388,10 @@ semantic_models:
   measures: []
 - name: interest_income_ytd
   model: ref('interest_income_ytd')
-  entities: []
+  entities:
+  - name: interest_income_ytd_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: processing_time
     type: time
@@ -2355,7 +2412,10 @@ semantic_models:
   measures: []
 - name: ledger_statement
   model: ref('ledger_statement')
-  entities: []
+  entities:
+  - name: ledger_statement_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2366,7 +2426,10 @@ semantic_models:
   measures: []
 - name: mart_jurnal_transaksi
   model: ref('mart_jurnal_transaksi')
-  entities: []
+  entities:
+  - name: mart_jurnal_transaksi_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: entered_debit
     type: categorical
@@ -2477,7 +2540,10 @@ semantic_models:
     agg_time_dimension: creation_date
 - name: mart_ledger_statement
   model: ref('mart_ledger_statement')
-  entities: []
+  entities:
+  - name: mart_ledger_statement_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: subbranch_name
     type: categorical
@@ -2497,7 +2563,10 @@ semantic_models:
   measures: []
 - name: opex
   model: ref('opex')
-  entities: []
+  entities:
+  - name: opex_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2512,7 +2581,10 @@ semantic_models:
   measures: []
 - name: recovery
   model: ref('recovery')
-  entities: []
+  entities:
+  - name: recovery_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: tahun
     type: categorical
@@ -2521,7 +2593,10 @@ semantic_models:
   measures: []
 - name: dpk_dn_daily
   model: ref('dpk_dn_daily')
-  entities: []
+  entities:
+  - name: dpk_dn_daily_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: flag_rate
     type: categorical
@@ -2544,7 +2619,10 @@ semantic_models:
   measures: []
 - name: funding
   model: ref('funding')
-  entities: []
+  entities:
+  - name: funding_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: acct_close_date
     type: time
@@ -2595,7 +2673,10 @@ semantic_models:
   measures: []
 - name: dpk_nrealtime
   model: ref('dpk_nrealtime')
-  entities: []
+  entities:
+  - name: dpk_nrealtime_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: subbranch_name
     type: categorical
@@ -2614,7 +2695,10 @@ semantic_models:
   measures: []
 - name: funding_deposito
   model: ref('funding_deposito')
-  entities: []
+  entities:
+  - name: funding_deposito_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: saldo_rate
     type: categorical
@@ -2675,7 +2759,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: funding_cof
   model: ref('funding_cof')
-  entities: []
+  entities:
+  - name: funding_cof_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: avg_r_ytd
     type: categorical
@@ -2770,7 +2857,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: funding_giro
   model: ref('funding_giro')
-  entities: []
+  entities:
+  - name: funding_giro_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: flag_rate
     type: categorical
@@ -2815,7 +2905,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: funding_tabungan
   model: ref('funding_tabungan')
-  entities: []
+  entities:
+  - name: funding_tabungan_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: flag_rate
     type: categorical
@@ -2854,7 +2947,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: funding_movement
   model: ref('funding_movement')
-  entities: []
+  entities:
+  - name: funding_movement_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -2865,7 +2961,10 @@ semantic_models:
   measures: []
 - name: humanresource
   model: ref('humanresource')
-  entities: []
+  entities:
+  - name: humanresource_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: email_pribadi
     type: categorical
@@ -2973,7 +3072,10 @@ semantic_models:
   measures: []
 - name: teller
   model: ref('teller')
-  entities: []
+  entities:
+  - name: teller_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: ca_desc
     type: categorical
@@ -3042,7 +3144,10 @@ semantic_models:
   measures: []
 - name: elo_incoming
   model: ref('elo_incoming')
-  entities: []
+  entities:
+  - name: elo_incoming_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: jns_pendapatan
     type: categorical
@@ -3217,7 +3322,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: aum_daily_pms
   model: ref('aum_daily_pms')
-  entities: []
+  entities:
+  - name: aum_daily_pms_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: marital_status
     type: categorical
@@ -3254,7 +3362,10 @@ semantic_models:
   measures: []
 - name: hapusbuku
   model: ref('hapusbuku')
-  entities: []
+  entities:
+  - name: hapusbuku_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: tahun
     type: categorical
@@ -3553,7 +3664,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: ncl
   model: ref('ncl')
-  entities: []
+  entities:
+  - name: ncl_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -3568,7 +3682,10 @@ semantic_models:
   measures: []
 - name: aum_daily
   model: ref('aum_daily')
-  entities: []
+  entities:
+  - name: aum_daily_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: bni_birth_date
     type: time
@@ -3601,7 +3718,10 @@ semantic_models:
   measures: []
 - name: collateral
   model: ref('collateral')
-  entities: []
+  entities:
+  - name: collateral_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: type_seq
     type: categorical
@@ -3910,7 +4030,10 @@ semantic_models:
     agg_time_dimension: acct_close_date
 - name: channel_atm
   model: ref('channel_atm')
-  entities: []
+  entities:
+  - name: channel_atm_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: propinsi
     type: categorical
@@ -3929,7 +4052,10 @@ semantic_models:
   measures: []
 - name: channel_branch
   model: ref('channel_branch')
-  entities: []
+  entities:
+  - name: channel_branch_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: provinsi_name
     type: categorical
@@ -3948,7 +4074,10 @@ semantic_models:
   measures: []
 - name: channel_agent46
   model: ref('channel_agent46')
-  entities: []
+  entities:
+  - name: channel_agent46_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -3963,7 +4092,10 @@ semantic_models:
   measures: []
 - name: channel_merchant_android
   model: ref('channel_merchant_android')
-  entities: []
+  entities:
+  - name: channel_merchant_android_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: provinsi
     type: categorical
@@ -3976,7 +4108,10 @@ semantic_models:
   measures: []
 - name: channel_teller
   model: ref('channel_teller')
-  entities: []
+  entities:
+  - name: channel_teller_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: ca_desc
     type: categorical
@@ -3995,7 +4130,10 @@ semantic_models:
   measures: []
 - name: channel_merchant
   model: ref('channel_merchant')
-  entities: []
+  entities:
+  - name: channel_merchant_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: assesment_34
     type: categorical
@@ -4752,7 +4890,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: channel_merchant_qris
   model: ref('channel_merchant_qris')
-  entities: []
+  entities:
+  - name: channel_merchant_qris_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: pos1
     type: categorical
@@ -4825,7 +4966,10 @@ semantic_models:
   measures: []
 - name: master_merchant
   model: ref('master_merchant')
-  entities: []
+  entities:
+  - name: master_merchant_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: assesment_7
     type: categorical
@@ -5574,7 +5718,10 @@ semantic_models:
     agg_time_dimension: as_of_date
 - name: transaction_cta_batch
   model: ref('transaction_cta_batch')
-  entities: []
+  entities:
+  - name: transaction_cta_batch_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: row_no
     type: categorical
@@ -5650,7 +5797,10 @@ semantic_models:
     agg_time_dimension: load_timestamp
 - name: transaction_dpk
   model: ref('transaction_dpk')
-  entities: []
+  entities:
+  - name: transaction_dpk_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: customer_name_destination
     type: categorical
@@ -5663,7 +5813,10 @@ semantic_models:
   measures: []
 - name: transaction_dpk_batch
   model: ref('transaction_dpk_batch')
-  entities: []
+  entities:
+  - name: transaction_dpk_batch_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: balance_idr_01
     type: categorical
@@ -5979,7 +6132,10 @@ semantic_models:
     agg_time_dimension: date_process
 - name: transaction_dpk_all
   model: ref('transaction_dpk_all')
-  entities: []
+  entities:
+  - name: transaction_dpk_all_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: description_21
     type: categorical
@@ -6299,7 +6455,10 @@ semantic_models:
     agg_time_dimension: date_process
 - name: transaction_gen_batch
   model: ref('transaction_gen_batch')
-  entities: []
+  entities:
+  - name: transaction_gen_batch_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: description_36
     type: categorical
@@ -6375,7 +6534,10 @@ semantic_models:
     agg_time_dimension: date_process
 - name: transaction_dpk_nearrealtime
   model: ref('transaction_dpk_nearrealtime')
-  entities: []
+  entities:
+  - name: transaction_dpk_nearrealtime_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: description_36_1
     type: categorical
@@ -6667,7 +6829,10 @@ semantic_models:
     agg_time_dimension: date_process
 - name: trxchannel
   model: ref('trxchannel')
-  entities: []
+  entities:
+  - name: trxchannel_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: machine_acquirer
     type: categorical
@@ -6718,7 +6883,10 @@ semantic_models:
   measures: []
 - name: transaction_loan_batch
   model: ref('transaction_loan_batch')
-  entities: []
+  entities:
+  - name: transaction_loan_batch_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: load_timestamp
     type: time
@@ -6818,7 +6986,10 @@ semantic_models:
     agg_time_dimension: load_timestamp
 - name: transaction_mvtrx
   model: ref('transaction_mvtrx')
-  entities: []
+  entities:
+  - name: transaction_mvtrx_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: mcc
     type: categorical
@@ -6833,7 +7004,10 @@ semantic_models:
   measures: []
 - name: transaction_tapcash
   model: ref('transaction_tapcash')
-  entities: []
+  entities:
+  - name: transaction_tapcash_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
@@ -6852,7 +7026,10 @@ semantic_models:
   measures: []
 - name: trxchannel_cico
   model: ref('trxchannel_cico')
-  entities: []
+  entities:
+  - name: trxchannel_cico_id
+    type: primary
+    expr: '1'
   dimensions:
   - name: as_of_date
     type: time
