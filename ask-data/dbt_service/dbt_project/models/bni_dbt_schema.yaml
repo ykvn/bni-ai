@@ -19,10 +19,16 @@ semantic_models:
   - name: cif_key
     type: foreign
     expr: cif_key
-  - name: account_number
+  - name: funding_account_number
     type: foreign
     expr: account_number
-  - name: target_account_number
+  - name: lending_account_number
+    type: foreign
+    expr: account_number
+  - name: target_funding_account_number
+    type: foreign
+    expr: target_account_number
+  - name: target_lending_account_number
     type: foreign
     expr: target_account_number
   dimensions:
@@ -682,8 +688,11 @@ semantic_models:
 - name: funding
   model: ref('funding')
   entities:
-  - name: account_number
+  - name: funding_account_number
     type: primary
+    expr: account_number
+  - name: target_funding_account_number
+    type: unique
     expr: account_number
   - name: cif_key
     type: foreign
@@ -1529,8 +1538,11 @@ semantic_models:
 - name: lending
   model: ref('lending')
   entities:
-  - name: account_number
+  - name: lending_account_number
     type: primary
+    expr: account_number
+  - name: target_lending_account_number
+    type: unique
     expr: account_number
   - name: cif_key
     type: foreign
@@ -2339,10 +2351,10 @@ semantic_models:
     expr: ii_monthly
     agg: max
     agg_time_dimension: as_of_date
-- name: MAPPING_GROUP_WHS
-  model: ref('MAPPING_GROUP_WHS')
+- name: mapping_group_whs
+  model: ref('mapping_group_whs')
   entities:
-  - name: cif_principal
+  - name: cif_key
     type: foreign
     expr: cif_principal
   dimensions:

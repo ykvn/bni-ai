@@ -27,11 +27,40 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
     except Exception:
         vals_df = pd.DataFrame()
 
-    # Pre-pass: Find global entities (PKs or FKs across all tables) to prevent entity vs dimension collisions
+    alias_col = "Alias (Optional)"
+
+    # Pre-pass 1: Find global entities (PKs or FKs across all tables) to prevent entity vs dimension collisions
     global_entities = set()
     for _, col in cols_df.iterrows():
         if col.get("Is PK?", False) or pd.notna(col.get("References (Foreign Keys)")):
             global_entities.add(str(col["Column Name"]).strip())
+
+    # Pre-pass 2: Build a map of all target Primary Keys to their final Alias names
+    target_pk_map = {}
+    for _, table in tables_df.iterrows():
+        t_name = str(table["Table Name"]).strip()
+        if t_name == 'nan' or not t_name: continue
+        
+        t_cols = cols_df[cols_df["Table Name"] == t_name]
+        for _, c in t_cols.iterrows():
+            c_name = str(c["Column Name"]).strip()
+            
+            is_pk = c.get("Is PK?", False)
+            if isinstance(is_pk, str):
+                is_pk = is_pk.strip().upper() in ['TRUE', 'YES', '1']
+            else:
+                is_pk = bool(is_pk and not pd.isna(is_pk))
+                
+            if is_pk:
+                raw_al = c.get(alias_col)
+                if pd.notna(raw_al) and str(raw_al).strip() != "" and str(raw_al).strip().lower() != "nan":
+                    alias_list = [sanitize_dbt_name(a.strip()) for a in re.split(r'[;,]', str(raw_al)) if a.strip()]
+                    f_name = alias_list[0]
+                else:
+                    f_name = sanitize_dbt_name(c_name)
+                
+                target_pk_map[f"{t_name}.{c_name}".lower()] = f_name
+                target_pk_map[c_name.lower()] = f_name
 
     semantic_models = []
     metrics = []
@@ -95,22 +124,68 @@ CROSS JOIN numbers d
 
         for _, col in table_cols.iterrows():
             raw_col_name = str(col["Column Name"]).strip()
+            if raw_col_name == "nan" or not raw_col_name:
+                continue
             safe_col_name = sanitize_dbt_name(raw_col_name)
             
             is_pk = col.get("Is PK?", False)
+            if isinstance(is_pk, str):
+                is_pk = is_pk.strip().upper() in ['TRUE', 'YES', '1']
+            else:
+                is_pk = bool(is_pk and not pd.isna(is_pk))
+            
             ref_fk = col.get("References (Foreign Keys)")
             custom_measures = col.get("Custom Measures (Optional)")
+            
+            # --- SMART ALIAS LOGIC ---
+            raw_alias = col.get(alias_col)
+            str_ref = str(ref_fk).strip() if pd.notna(ref_fk) else ""
+            
+            alias_list = []
+            if pd.notna(raw_alias) and str(raw_alias).strip() != "" and str(raw_alias).strip().lower() != "nan":
+                alias_list = [sanitize_dbt_name(a.strip()) for a in re.split(r'[;,]', str(raw_alias)) if a.strip()]
+
+            if alias_list:
+                final_name = alias_list[0]
+            else:
+                final_name = safe_col_name
+            # -------------------------
             
             val_mode = col.get("Distinct Value Mode")
             static_vals = col.get("Static Allowed Values")
             base_desc = str(col.get("Description", "")).strip()
 
+            # 1. Primary Key Declaration (Supports multiple primary/unique aliases)
             if is_pk:
-                entities.append({"name": safe_col_name, "type": "primary", "expr": raw_col_name})
-            elif pd.notna(ref_fk) or raw_col_name in global_entities:
-                entities.append({"name": safe_col_name, "type": "foreign", "expr": raw_col_name})
+                if alias_list:
+                    for i, al in enumerate(alias_list):
+                        e_type = "primary" if i == 0 else "unique"
+                        entities.append({"name": al, "type": e_type, "expr": raw_col_name})
+                else:
+                    entities.append({"name": safe_col_name, "type": "primary", "expr": raw_col_name})
+            
+            # 2. Explicit Foreign Keys (Handles semicolons, commas, dots, and multi-aliases)
+            elif pd.notna(ref_fk) and str_ref.lower() not in ["", "nan", "true", "yes", "1"]:
+                refs = [r.strip() for r in re.split(r'[;,]', str_ref) if r.strip()]
+                for i, r in enumerate(refs):
+                    lookup_key = r.lower()
+                    
+                    if i < len(alias_list):
+                        fk_name = alias_list[i]
+                    elif lookup_key in target_pk_map:
+                        fk_name = target_pk_map[lookup_key]
+                    else:
+                        fk_name = r.split(".")[-1] if "." in r else r
+                        
+                    entities.append({"name": sanitize_dbt_name(fk_name), "type": "foreign", "expr": raw_col_name})
+            
+            # 3. Implicit Global Keys
+            elif raw_col_name in global_entities:
+                entities.append({"name": final_name, "type": "foreign", "expr": raw_col_name})
+            
+            # 4. Standard Dimensions
             else:
-                dim_type = "time" if "DATE" in str(col["Data Type"]).upper() or "TIME" in str(col["Data Type"]).upper() else "categorical"
+                dim_type = "time" if "DATE" in str(col.get("Data Type", "")).upper() or "TIME" in str(col.get("Data Type", "")).upper() else "categorical"
                 
                 meta_parts = []
                 if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
@@ -145,7 +220,7 @@ CROSS JOIN numbers d
                     base_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
 
                 dim_obj = {
-                    "name": safe_col_name, 
+                    "name": final_name, 
                     "type": dim_type, 
                     "expr": raw_col_name, 
                     "description": base_desc.strip()
@@ -154,7 +229,7 @@ CROSS JOIN numbers d
                 if dim_type == "time":
                     dim_obj["type_params"] = {"time_granularity": "day"}
                     if not first_time_dim:
-                        first_time_dim = safe_col_name
+                        first_time_dim = final_name
                 
                 dimensions.append(dim_obj)
 
@@ -162,14 +237,14 @@ CROSS JOIN numbers d
                 aggs = [a.strip().lower() for a in str(custom_measures).split(",")]
                 for agg in aggs:
                     dbt_agg_type = "average" if agg == "avg" else agg
-                    m_name = f"{table_name}_{safe_col_name}_{agg}"
+                    m_name = f"{table_name}_{final_name}_{agg}"
                     
                     measures.append({
                         "name": m_name, 
                         "expr": raw_col_name, 
                         "agg": dbt_agg_type,
                         "_base_desc": base_desc,
-                        "_col_name": safe_col_name,
+                        "_col_name": final_name,
                         "_agg": agg
                     })
 
