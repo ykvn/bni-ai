@@ -182,8 +182,8 @@ def build_ui() -> object:
                     gr.update(visible=True, value="⚠️ **Please enter a valid question.**"),
                     gr.update(visible=False, value=""),
                     gr.update(visible=False),
-                    gr.update(interactive=True),
-                    gr.update(visible=False, interactive=False)
+                    gr.update(visible=True, interactive=True),
+                    gr.update(visible=False)
                 )
                 return
 
@@ -200,7 +200,7 @@ def build_ui() -> object:
                 gr.update(visible=True, value=initial_job_box),
                 gr.update(visible=False, value=""),
                 gr.update(visible=False),
-                gr.update(interactive=False),
+                gr.update(visible=False),
                 gr.update(visible=True, interactive=True)
             )
 
@@ -232,8 +232,8 @@ def build_ui() -> object:
                                 gr.update(visible=True, value=job_box_cancelled),
                                 gr.update(visible=False, value=""),
                                 gr.update(visible=False),
-                                gr.update(interactive=True),
-                                gr.update(visible=False, interactive=False)
+                                gr.update(visible=True, interactive=True),
+                                gr.update(visible=False)
                             )
                             state["cancel"] = False
                             break
@@ -269,8 +269,8 @@ def build_ui() -> object:
                                 gr.update(visible=True, value=job_box_completed),
                                 gr.update(visible=True, value=text_out),
                                 df_out,
-                                gr.update(interactive=True),
-                                gr.update(visible=False, interactive=False)
+                                gr.update(visible=True, interactive=True),
+                                gr.update(visible=False)
                             )
                             break
 
@@ -282,8 +282,8 @@ def build_ui() -> object:
                                 gr.update(visible=True, value=job_box_failed),
                                 gr.update(visible=False, value=""),
                                 gr.update(visible=False),
-                                gr.update(interactive=True),
-                                gr.update(visible=False, interactive=False)
+                                gr.update(visible=True, interactive=True),
+                                gr.update(visible=False)
                             )
                             break
 
@@ -294,8 +294,8 @@ def build_ui() -> object:
                                 gr.update(visible=True, value=job_box_cancelled),
                                 gr.update(visible=False, value=""),
                                 gr.update(visible=False),
-                                gr.update(interactive=True),
-                                gr.update(visible=False, interactive=False)
+                                gr.update(visible=True, interactive=True),
+                                gr.update(visible=False)
                             )
                             break
 
@@ -306,7 +306,7 @@ def build_ui() -> object:
                                 gr.update(visible=True, value=job_box_running),
                                 gr.update(visible=False, value=""),
                                 gr.update(visible=False),
-                                gr.update(interactive=False),
+                                gr.update(visible=False),
                                 gr.update(visible=True, interactive=True)
                             )
                 else:
@@ -316,8 +316,8 @@ def build_ui() -> object:
                         gr.update(visible=True, value=job_box_direct),
                         gr.update(visible=True, value=text_out),
                         df_out,
-                        gr.update(interactive=True),
-                        gr.update(visible=False, interactive=False)
+                        gr.update(visible=True, interactive=True),
+                        gr.update(visible=False)
                     )
 
             except Exception as exc:
@@ -328,8 +328,8 @@ def build_ui() -> object:
                     gr.update(visible=True, value=job_box_err),
                     gr.update(visible=False, value=""),
                     gr.update(visible=False),
-                    gr.update(interactive=True),
-                    gr.update(visible=False, interactive=False)
+                    gr.update(visible=True, interactive=True),
+                    gr.update(visible=False)
                 )
 
         def cancel_backend():
@@ -346,8 +346,8 @@ def build_ui() -> object:
                 gr.update(visible=True, value="Job Execution Information\n⏳ Cancelling request..."),
                 gr.update(visible=False, value=""),
                 gr.update(visible=False),
-                gr.update(interactive=True),
-                gr.update(visible=False, interactive=False)
+                gr.update(visible=True, interactive=True),
+                gr.update(visible=False)
             )
 
         return ask_backend, cancel_backend
