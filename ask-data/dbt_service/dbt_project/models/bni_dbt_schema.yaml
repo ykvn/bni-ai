@@ -638,7 +638,7 @@ semantic_models:
   model: ref('customer_beneficial_owner_individu')
   entities:
   - name: bo_id_number
-    type: primary
+    type: foreign
     expr: bo_id_number
   dimensions:
   - name: bo_id_type
@@ -723,7 +723,7 @@ semantic_models:
   model: ref('customer_kplus')
   entities:
   - name: mdm_id
-    type: primary
+    type: foreign
     expr: mdm_id
   dimensions:
   - name: emailcc
@@ -819,7 +819,7 @@ semantic_models:
   model: ref('customer_icons')
   entities:
   - name: mdm_id
-    type: primary
+    type: foreign
     expr: mdm_id
   dimensions:
   - name: segment_maverick
@@ -1064,7 +1064,7 @@ semantic_models:
   model: ref('customer_dplk')
   entities:
   - name: mdm_id
-    type: primary
+    type: foreign
     expr: mdm_id
   dimensions:
   - name: home_add_rtrw_ktp
@@ -1150,7 +1150,7 @@ semantic_models:
   model: ref('customer_creditcard')
   entities:
   - name: mdm_id
-    type: primary
+    type: foreign
     expr: mdm_id
   dimensions:
   - name: cr_var_na_length_1
@@ -1820,7 +1820,7 @@ semantic_models:
   model: ref('customer_wms')
   entities:
   - name: mdm_id
-    type: primary
+    type: foreign
     expr: mdm_id
   dimensions:
   - name: sid_mutual_fund

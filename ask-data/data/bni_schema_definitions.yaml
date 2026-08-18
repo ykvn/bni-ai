@@ -177,7 +177,7 @@ tables:
         description: "Atribut yang mencatat informasi bo dana tahun own dalam operasional perbankan."
       - name: bo_id_number
         type: "VARCHAR(20)"
-        primary_key: true
+        references: "customer_beneficial_owner.bo_id_type"
         description: "Pengidentifikasi unik (ID) bo nomor yang menjadi kunci referensi data."
       - name: as_of_date
         type: "DATE"
@@ -236,7 +236,7 @@ tables:
         description: "Warga negara Peserta"
       - name: mdm_id
         type: "VARCHAR(100)"
-        primary_key: true
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: nationality
         type: "VARCHAR(100)"
@@ -346,7 +346,7 @@ tables:
         description: "Flag Politically Exposed Person (PEP) yang selanjutnya disingkat sebagai PEP adalah orang yang memiliki atau pernah memiliki kewenangan publik diantaranya adalah penyelenggara negara sebagaimana dimaksud dalam peraturan perundangundangan yang mengatur tentang penyelenggara negara, dan/atau orang yang tercatat atau pernah tercatat sebagai anggora partai politik yang memiliki pengaruh terhadap kebijakan dan operasional partai politik, baik yang berkewarganegaraan Indonesia maupun yang berkewarganegaraan asing."
       - name: mdm_id
         type: "VARCHAR(100)"
-        primary_key: true
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: exporter_type
         type: "VARCHAR(100)"
@@ -434,7 +434,7 @@ tables:
         description: "Nomor Identitas Pemberi Dana"
       - name: mdm_id
         type: "VARCHAR(50)"
-        primary_key: true
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: cust_birth_date
         type: "DATE"
@@ -553,7 +553,7 @@ tables:
         description: ""
       - name: mdm_id
         type: "VARCHAR(100)"
-        primary_key: true
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: cr_crlimit_temp_eff_dte
         type: "DATE"
@@ -719,7 +719,7 @@ tables:
     columns:
       - name: mdm_id
         type: "VARCHAR(100)"
-        primary_key: true
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: sid_mutual_fund
         type: "VARCHAR(100)"
@@ -766,7 +766,7 @@ tables:
         description: "Atribut yang mencatat informasi sumber data dalam operasional perbankan."
       - name: mdm_id
         type: "VARCHAR(100)"
-        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
   - name: dm_campaign.digisales_monitoring_leads
@@ -949,7 +949,7 @@ tables:
         description: "Posisi periode dari data yang ditampilkan"
       - name: mdm_id
         type: "VARCHAR(100)"
-        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
   - name: dm_card.performance_creditcard_new
@@ -969,7 +969,7 @@ tables:
         description: "Posisi periode dari data yang ditampilkan"
       - name: mdm_id
         type: "VARCHAR(30)"
-        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
 
   - name: dm_card.performance_creditcard
@@ -1373,7 +1373,7 @@ tables:
     columns:
       - name: mdm_id
         type: "VARCHAR(100)"
-        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: as_of_date
         type: "DATE"
@@ -1582,7 +1582,7 @@ tables:
         description: "Interest Income Daily"
       - name: mdm_id
         type: "STRING"
-        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: no_hp_wondr
         type: "STRING"
@@ -1614,7 +1614,7 @@ tables:
         description: "Posisi periode dari data yang ditampilkan"
       - name: mdm_id
         type: "VARCHAR(100)"
-        references: "customer_performance.mdm_id; customer_kplus.mdm_id; customer_icons.mdm_id; customer_dplk.mdm_id; customer_creditcard.mdm_id; customer_wms.mdm_id"
+        references: "customer_performance.mdm_id"
         description: "Pengidentifikasi unik (ID) mdm yang menjadi kunci referensi data."
       - name: acct_close_date
         type: "DATE"
