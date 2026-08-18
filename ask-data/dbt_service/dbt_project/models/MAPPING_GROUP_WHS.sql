@@ -1,2 +1,2 @@
-{{ config(schema='PRD_DB_SBX_IND') }}
-select * from PRD_DB_SBX_IND.MAPPING_GROUP_WHS
+{{ config(schema='prd_db_sbx_ind') }}
+select * from prd_db_sbx_ind.mapping_group_whs
