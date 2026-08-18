@@ -5,7 +5,7 @@ import re
 import yaml
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, create_model
 from crewai import Agent, Crew, Task, LLM
@@ -192,25 +192,32 @@ def create_dynamic_tool(name: str, desc: str, expected_args: list):
     schema_fields = {arg_name: (str, ...) for arg_name in expected_args}
     DynamicSchema = create_model(f"{name}Schema", **schema_fields)
 
-    class DynamicMCPTool(BaseTool):
-        name: str = name
-        description: str = desc
-        args_schema: Type[BaseModel] = DynamicSchema
+    def _run(self, **kwargs) -> str:
+        # Sync path (CrewAI calls this outside a running event loop).
+        log_ts(f"🛠️ Tool Invoked: '{name}'")
+        try:
+            loop = asyncio.get_running_loop()
+            return loop.run_until_complete(call_mcp(name, arguments=kwargs))
+        except RuntimeError:
+            return asyncio.run(call_mcp(name, arguments=kwargs))
 
-        def _run(self, **kwargs) -> str:
-            # Sync path (CrewAI calls this outside a running event loop).
-            log_ts(f"🛠️ Tool Invoked: '{name}'")
-            try:
-                loop = asyncio.get_running_loop()
-                return loop.run_until_complete(call_mcp(name, arguments=kwargs))
-            except RuntimeError:
-                return asyncio.run(call_mcp(name, arguments=kwargs))
+    async def _arun(self, **kwargs) -> str:
+        # Async path (used by CrewAI's kickoff_async in this service).
+        log_ts(f"🛠️ Tool Invoked: '{name}'")
+        return await call_mcp(name, arguments=kwargs)
 
-        async def _arun(self, **kwargs) -> str:
-            # Async path (used by CrewAI's kickoff_async in this service).
-            log_ts(f"🛠️ Tool Invoked: '{name}'")
-            return await call_mcp(name, arguments=kwargs)
-
+    # Build the tool class dynamically. A class *body* cannot see the enclosing
+    # function's locals (e.g. `name`), which raises NameError, so define the
+    # methods as closures and assemble the subclass via type(), whose namespace
+    # dict IS evaluated in this scope. Pydantic's metaclass registers
+    # name/description/args_schema as field defaults on the new class.
+    DynamicMCPTool = type(name + "Tool", (BaseTool,), {
+        "name": name,
+        "description": desc,
+        "args_schema": DynamicSchema,
+        "_run": _run,
+        "_arun": _arun,
+    })
     return DynamicMCPTool()
 
 TOOL_REGISTRY = {}
