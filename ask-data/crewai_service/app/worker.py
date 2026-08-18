@@ -1,4 +1,3 @@
-import sys
 import json
 import asyncio
 import re

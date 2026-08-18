@@ -1,14 +1,15 @@
 import os
+import asyncio
 import httpx
 import re
 import yaml
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field, create_model
 from crewai import Agent, Crew, Task, LLM
-from crewai.tools import tool
+from crewai.tools import BaseTool
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from shared.cml_auth import build_cml_headers
@@ -187,18 +188,30 @@ async def call_mcp(tool_name: str, arguments: dict = None) -> str:
     return content
 
 def create_dynamic_tool(name: str, desc: str, expected_args: list):
-    """Factory function to generate CrewAI tools with STRICT schemas and tool invocation logging"""
+    """Factory function to generate CrewAI tools with STRICT schemas and tool invocation logging."""
     schema_fields = {arg_name: (str, ...) for arg_name in expected_args}
     DynamicSchema = create_model(f"{name}Schema", **schema_fields)
 
-    @tool(name, args_schema=DynamicSchema)
-    async def _dynamic_tool(**kwargs) -> str:
-        # Re-inserted tool invocation log trace
-        log_ts(f"🛠️ Tool Invoked: '{name}'")
-        return await call_mcp(name, arguments=kwargs)
-    
-    _dynamic_tool.description = desc
-    return _dynamic_tool
+    class DynamicMCPTool(BaseTool):
+        name: str = name
+        description: str = desc
+        args_schema: Type[BaseModel] = DynamicSchema
+
+        def _run(self, **kwargs) -> str:
+            # Sync path (CrewAI calls this outside a running event loop).
+            log_ts(f"🛠️ Tool Invoked: '{name}'")
+            try:
+                loop = asyncio.get_running_loop()
+                return loop.run_until_complete(call_mcp(name, arguments=kwargs))
+            except RuntimeError:
+                return asyncio.run(call_mcp(name, arguments=kwargs))
+
+        async def _arun(self, **kwargs) -> str:
+            # Async path (used by CrewAI's kickoff_async in this service).
+            log_ts(f"🛠️ Tool Invoked: '{name}'")
+            return await call_mcp(name, arguments=kwargs)
+
+    return DynamicMCPTool()
 
 TOOL_REGISTRY = {}
 tools_cfg = load_yaml("tools.yaml")
