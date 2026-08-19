@@ -7,7 +7,7 @@ from shared.cml_auth import get_cml_token
 
 
 def _normalize_table_dict(table: dict, columns: list) -> dict:
-    """Helper to enforce strict key order for tables (name -> description -> columns) and columns (name -> type -> primary_key -> references -> description)."""
+    """Helper to enforce strict key order for tables and columns."""
     clean_cols = []
     for col in columns:
         clean_col = {}
@@ -40,8 +40,8 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
 def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
-    top_columns: int = 40,
-    threshold: float = 0.0
+    top_columns_per_table: int = 12,
+    threshold: float = 0.10
 ) -> str:
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
@@ -76,13 +76,13 @@ def get_smart_schema_context(
     retrieved_tables = []
     for point in retrieved_points:
         payload = point.get("payload", {})
-        point_score = point.get("score")  # 🚀 NEW: Extract Qdrant Similarity Score
+        point_score = point.get("score")  # Extract Qdrant Similarity Score
         raw_yaml_str = payload.get("raw_yaml")
 
         if raw_yaml_str:
             parsed_table = yaml.safe_load(raw_yaml_str)
             if point_score is not None:
-                parsed_table["score"] = round(point_score, 4)  # 🚀 NEW: Inject Table Score
+                parsed_table["score"] = round(point_score, 4)  # Inject Table Score
             retrieved_tables.append(parsed_table)
 
     if not retrieved_tables:
@@ -91,48 +91,51 @@ def get_smart_schema_context(
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
     # ==========================================
-    # STAGE 2: RERANKING (Find Columns)
+    # STAGE 2: PER-TABLE RERANKING (Column Name + Description Focus)
     # ==========================================
-    documents = []
-    mapping = []
+    winning_columns = []
     for table in retrieved_tables:
         t_name = table.get("name")
+        table_docs = []
+        table_mapping = []
+
         for col in table.get("columns", []):
-            c_name = col.get("name")
-            doc_string = f"Table: {t_name} | Column: {c_name} | Type: {col.get('type')} | Description: {col.get('description', '')}"
-            documents.append(doc_string)
-            mapping.append({"table": t_name, "column": c_name})
+            c_name = col.get("name", "")
+            c_desc = str(col.get("description", "")).strip() or "No description provided."
+            c_type = col.get("type", "")
 
-    try:
-        rerank_results = rerank_documents(
-            query=user_query,
-            documents=documents,
-            engine_url=embed_url,
-            cml_token=cml_token,
-            top_n=top_columns,
-            timeout=15,
-        )
-    except Exception as e:
-        error_msg = f"CRITICAL ERROR: Reranker API call failed at {embed_url}/v1/rerank: {e}"
-        print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
+            # Structural document string prioritizing Column Name and Description for cross-encoder attention
+            doc_string = f"Column Name: {c_name} | Description: {c_desc} | Table: {t_name} | Type: {c_type}"
+            
+            table_docs.append(doc_string)
+            table_mapping.append({"table": t_name, "column": c_name})
 
-    winning_columns = []
-    for hit in rerank_results:
-        score = hit.get("score", hit.get("relevance_score", 0.0))
-        idx = hit.get("index")
-        if idx is not None and score >= threshold:
-            col_data = mapping[idx].copy()
-            col_data["score"] = round(score, 4)  # 🚀 NEW: Inject Column Rerank Score
-            winning_columns.append(col_data)
+        if not table_docs:
+            continue
 
-    if not winning_columns:
-        error_msg = f"CRITICAL ERROR: Reranker returned 0 valid matching columns for top_n={top_columns}."
-        print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
+        try:
+            rerank_results = rerank_documents(
+                query=user_query,
+                documents=table_docs,
+                engine_url=embed_url,
+                cml_token=cml_token,
+                top_n=top_columns_per_table,  # Dedicated per-table quota
+                timeout=15,
+            )
+            for hit in rerank_results:
+                score = hit.get("score", hit.get("relevance_score", 0.0))
+                idx = hit.get("index")
+                
+                # Filter using semantic reranker threshold
+                if idx is not None and score >= threshold:
+                    col_data = table_mapping[idx].copy()
+                    col_data["score"] = round(score, 4)  # Inject Column Score
+                    winning_columns.append(col_data)
+        except Exception as e:
+            print(f"⚠️ Per-table reranking failed for {t_name}: {e}")
 
     # ==========================================
-    # STAGE 3: RECONSTRUCT STRICT PRUNED SCHEMA
+    # STAGE 3: RECONSTRUCT PRUNED SCHEMA
     # ==========================================
     relevant_table_names = {item['table'] for item in winning_columns}
     pruned_tables = []
@@ -140,19 +143,21 @@ def get_smart_schema_context(
     for table in retrieved_tables:
         table_name = table.get("name")
         if table_name in relevant_table_names:
-            # 🚀 NEW: Create a quick lookup dictionary for the winning column scores
             col_scores = {item['column']: item['score'] for item in winning_columns if item['table'] == table_name}
 
             mandatory_columns = []
             for col in table.get("columns", []):
-                c_name = col.get("name")
+                c_name = col.get("name", "")
                 c_desc = str(col.get("description", ""))
-                
+
+                # 1. Column passed semantic reranking threshold
                 if c_name in col_scores:
-                    col["score"] = col_scores[c_name]  # 🚀 NEW: Map score back to column
+                    col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
-                elif col.get("primary_key") or "references" in col or "DEFAULT_TIME_AXIS: True" in c_desc:
-                    # Keep PK/FK and DEFAULT_TIME_AXIS even if they didn't win the rerank, but no score is attached
+                # 2. Structural Schema Safeguards (Primary Keys, Foreign Keys, or Default Time Axis)
+                elif (col.get("primary_key") or 
+                      "references" in col or 
+                      "DEFAULT_TIME_AXIS: True" in c_desc):
                     mandatory_columns.append(col)
 
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
