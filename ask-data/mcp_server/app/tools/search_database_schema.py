@@ -256,7 +256,7 @@ def get_smart_schema_context(
     return yaml.dump(final_schema, sort_keys=False, default_flow_style=False)
 
 
-def get_database_schema(user_question: str) -> str:
+def search_database_schema(user_question: str) -> str:
     # 1. Fetch pure YAML schema context
     raw_schema_context = get_smart_schema_context(user_query=user_question)
     

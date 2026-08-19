@@ -15,7 +15,7 @@ from mcp.server.sse import SseServerTransport
 # --- ACTIVE TOOL REGISTRATION ---
 from app.tools.config import settings  
 from app.tools.execute_sql_query import execute_banking_query
-from app.tools.search_database_schema import get_database_schema
+from app.tools.search_database_schema import search_database_schema
 from app.tools.search_golden_queries import search_golden_queries
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 from app.tools.search_mf_catalog import search_mf_catalog
@@ -42,7 +42,7 @@ async def mcp_get_database_schema(user_question: str) -> str:
     CRITICAL FIRST STEP FOR SQL: Dynamically retrieves table names, column layouts, 
     data types, descriptions, and matching golden queries relevant to the user's question.
     """
-    return await anyio.to_thread.run_sync(get_database_schema, user_question)
+    return await anyio.to_thread.run_sync(search_database_schema, user_question)
 
 
 @mcp.tool(name="search_golden_queries")
@@ -124,7 +124,7 @@ async def handle_sse_handshake(request: Request):
 
 @app.get("/api/test/schema")
 def test_schema_tool(user_question: str):
-    return {"matched_schema": get_database_schema(user_question)}
+    return {"matched_schema": search_database_schema(user_question)}
 
 @app.get("/api/test/golden_queries")
 def test_golden_queries_tool(user_question: str):
