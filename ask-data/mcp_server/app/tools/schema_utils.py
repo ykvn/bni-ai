@@ -40,8 +40,8 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
 def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
-    top_columns_per_table: int = 12,
-    threshold: float = 0
+    top_columns_per_table: int = 10,
+    threshold: float = 0.03  # Calibrated for per-table Softmax distributions (~10-15 cols per table)
 ) -> str:
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
@@ -91,7 +91,7 @@ def get_smart_schema_context(
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
     # ==========================================
-    # STAGE 2: PER-TABLE RERANKING (Column Name + Description Focus)
+    # STAGE 2: PER-TABLE RERANKING & THRESHOLDING
     # ==========================================
     winning_columns = []
     for table in retrieved_tables:
@@ -104,9 +104,8 @@ def get_smart_schema_context(
             c_desc = str(col.get("description", "")).strip() or "No description provided."
             c_type = col.get("type", "")
 
-            # Structural document string prioritizing Column Name and Description for cross-encoder attention
+            # Front-load Column Name and Description for attention focus
             doc_string = f"Column Name: {c_name} | Description: {c_desc} | Table: {t_name} | Type: {c_type}"
-            
             table_docs.append(doc_string)
             table_mapping.append({"table": t_name, "column": c_name})
 
@@ -114,22 +113,23 @@ def get_smart_schema_context(
             continue
 
         try:
+            # Rerank exclusively against this table's column pool
             rerank_results = rerank_documents(
                 query=user_query,
                 documents=table_docs,
                 engine_url=embed_url,
                 cml_token=cml_token,
-                top_n=top_columns_per_table,  # Dedicated per-table quota
+                top_n=top_columns_per_table,
                 timeout=15,
             )
             for hit in rerank_results:
                 score = hit.get("score", hit.get("relevance_score", 0.0))
                 idx = hit.get("index")
                 
-                # Filter using semantic reranker threshold
+                # Apply threshold against per-table normalized Softmax score
                 if idx is not None and score >= threshold:
                     col_data = table_mapping[idx].copy()
-                    col_data["score"] = round(score, 4)  # Inject Column Score
+                    col_data["score"] = round(score, 4)
                     winning_columns.append(col_data)
         except Exception as e:
             print(f"⚠️ Per-table reranking failed for {t_name}: {e}")
@@ -150,11 +150,11 @@ def get_smart_schema_context(
                 c_name = col.get("name", "")
                 c_desc = str(col.get("description", ""))
 
-                # 1. Column passed semantic reranking threshold
+                # 1. Column passed per-table semantic reranking & threshold
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
-                # 2. Structural Schema Safeguards (Primary Keys, Foreign Keys, or Default Time Axis)
+                # 2. Structural Safeguards (PK, FK, or DEFAULT_TIME_AXIS)
                 elif (col.get("primary_key") or 
                       "references" in col or 
                       "DEFAULT_TIME_AXIS: True" in c_desc):
