@@ -318,7 +318,13 @@ CROSS JOIN numbers d
                 "description": "Required time spine for MetricFlow aggregations",
                 "time_spine": {
                     "standard_granularity_column": "date_day"
-                }
+                },
+                "columns": [
+                    {
+                        "name": "date_day",
+                        "granularity": "day"
+                    }
+                ]
             }
         ],
         "semantic_models": semantic_models,
