@@ -213,9 +213,17 @@ def cache_and_monkeypatch_cli():
             if config_cls is None:
                 raise ImportError("Could not find configuration class inside dbt_metricflow.cli.cli_configuration")
 
-            # Restore original __new__ if rebuilding the cache
-            if hasattr(config_cls, "_original_new"):
-                config_cls.__new__ = config_cls._original_new
+            # Save the real __new__/__init__ on first run so both can be restored on a rebuild.
+            # Restoring only __new__ (and leaving __init__ as the no-op lambda) would make
+            # config_cls() skip __init__ and leave the instance without `_mf`.
+            if not hasattr(config_cls, "_original_new"):
+                config_cls._original_new = config_cls.__new__
+            if not hasattr(config_cls, "_original_init"):
+                config_cls._original_init = config_cls.__init__
+
+            # Restore both so config_cls() runs the real __new__ AND __init__ every time.
+            config_cls.__new__ = config_cls._original_new
+            config_cls.__init__ = config_cls._original_init
 
             # 1. Instantiate configuration object
             cfg = config_cls()
