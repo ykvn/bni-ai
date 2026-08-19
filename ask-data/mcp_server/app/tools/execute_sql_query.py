@@ -5,7 +5,7 @@ from app.tools.impala_client import execute_query
 from shared.sql_guard import sanitize_sql, is_read_only_query
 
 
-def execute_banking_query(sql_query: str) -> str:
+def execute_sql_query(sql_query: str) -> str:
     # 1. Clean input normalization (Standard API boundary hygiene)
     query = sanitize_sql(sql_query)
 

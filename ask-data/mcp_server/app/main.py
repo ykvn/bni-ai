@@ -14,7 +14,7 @@ from mcp.server.sse import SseServerTransport
 
 # --- ACTIVE TOOL REGISTRATION ---
 from app.tools.config import settings  
-from app.tools.execute_sql_query import execute_banking_query
+from app.tools.execute_sql_query import execute_sql_query
 from app.tools.search_database_schema import search_database_schema
 from app.tools.search_golden_queries import search_golden_queries
 from app.tools.rag_search import search_policy_documents as perform_rag_search
@@ -61,7 +61,7 @@ def mcp_execute_banking_query(sql_query: str) -> str:
     If the query fails due to a syntax error, this tool returns the error message. 
     Use the error details to fix your query and call this tool again.
     """
-    return execute_banking_query(sql_query)
+    return execute_sql_query(sql_query)
 
 
 @mcp.tool(name="search_policy_documents")
@@ -132,7 +132,7 @@ def test_golden_queries_tool(user_question: str):
 
 @app.post("/api/test/sql")
 def test_sql_tool(sql_query: str):
-    raw_result = execute_banking_query(sql_query)
+    raw_result = execute_sql_query(sql_query)
     try:
         return {"status": "success", "data": json.loads(raw_result)}
     except Exception:
