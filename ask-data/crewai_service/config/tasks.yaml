@@ -53,10 +53,12 @@ mf_draft_payload_task:
     {error_context}
 
     INSTRUCTIONS:
-    1. EXACT CATALOG NAMES: Copy the exact metric and dimension names provided in the catalog.
-    2. TIME GRANULARITY MATCHING: If filtering by time in 'where' using a modifier, include the exact same dimension in 'group_by'.
-    3. QUOTED DATE VALUES: MetricFlow truncates time dimensions into timestamps. Wrap date values in single quotes.
-  expected_output: "A structured JSON MetricFlow query payload."
+    1. EXACT ENTITY-PREFIXED NAMES: Use the 'name' attribute from matched_dimensions (e.g. 'trxchannel_id__trx_region'). NEVER use 'raw_name' (e.g. 'trxchannel__trx_region').
+    2. TIME GRANULARITY SUFFIXES: Always append granularity suffixes to time dimensions in both 'group_by' and 'where' (e.g. 'trxchannel_id__as_of_date__day' or 'trxchannel_id__as_of_date__month').
+    3. DATE RANGE FILTERS: Write date filters in 'where' using explicit ISO date strings with single quotes on the entity-prefixed dimension name, e.g.:
+       "trxchannel_id__as_of_date__day >= '2026-08-01' AND trxchannel_id__as_of_date__day < '2026-09-01'"
+    4. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month' in the 'where' string.
+  expected_output: "A structured JSON MetricFlow query payload object."
 
 mf_execute_task:
   agent: mf_executor
