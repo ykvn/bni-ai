@@ -52,12 +52,12 @@ mf_draft_payload_task:
     PREVIOUS ERROR (If any):
     {error_context}
 
-    INSTRUCTIONS:
+    CRITICAL INSTRUCTIONS:
     1. EXACT ENTITY-PREFIXED NAMES: Use the 'name' attribute from matched_dimensions (e.g. 'trxchannel_id__trx_region'). NEVER use 'raw_name' (e.g. 'trxchannel__trx_region').
-    2. TIME GRANULARITY SUFFIXES: Always append granularity suffixes to time dimensions in both 'group_by' and 'where' (e.g. 'trxchannel_id__as_of_date__day' or 'trxchannel_id__as_of_date__month').
-    3. DATE RANGE FILTERS: Write date filters in 'where' using explicit ISO date strings with single quotes on the entity-prefixed dimension name, e.g.:
-       "trxchannel_id__as_of_date__day >= '2026-08-01' AND trxchannel_id__as_of_date__day < '2026-09-01'"
-    4. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month' in the 'where' string.
+    2. TIME DIMENSIONS IN GROUP_BY & WHERE: Any time dimension used in 'where' MUST ALSO be included in 'group_by' with the exact same granularity suffix (e.g. 'trxchannel_id__as_of_date__month' or 'trxchannel_id__as_of_date__day').
+    3. DATE RANGE (MONTHLY/DAILY) FILTERS: Write date filters in 'where' using explicit ISO date strings with single quotes on the entity-prefixed dimension name, e.g.:
+       "trxchannel_id__as_of_date__day >= '2026-08-01' AND trxchannel_id__as_of_date__day < '2026-09-01'". For monthly questions (e.g. 'Agustus 2026'), use 'trxchannel_id__as_of_date__month' in BOTH 'group_by' and 'where' (e.g. "trxchannel_id__as_of_date__month = '2026-08-01'").
+    4. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month'.
   expected_output: "A structured JSON MetricFlow query payload object."
 
 mf_execute_task:
