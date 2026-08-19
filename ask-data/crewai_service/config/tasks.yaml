@@ -22,6 +22,7 @@ draft_sql_task:
     
     - TABLE MATCHING: You MUST strictly use the actual table and column names provided.
     - READ ONLY: Only write SELECT statements.
+    - NULL HANDLING: When calculating monetary balance Use NVL for any decimal column. For example NVL(<decimal_column>, 0)
     - LIMIT RESULTS: Always LIMIT results to 100 (LIMIT 100) by default, unless specified otherwise.
     
     CRITICAL LLM CONTEXT RULES:
