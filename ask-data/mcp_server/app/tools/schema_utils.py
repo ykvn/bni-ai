@@ -41,7 +41,7 @@ def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
     top_columns_per_table: int = 10,
-    threshold: float = 0  # Calibrated for per-table Softmax distributions (~10-15 cols per table)
+    relative_threshold_ratio: float = 0.10  # Retains cols scoring >= 10% of table's max score
 ) -> str:
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
@@ -91,7 +91,7 @@ def get_smart_schema_context(
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
     # ==========================================
-    # STAGE 2: PER-TABLE RERANKING & THRESHOLDING
+    # STAGE 2: PER-TABLE RERANKING & RELATIVE THRESHOLDING
     # ==========================================
     winning_columns = []
     for table in retrieved_tables:
@@ -104,7 +104,7 @@ def get_smart_schema_context(
             c_desc = str(col.get("description", "")).strip() or "No description provided."
             c_type = col.get("type", "")
 
-            # Front-load Column Name and Description for attention focus
+            # Front-load Column Name and Description for cross-encoder attention focus
             doc_string = f"Column Name: {c_name} | Description: {c_desc} | Table: {t_name} | Type: {c_type}"
             table_docs.append(doc_string)
             table_mapping.append({"table": t_name, "column": c_name})
@@ -122,12 +122,18 @@ def get_smart_schema_context(
                 top_n=top_columns_per_table,
                 timeout=15,
             )
+
+            # Calculate adaptive relative threshold for this table
+            raw_scores = [hit.get("score", hit.get("relevance_score", 0.0)) for hit in rerank_results]
+            top_table_score = max(raw_scores) if raw_scores else 0.0
+            relative_threshold = top_table_score * relative_threshold_ratio
+
             for hit in rerank_results:
                 score = hit.get("score", hit.get("relevance_score", 0.0))
                 idx = hit.get("index")
                 
-                # Apply threshold against per-table normalized Softmax score
-                if idx is not None and score >= threshold:
+                # Filter using table-relative threshold
+                if idx is not None and score >= relative_threshold:
                     col_data = table_mapping[idx].copy()
                     col_data["score"] = round(score, 4)
                     winning_columns.append(col_data)
@@ -150,11 +156,11 @@ def get_smart_schema_context(
                 c_name = col.get("name", "")
                 c_desc = str(col.get("description", ""))
 
-                # 1. Column passed per-table semantic reranking & threshold
+                # 1. Column passed per-table relative thresholding
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
-                # 2. Structural Safeguards (PK, FK, or DEFAULT_TIME_AXIS)
+                # 2. Structural Schema Safeguards (Primary Keys, Foreign Keys, or Default Time Axis)
                 elif (col.get("primary_key") or 
                       "references" in col or 
                       "DEFAULT_TIME_AXIS: True" in c_desc):
