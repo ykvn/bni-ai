@@ -2,8 +2,8 @@ fetch_schema_task:
   agent: schema_analyst
   description: >
     Retrieve the live database schema for the user query: '{user_question}'
-    INSTRUCTION: Execute the `get_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
-  expected_output: "The exact, raw tool response string returned by `get_database_schema`."
+    INSTRUCTION: Execute the `search_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response.
+  expected_output: "The exact, raw tool response string returned by `search_database_schema`."
 
 draft_sql_task:
   agent: sql_developer
@@ -41,8 +41,8 @@ execute_sql_task:
     {sql_query}
 
     INSTRUCTION:
-    Call the `execute_banking_query` tool immediately, passing the exact SQL query string provided above. Do not think or explain.
-  expected_output: "The exact raw JSON output or error string returned by the `execute_banking_query` tool."
+    Call the `execute_sql_query` tool immediately, passing the exact SQL query string provided above. Do not think or explain.
+  expected_output: "The exact raw JSON output or error string returned by the `execute_sql_query` tool."
 
 mf_fetch_schema_task:
   agent: mf_schema_analyst

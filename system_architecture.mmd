@@ -15,8 +15,8 @@ flowchart TD
 
     subgraph MCP_Server ["MCP Server (Protocol Gateway)"]
         MCP["FastMCP Server (SSE)"]
-        TOOL_SCHEMA["get_database_schema tool"]
-        TOOL_SQL["execute_banking_query tool"]
+        TOOL_SCHEMA["search_database_schema tool"]
+        TOOL_SQL["execute_sql_query tool"]
         TOOL_RAG["search_policy_documents tool"]
         TOOL_RISK["evaluate_dormant_account_risk tool"]
         IMPALA_CLIENT["Impala Client"]
@@ -42,15 +42,15 @@ flowchart TD
     FE -->|"HTTP POST /ask - frontend_entry.py"| BACKEND
     BACKEND -->|"Route Question - app/main.py"| TRANSLATOR
 
-    TRANSLATOR -->|"get_database_schema - translator.py"| MCP
+    TRANSLATOR -->|"search_database_schema - translator.py"| MCP
     MCP -->|"call tool - app/main.py"| TOOL_SCHEMA
-    TOOL_SCHEMA -->|"reads file - get_database_schema.py"| DOMAIN_CONFIG
+    TOOL_SCHEMA -->|"reads file - search_database_schema.py"| DOMAIN_CONFIG
     TRANSLATOR -->|"CrewAI kickoff - translator.py"| CREW
     CREW -->|"LLM call - translator.py"| LITELLM
     LITELLM -->|"route /v1/chat/completions - litellm_config.yaml"| QWEN
-    TRANSLATOR -->|"execute_banking_query - translator.py"| MCP
+    TRANSLATOR -->|"execute_sql_query - translator.py"| MCP
     MCP -->|"call tool - app/main.py"| TOOL_SQL
-    TOOL_SQL -->|"execute_query - execute_banking_query.py"| IMPALA_CLIENT
+    TOOL_SQL -->|"execute_query - execute_sql_query.py"| IMPALA_CLIENT
     IMPALA_CLIENT -->|"SQL query - impala_client.py"| IMPALA_DB
 
     TRANSLATOR -->|"search_policy_documents - translator.py"| MCP

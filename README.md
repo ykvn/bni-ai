@@ -87,7 +87,7 @@ ask-data/                              # Root project directory
 │   ├── test_impala.py                 # Standalone diagnostic script — tests Impala DB connection and configuration loading
 │   ├── requirements.txt               # Pinned dependencies: FastAPI, FastMCP, impyla, pypdf, etc.
 │   ├── app/
-│   │   ├── main.py                    # FastAPI + FastMCP app — registers 4 agentic MCP tools (get_database_schema, search_golden_queries, execute_banking_query, search_policy_documents), SSE transport
+│   │   ├── main.py                    # FastAPI + FastMCP app — registers 4 agentic MCP tools (search_database_schema, search_golden_queries, execute_sql_query, search_policy_documents), SSE transport
 │   │   ├── core/
 │   │   │   ├── ingest_common.py       # Shared helpers for all ingestion pipelines: bootstrap_env, resolve_data_path, reset_and_index, resolve_reindex_config
 │   │   │   ├── ingest_cube_metadata.py  # Ingests Cube catalog (YAML measures/dimensions) and value mappings into Qdrant
@@ -100,8 +100,8 @@ ask-data/                              # Root project directory
 │   │       ├── __init__.py             # Package marker
 │   │       ├── config.py               # Pydantic settings — loads env vars for Impala credentials, Qdrant URL, document collection name
 │   │       ├── impala_client.py        # Cloudera Impala connection & query execution utility (SSL, PLAIN auth, HTTP transport)
-│   │       ├── execute_banking_query.py  # SQL execution tool — sanitizes input, validates read-only, executes via Impala, returns JSON rows
-│   │       ├── get_database_schema.py    # Schema retrieval tool — delegates to schema_utils for smart vector-based schema context
+│   │       ├── execute_sql_query.py     # SQL execution tool — sanitizes input, validates read-only, executes via Impala, returns JSON rows
+│   │       ├── search_database_schema.py # Schema retrieval tool — smart vector-based schema context (merged from schema_utils)
 │   │       ├── search_golden_queries.py  # Golden queries tool — vector search + Cross-Encoder rerank to find verified SQL templates
 │   │       ├── rag_search.py             # Policy documents search tool — queries Qdrant for enterprise manuals/SOPs
 │   │       ├── schema_utils.py          # Smart schema context retriever — 3-stage pipeline: vector search tables → rerank columns → reconstruct pruned YAML

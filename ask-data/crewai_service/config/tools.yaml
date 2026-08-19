@@ -1,4 +1,4 @@
-get_database_schema:
+search_database_schema:
   description: "CRITICAL FIRST STEP: Retrieves table names and columns based on the user query."
   args:
     - "user_question"
@@ -8,7 +8,7 @@ search_golden_queries:
   args:
     - "user_question"
 
-execute_banking_query:
+execute_sql_query:
   description: "Executes Impala SQL. Returns raw JSON rows or an error message if syntax is wrong."
   args:
     - "sql_query"

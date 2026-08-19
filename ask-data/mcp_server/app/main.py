@@ -36,8 +36,8 @@ sse = SseServerTransport("/messages")
 # 🛠️ AGENTIC MCP TOOLS
 # =====================================================================
 
-@mcp.tool(name="get_database_schema")
-async def mcp_get_database_schema(user_question: str) -> str:
+@mcp.tool(name="search_database_schema")
+async def mcp_search_database_schema(user_question: str) -> str:
     """
     CRITICAL FIRST STEP FOR SQL: Dynamically retrieves table names, column layouts, 
     data types, descriptions, and matching golden queries relevant to the user's question.
@@ -54,8 +54,8 @@ async def mcp_search_golden_queries(user_question: str) -> str:
     return await anyio.to_thread.run_sync(search_golden_queries, user_question, 5, 2)
 
 
-@mcp.tool(name="execute_banking_query")
-def mcp_execute_banking_query(sql_query: str) -> str:
+@mcp.tool(name="execute_sql_query")
+def mcp_execute_sql_query(sql_query: str) -> str:
     """
     Executes a read-only Cloudera Impala SELECT statement against the analytics warehouse.
     If the query fails due to a syntax error, this tool returns the error message. 
