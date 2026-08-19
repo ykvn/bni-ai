@@ -49,7 +49,7 @@ def get_smart_schema_context(
     golden_collection = os.getenv("GOLDEN_QUERY_COLLECTION", "bni_golden_queries")
 
     # ==========================================
-    # STAGE 1: VECTOR SEARCH (Find Tables)
+    # STAGE 1: VECTOR SEARCH (Find Tables & Golden Queries)
     # ==========================================
     try:
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
@@ -77,32 +77,38 @@ def get_smart_schema_context(
     golden_query_cols = set()
 
     # Query Golden Query collection directly to harvest referenced SQL columns
-    try:
-        golden_points = qdrant_client.search(
-            golden_collection,
-            query_vector,
-            top_k=3,
-            token=cml_token,
-        )
-        if golden_points and "error" not in golden_points[0]:
-            for g_point in golden_points:
-                g_payload = g_point.get("payload", {})
-                sql_text = str(g_payload.get("sql", "")).lower()
-                if sql_text:
-                    golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', sql_text))
-    except Exception as e:
-        print(f"⚠️ Golden Query vector search warning: {e}")
+    target_collections = [golden_collection, "bni_golden_queries", "golden_queries"]
+    for g_col in dict.fromkeys(target_collections):
+        try:
+            golden_points = qdrant_client.search(
+                g_col,
+                query_vector,
+                top_k=5,
+                token=cml_token,
+            )
+            if golden_points and "error" not in golden_points[0]:
+                for g_point in golden_points:
+                    g_payload = g_point.get("payload", {})
+                    # Scan all payload string values for SQL statements
+                    for val in g_payload.values():
+                        val_str = str(val)
+                        if any(kw in val_str.upper() for kw in ["SELECT", "FROM", "WHERE"]):
+                            golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', val_str.lower()))
+                if golden_query_cols:
+                    break
+        except Exception:
+            continue
 
     for point in retrieved_points:
         payload = point.get("payload", {})
         point_score = point.get("score")
         raw_yaml_str = payload.get("raw_yaml")
 
-        # Collect columns referenced in any Golden Queries inside point payloads
-        gq_list = payload.get("golden_queries", []) or payload.get("examples", [])
-        for gq in gq_list:
-            sql_text = (gq.get("sql", "") if isinstance(gq, dict) else str(gq)).lower()
-            golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', sql_text))
+        # Scan point payloads and raw YAML strings for embedded Golden Query SQLs
+        for val in payload.values():
+            val_str = str(val)
+            if any(kw in val_str.upper() for kw in ["SELECT", "FROM", "WHERE"]):
+                golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', val_str.lower()))
 
         if raw_yaml_str:
             parsed_table = yaml.safe_load(raw_yaml_str)
@@ -110,10 +116,7 @@ def get_smart_schema_context(
                 parsed_table["score"] = round(point_score, 4)
             retrieved_tables.append(parsed_table)
 
-            # Collect columns from golden queries embedded inside table YAMLs
-            for gq in parsed_table.get("golden_queries", []):
-                sql_text = (gq.get("sql", "") if isinstance(gq, dict) else str(gq)).lower()
-                golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', sql_text))
+    print(f"🔑 [Schema Safeguard] Extracted Golden Query columns to protect: {sorted(list(golden_query_cols))}")
 
     if not retrieved_tables:
         error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
