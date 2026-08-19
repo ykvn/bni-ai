@@ -41,7 +41,7 @@ def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
     top_columns_per_table: int = 10,
-    threshold: float = 0.03  # Calibrated for per-table Softmax distributions (~10-15 cols per table)
+    threshold: float = 0  # Calibrated for per-table Softmax distributions (~10-15 cols per table)
 ) -> str:
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
