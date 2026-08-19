@@ -140,23 +140,22 @@ class MetricFlowQueryPayload(BaseModel):
     )
 
 # --- 2. LLM PROFILES ---
-LLM_REGISTRY = {
-    "GLOBAL_LLM": LLM(
-        model=f"openai/{os.getenv('CML_MODEL_NAME')}",
-        base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
-        api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
-        temperature=0.0,
-        max_tokens=4096,
-        extra_body={"chat_template_kwargs": {"enable_thinking": False}}
-    ),
-    "REASONING_LLM": LLM(
-        model=f"openai/{os.getenv('CML_MODEL_NAME')}",
-        base_url=os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
-        api_key=os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
-        temperature=0.0,
-        max_tokens=4096
-    )
-}
+LLM_REGISTRY = {}
+llm_configs = load_yaml("llm_config.yaml")
+
+for llm_name, llm_params in llm_configs.items():
+    llm_kwargs = {
+        "model": f"openai/{os.getenv('CML_MODEL_NAME', '')}",
+        "base_url": os.getenv("LITELLM_PROXY_URL") or os.getenv("LITELLM_APP_URL"),
+        "api_key": os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY"),
+        "temperature": llm_params.get("temperature", 0.0),
+        "max_tokens": llm_params.get("max_tokens", 4096),
+    }
+    
+    if "extra_body" in llm_params:
+        llm_kwargs["extra_body"] = llm_params["extra_body"]
+
+    LLM_REGISTRY[llm_name] = LLM(**llm_kwargs)
 
 # --- 3. DYNAMIC MCP TOOLS REGISTRY ---
 async def call_mcp(tool_name: str, arguments: dict = None) -> str:

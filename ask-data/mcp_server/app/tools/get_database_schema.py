@@ -20,8 +20,8 @@ def get_database_schema(user_question: str) -> str:
     raw_schema_context = get_smart_schema_context(user_query=user_question)
     
     # 2. Clean the score fields while it is pure YAML
-    # cleaned_schema = clean_schema_yaml(raw_schema_context)
-    cleaned_schema = raw_schema_context
+    cleaned_schema = clean_schema_yaml(raw_schema_context)
+    # cleaned_schema = raw_schema_context
     
     # 3. Fetch golden queries and append
     try:
