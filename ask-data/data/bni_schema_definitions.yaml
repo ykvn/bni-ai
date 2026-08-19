@@ -9,7 +9,7 @@ tables:
     columns:
       - name: as_of_date
         type: "date"
-        description: "Tanggal Data"
+        description: "Tanggal Data [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: trx_datetime
         type: "timestamp"
         description: "Waktu Transaksi"
@@ -56,7 +56,7 @@ tables:
         description: "Nilai Transaksi"
       - name: channel
         type: "string"
-        description: "Channel Transaksi"
+        description: "Channel Transaksi [LLM Context: Mode: STATIC_ENUM | Value Mappings: [API - Transaksi API; ACQUIRING - Transaksi Acquiring; SPAN - Transaksi SPAN; WONDR (Synonyms: Wonder) - Transaksi via Wonder / WONDR; TELLER - Transaksi via Teller; SMS - Transaksi via SMS; OTHERS - Transaksi lainnya; BOP - Transaksi BOP; AUTODEBET - Transaksi via Autodebet; EDC_NON_BNI - Transaksi via EDC Non BNI (EDC Bank Lain); NEW_MOB - Transaksi New MOB; REMITTANCE - Transaksi Remittance; AGEN_TRX - Transaksi via Agen; BNIDIRECT - Transaksi via BNI Direct; NON API - Transaksi Non API; ATM - Transaksi via ATM]]"
       - name: trx_region
         type: "smallint"
         description: "Region Transaksi"
@@ -150,7 +150,7 @@ tables:
         description: "Jenis Entitas Bisnis"
       - name: cif_open_date
         type: "date"
-        description: "Tanggal Pembukaan CIF"
+        description: "Tanggal Pembukaan CIF [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: cif_open_region_code
         type: "int"
         description: "Region Pembukaan CIF (KODE)"
@@ -519,7 +519,7 @@ tables:
         description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
       - name: acct_open_date
         type: "date"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Acct Nasabah ( Openisi Pemegang Nasabah) [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: acct_renewal_date
         type: "date"
         description: "Acct Nasabah ( Renewalisi Pemegang Nasabah)"
@@ -742,7 +742,7 @@ tables:
     columns:
       - name: as_of_date
         type: "date"
-        description: "As Nasabah ( Ofisi Pemegang Nasabah)"
+        description: "As Nasabah ( Ofisi Pemegang Nasabah) [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: mdm_id
         type: "string"
         description: "Mdm Id Nasabah"
@@ -1058,4 +1058,4 @@ tables:
         description: "Segment Nasabah ( Divisi Pemegang Nasabah)"
       - name: as_of_date
         type: "date"
-        description: "As Nasabah ( Ofisi Pemegang Nasabah)"
+        description: "As Nasabah ( Ofisi Pemegang Nasabah) [LLM Context: DEFAULT_TIME_AXIS: True]"

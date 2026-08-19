@@ -71,14 +71,24 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
                 is_pk = bool(is_pk and not pd.isna(is_pk))
                 
             ref_fk = col.get("References (Foreign Keys)")
-            
             val_mode = col.get("Distinct Value Mode")
             static_vals = col.get("Static Allowed Values")
+
+            # 1. 🌟 NEW: Extract the Agg Time Dimension flag
+            is_agg_time = col.get("Agg Time Dimension", False)
+            if isinstance(is_agg_time, str):
+                is_agg_time = is_agg_time.strip().upper() in ['TRUE', 'YES', '1']
+            else:
+                is_agg_time = bool(is_agg_time and not pd.isna(is_agg_time))
 
             col_desc_raw = col.get("Description")
             col_desc = str(col_desc_raw) if pd.notna(col_desc_raw) else ""
 
             meta_parts = []
+            
+            # 2. 🌟 NEW: Inject into LLM Context if True
+            if is_agg_time:
+                meta_parts.append("DEFAULT_TIME_AXIS: True")
             
             if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
                 meta_parts.append(f"Mode: {str(val_mode).strip()}")

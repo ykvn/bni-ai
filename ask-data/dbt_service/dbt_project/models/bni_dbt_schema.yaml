@@ -92,7 +92,14 @@ semantic_models:
   - name: channel
     type: categorical
     expr: channel
-    description: Channel Transaksi
+    description: 'Channel Transaksi [LLM Context: Mode: STATIC_ENUM | Value Mappings:
+      [API - Transaksi API; ACQUIRING - Transaksi Acquiring; SPAN - Transaksi SPAN;
+      WONDR (Synonyms: Wonder) - Transaksi via Wonder / WONDR; TELLER - Transaksi
+      via Teller; SMS - Transaksi via SMS; OTHERS - Transaksi lainnya; BOP - Transaksi
+      BOP; AUTODEBET - Transaksi via Autodebet; EDC_NON_BNI - Transaksi via EDC Non
+      BNI (EDC Bank Lain); NEW_MOB - Transaksi New MOB; REMITTANCE - Transaksi Remittance;
+      AGEN_TRX - Transaksi via Agen; BNIDIRECT - Transaksi via BNI Direct; NON API
+      - Transaksi Non API; ATM - Transaksi via ATM]]'
   - name: trx_region
     type: categorical
     expr: trx_region
