@@ -5,8 +5,8 @@
     "complexity": "simple"
   },
   {
-    "user_intent": "Tampilkan cash out",
-    "sql_template": "nan",
-    "complexity": "nan"
+    "user_intent": "Aktivitas Cash out",
+    "sql_template": "SELECT * FROM dm_transaction.trxchannel WHERE destination_bankname <> 'BANK NEGARA INDONESIA';",
+    "complexity": "simple"
   }
 ]
