@@ -1,3 +1,52 @@
+"""
+Module: search_golden_queries
+================================
+
+This module provides one small helper function, ``search_golden_queries``, used
+by the MCP server to retrieve *verified* SQL templates from a Qdrant vector
+database. In simple terms, it answers this question:
+
+    "Have humans already written a trusted SQL query that matches what the
+     user is asking for?"
+
+If yes, that verified query is returned as nicely formatted text so the LLM can
+use it as a reference for correct SQL syntax.
+
+How it works (the "big picture")
+--------------------------------
+When the user asks a natural-language question (e.g. "What was the total sales
+last quarter?"), the Golden Queries database may already contain a known-good
+SQL template that someone has validated. Searching for it happens in 3 stages:
+
+    1. VECTOR SEARCH (broad net)
+       The user's question is converted into a numeric "embedding" vector and
+       compared against every stored golden query in Qdrant using cosine
+       similarity. This returns a *wider* pool of candidates (controlled by
+       ``top_k``) because vector similarity is fast but not perfectly precise.
+
+    2. RERANKING (narrowing it down)
+       Each candidate from stage 1 is re-scored by a Cross-Encoder reranking
+       model against the user's *exact* question. This is more accurate than
+       plain vector similarity, so it lets us keep only the few truly relevant
+       ones (controlled by ``top_n``).
+
+    3. FORMATTING (preparing the answer)
+       The top results are turned into a clean text block that can be dropped
+       directly into an LLM prompt as a reference for SQL syntax.
+
+The names of the two helper functions we call come from ``qdrant_client.py``:
+
+- ``search_documents(query, collection_name, top_k)`` returns a list of dicts
+  after querying the vector store. Each dict contains keys like ``document_id``,
+  ``title``, ``excerpt``, ``page_content``, ``score`` and ``raw_payload``.
+  On failure it returns a list whose first dict has an ``"error"`` key.
+- ``rerank_documents(query, raw_documents, top_n)`` returns the same dicts but
+  re-ordered by a Cross-Encoder relevance score (adding a ``rerank_score`` key).
+"""
+
+import os
+from app.tools.qdrant_client import search_documents, rerank_documents
+
 import os
 from app.tools.qdrant_client import search_documents, rerank_documents
 
