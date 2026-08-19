@@ -168,7 +168,7 @@ tables:
         description: "Source Status"
       - name: cust_status
         type: "string"
-        description: "Status Customer"
+        description: "Status Customer [LLM Context: Mode: STATIC_ENUM | Allowed: [Aktif] | Value Mappings: [AKTIF (Synonyms: Aktif)]]"
       - name: cust_type_code
         type: "varchar(100)"
         description: "Kode Type"
