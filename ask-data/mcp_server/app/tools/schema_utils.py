@@ -40,7 +40,7 @@ def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
     top_columns_per_table: int = 10,
-    relative_threshold_ratio: float = 0
+    relative_threshold_ratio: float = 0.05
 ) -> str:
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
