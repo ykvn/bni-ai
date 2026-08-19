@@ -41,7 +41,7 @@ def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
     top_columns_per_table: int = 10,
-    relative_threshold_ratio: float = 0.10  # Retains cols scoring >= 10% of table's max score
+    relative_threshold_ratio: float = 0.03  # Retains cols scoring >= 10% of table's max score
 ) -> str:
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
