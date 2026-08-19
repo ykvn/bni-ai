@@ -5,19 +5,28 @@ import pandas as pd
 
 def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None:
     """Generates the bni_schema_definitions.yaml from the Excel file."""
-    # Read the Tables and Columns sheets from the Excel file
     tables_df = pd.read_excel(excel_path, sheet_name="Tables")
     cols_df = pd.read_excel(excel_path, sheet_name="Columns")
     
-    # Extract Value Mappings sheet if present
     try:
         vals_df = pd.read_excel(excel_path, sheet_name="Value_Mappings")
     except Exception:
         vals_df = pd.DataFrame()
+        
+    # --- AUTO-SCHEMA RESOLUTION MAP ---
+    # Build a lookup map of Table Name -> Schema from the Tables sheet
+    table_schema_map = {}
+    for _, table in tables_df.iterrows():
+        t_name = str(table.get("Table Name", "")).strip()
+        custom_schema = str(table.get("Schema / Database", "")).strip()
+        if t_name and t_name.lower() != 'nan':
+            if custom_schema and custom_schema.lower() != 'nan':
+                table_schema_map[t_name] = custom_schema
+            else:
+                table_schema_map[t_name] = ""
     
-    # Initialize the YAML with top-level properties and explicit quotes
     yaml_lines = [
-        'version: "1.0"',
+        'version: "2.0"',
         'domain: "Bank Negara Indonesia Customer Analytics"',
         'database_type: "Cloudera Impala"',
         'database_name: "test"',
@@ -25,7 +34,6 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
         'tables:'
     ]
 
-    # Process Business Tables
     for _, table in tables_df.iterrows():
         table_name = str(table.get("Table Name", "")).strip()
         custom_schema = str(table.get("Schema / Database", "")).strip()
@@ -33,26 +41,20 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
         if not table_name or table_name.lower() == 'nan':
             continue
 
-        # Prepend schema/database to the table name if it exists
         if custom_schema and custom_schema.lower() != 'nan':
             full_table_name = f"{custom_schema}.{table_name}"
         else:
             full_table_name = table_name
 
-        # Get description exactly as is, without stripping
         table_desc_raw = table.get("Description")
         table_desc = str(table_desc_raw) if pd.notna(table_desc_raw) else ""
-        
-        # Safely escape quotes and newlines for double-quoted YAML strings
         table_desc = table_desc.replace('"', '\\"').replace('\n', '\\n')
 
-        # Add table level properties with quoted descriptions (using full_table_name)
         yaml_lines.append(f'  - name: {full_table_name}')
         yaml_lines.append(f'    description: "{table_desc}"')
         yaml_lines.append('    columns:')
 
-        # We still match columns to the raw table_name from the Columns sheet
-        table_cols = cols_df[cols_df["Table Name"] == table_name]
+        table_cols = cols_df[cols_df["Table Name"].astype(str).str.strip() == table_name]
 
         for _, col in table_cols.iterrows():
             col_name = str(col.get("Column Name", "")).strip()
@@ -60,26 +62,30 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
                 continue
                 
             data_type = str(col.get("Data Type", "")).strip()
+            
+            # Robust boolean parsing for PKs (matches excel_to_dbt.py)
             is_pk = col.get("Is PK?", False)
+            if isinstance(is_pk, str):
+                is_pk = is_pk.strip().upper() in ['TRUE', 'YES', '1']
+            else:
+                is_pk = bool(is_pk and not pd.isna(is_pk))
+                
             ref_fk = col.get("References (Foreign Keys)")
             
             val_mode = col.get("Distinct Value Mode")
             static_vals = col.get("Static Allowed Values")
 
-            # Get description exactly as is, without stripping
             col_desc_raw = col.get("Description")
             col_desc = str(col_desc_raw) if pd.notna(col_desc_raw) else ""
 
             meta_parts = []
             
-            # Format Distinct Value Mode and Static Allowed Values
             if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
                 meta_parts.append(f"Mode: {str(val_mode).strip()}")
             
             if pd.notna(static_vals) and str(static_vals).strip() and str(static_vals).strip().lower() != "nan":
                 meta_parts.append(f"Allowed: [{str(static_vals).strip()}]")
 
-            # Match and format entries from Value_Mappings sheet
             if not vals_df.empty:
                 col_mappings = vals_df[(vals_df["Table Name"] == table_name) & (vals_df["Column Name"] == col_name)]
                 if not col_mappings.empty:
@@ -101,42 +107,54 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
                     if value_entries:
                         meta_parts.append(f"Value Mappings: [{'; '.join(value_entries)}]")
 
-            # Append the LLM context if any metadata parts exist
             if meta_parts:
                 col_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
 
-            # Safely escape quotes and newlines for double-quoted YAML strings
             col_desc = col_desc.replace('"', '\\"').replace('\n', '\\n')
 
-            # Append column properties maintaining the exact quote and spacing format
             yaml_lines.append(f'      - name: {col_name}')
             yaml_lines.append(f'        type: "{data_type}"')
             
-            if str(is_pk).strip().lower() == 'true' or is_pk is True:
+            if is_pk:
                 yaml_lines.append('        primary_key: true')
             
+            # --- AUTO-SCHEMA INJECTION FOR REFERENCES ---
             if pd.notna(ref_fk) and str(ref_fk).strip() and str(ref_fk).strip().lower() != 'nan':
-                yaml_lines.append(f'        references: "{str(ref_fk).strip()}"')
+                raw_refs = [r.strip() for r in str(ref_fk).split(";") if r.strip()]
+                resolved_refs = []
+                
+                for r in raw_refs:
+                    parts = r.split('.')
+                    # If user provided table.column, auto-inject the schema from the Tables sheet
+                    if len(parts) == 2:
+                        target_table, target_col = parts
+                        target_schema = table_schema_map.get(target_table, "")
+                        if target_schema:
+                            resolved_refs.append(f"{target_schema}.{target_table}.{target_col}")
+                        else:
+                            resolved_refs.append(r)
+                    else:
+                        # If user explicitly provided schema.table.column, leave it as is
+                        resolved_refs.append(r)
+                        
+                clean_refs = "; ".join(resolved_refs)
+                yaml_lines.append(f'        references: "{clean_refs}"')
                 
             yaml_lines.append(f'        description: "{col_desc}"')
 
-        # Add a new line after each table item
         yaml_lines.append('')
         
     models_dir = Path(output_yaml_path).parent
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    # Join all lines and remove any excessive trailing empty lines at the end of the file
     final_yaml = "\n".join(yaml_lines).strip() + "\n"
 
-    # Write directly to the file to bypass PyYAML's automatic quote stripping
     with open(output_yaml_path, "w", encoding="utf-8") as f:
         f.write(final_yaml)
 
 
 def convert_excel_to_golden_queries(excel_path: str, output_json_path: str) -> None:
     """Generates the bni_golden_queries.json from the Excel file."""
-    # Attempt to read the Golden Queries sheet, falling back to variations of the name
     try:
         try:
             queries_df = pd.read_excel(excel_path, sheet_name="Golden Queries")
@@ -148,7 +166,6 @@ def convert_excel_to_golden_queries(excel_path: str, output_json_path: str) -> N
 
     queries_list = []
     for _, row in queries_df.iterrows():
-        # Check standard column names, falling back to the JSON key formats
         intent = str(row.get("User Intent", row.get("user_intent", ""))).strip()
         sql = str(row.get("SQL Template", row.get("sql_template", ""))).strip()
         complexity = str(row.get("Complexity", row.get("complexity", ""))).strip()
@@ -162,11 +179,9 @@ def convert_excel_to_golden_queries(excel_path: str, output_json_path: str) -> N
             "complexity": complexity
         })
 
-    # Ensure output directory exists
     json_dir = Path(output_json_path).parent
     json_dir.mkdir(parents=True, exist_ok=True)
 
-    # Output as JSON with exactly matched quotes and indentations
     with open(output_json_path, "w", encoding="utf-8") as f:
         json.dump(queries_list, f, indent=2)
 
@@ -174,7 +189,6 @@ def convert_excel_to_golden_queries(excel_path: str, output_json_path: str) -> N
 if __name__ == "__main__":
     print("🚀 Starting Standalone Definitions Generator...")
     
-    # Establish root path based on the standard project directory layout
     try:
         ask_data_root = Path(__file__).resolve().parent.parent.parent.parent
         if ask_data_root.name != "ask-data":
@@ -182,7 +196,6 @@ if __name__ == "__main__":
     except Exception:
         ask_data_root = Path("/home/cdsw/ask-data")
 
-    # Target specific bni_dbt_definitions.xlsx input file
     input_excel = ask_data_root / "data" / "bni_dbt_definitions.xlsx"
     output_yaml = ask_data_root / "data" / "bni_schema_definitions.yaml"
     output_json = ask_data_root / "data" / "bni_golden_queries.json"

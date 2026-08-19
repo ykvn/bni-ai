@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 import re
+from collections import defaultdict
 
 def sanitize_dbt_name(name: str) -> str:
     """Ensures dbt names start with a letter and contain valid characters."""
@@ -15,8 +16,8 @@ def sanitize_dbt_name(name: str) -> str:
         return ""
     if name[0].isdigit():
         name = f"d_{name}"
-    name = re.sub(r'[^a-z0-9_]', '_', name)
-    return name
+    # Replace non-alphanumeric with underscore and truncate to 60 characters for dbt limits
+    return re.sub(r'[^a-z0-9_]', '_', name)[:60]
 
 def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
     tables_df = pd.read_excel(excel_path, sheet_name="Tables")
@@ -27,40 +28,65 @@ def convert_excel_to_dbt_yaml(excel_path: str, output_yaml_path: str) -> None:
     except Exception:
         vals_df = pd.DataFrame()
 
-    alias_col = "Alias (Optional)"
-
-    # Pre-pass 1: Find global entities (PKs or FKs across all tables) to prevent entity vs dimension collisions
-    global_entities = set()
-    for _, col in cols_df.iterrows():
-        if col.get("Is PK?", False) or pd.notna(col.get("References (Foreign Keys)")):
-            global_entities.add(str(col["Column Name"]).strip())
-
-    # Pre-pass 2: Build a map of all target Primary Keys to their final Alias names
-    target_pk_map = {}
-    for _, table in tables_df.iterrows():
-        t_name = str(table["Table Name"]).strip()
-        if t_name == 'nan' or not t_name: continue
-        
-        t_cols = cols_df[cols_df["Table Name"] == t_name]
-        for _, c in t_cols.iterrows():
-            c_name = str(c["Column Name"]).strip()
+    # --- AUTO-ROLE-PLAYING RESOLUTION ENGINE ---
+    
+    # 1. Map all explicit Primary Keys to their globally unique base entity names
+    pk_base_name = {}
+    target_entities = defaultdict(list)  # target_table.target_col -> [entity1, entity2, ...]
+    
+    for _, row in cols_df.iterrows():
+        is_pk = row.get("Is PK?", False)
+        if isinstance(is_pk, str):
+            is_pk = is_pk.strip().upper() in ['TRUE', 'YES', '1']
+        else:
+            is_pk = bool(is_pk and not pd.isna(is_pk))
             
-            is_pk = c.get("Is PK?", False)
-            if isinstance(is_pk, str):
-                is_pk = is_pk.strip().upper() in ['TRUE', 'YES', '1']
-            else:
-                is_pk = bool(is_pk and not pd.isna(is_pk))
+        if is_pk:
+            t_name = sanitize_dbt_name(str(row["Table Name"]))
+            c_name = sanitize_dbt_name(str(row["Column Name"]))
+            
+            # Auto-generate base PK entity name (e.g., funding_account_number)
+            base_name = sanitize_dbt_name(f"{t_name}_{c_name}")
                 
-            if is_pk:
-                raw_al = c.get(alias_col)
-                if pd.notna(raw_al) and str(raw_al).strip() != "" and str(raw_al).strip().lower() != "nan":
-                    alias_list = [sanitize_dbt_name(a.strip()) for a in re.split(r'[;,]', str(raw_al)) if a.strip()]
-                    f_name = alias_list[0]
+            pk_ref = f"{t_name}.{c_name}"
+            pk_base_name[pk_ref] = base_name
+            # The first entity appended to a target is its 'primary' entity
+            target_entities[pk_ref].append(base_name)
+
+    # 2. Discover Foreign Keys and Auto-Generate Unique Role-Playing Names
+    fk_entity_map = defaultdict(list) # local_table.local_col -> [entity1, entity2, ...]
+    global_entities = set() # Standard fallback for flat tables
+    
+    for _, row in cols_df.iterrows():
+        t_name = sanitize_dbt_name(str(row["Table Name"]))
+        c_name = sanitize_dbt_name(str(row["Column Name"]))
+        raw_ref = row.get("References (Foreign Keys)")
+        
+        if pd.notna(raw_ref) and str(raw_ref).strip() and str(raw_ref).strip().lower() not in ['nan', 'none']:
+            refs = [r.strip().lower() for r in str(raw_ref).split(';') if r.strip()]
+            
+            for r in refs:
+                if "." not in r: continue
+                target_t, target_c = r.split('.')
+                target_t = sanitize_dbt_name(target_t)
+                target_c = sanitize_dbt_name(target_c)
+                
+                # Check for Role-Playing (Local column name differs from target column name)
+                if c_name == target_c:
+                    # Generic join: use the target's primary entity name
+                    ent_name = pk_base_name.get(r, sanitize_dbt_name(f"{target_t}_{target_c}"))
                 else:
-                    f_name = sanitize_dbt_name(c_name)
+                    # Role-playing join: Append target table name to disambiguate
+                    ent_name = sanitize_dbt_name(f"{c_name}_{target_t}")
                 
-                target_pk_map[f"{t_name}.{c_name}".lower()] = f_name
-                target_pk_map[c_name.lower()] = f_name
+                # Register the foreign entity on the local table
+                fk_entity_map[f"{t_name}.{c_name}"].append(ent_name)
+                
+                # Register the unique entity on the target table (if not already there)
+                if ent_name not in target_entities[r]:
+                    target_entities[r].append(ent_name)
+                    
+            global_entities.add(c_name)
 
     semantic_models = []
     metrics = []
@@ -83,29 +109,16 @@ CROSS JOIN numbers c
 CROSS JOIN numbers d
         """.strip())
 
-    # 2. Register Time Spine Model
-    semantic_models.append({
-        "name": "metricflow_time_spine",
-        "description": "Required time spine for MetricFlow aggregations",
-        "model": "ref('metricflow_time_spine')",
-        "entities": [{
-            "name": "date_id",           # ✅ Renamed entity to avoid namespace collision
-            "type": "primary",
-            "expr": "date_day"           # ✅ Points to the correct SQL column
-        }],
-        "dimensions": [{
-            "name": "date_day",
-            "type": "time",
-            "expr": "date_day",
-            "type_params": {"time_granularity": "day"}
-        }]
-    })
+    # NOTE: metricflow_time_spine is no longer appended as a semantic_model here.
+    # It will be defined purely in the top-level 'models:' YAML block.
 
-    # 3. Process Business Tables
+    # 2. Process Business Tables
     for _, table in tables_df.iterrows():
-        table_name = str(table["Table Name"]).strip()
+        table_name = str(table["Table Name"]).strip().lower()
+        if table_name == 'nan' or not table_name: continue
+        
         custom_schema = str(table.get("Schema / Database", "")).strip()
-        table_cols = cols_df[cols_df["Table Name"] == table_name]
+        table_cols = cols_df[cols_df["Table Name"].astype(str).str.strip().str.lower() == table_name]
 
         # Generate dbt stub SQL file with dynamic schema support
         sql_path = models_dir / f"{table_name}.sql"
@@ -120,12 +133,15 @@ CROSS JOIN numbers d
         dimensions = []
         measures = []
         
+        explicit_time_dim = None
         first_time_dim = None
 
         for _, col in table_cols.iterrows():
             raw_col_name = str(col["Column Name"]).strip()
             if raw_col_name == "nan" or not raw_col_name:
                 continue
+            
+            c_name_lower = raw_col_name.lower()
             safe_col_name = sanitize_dbt_name(raw_col_name)
             
             is_pk = col.get("Is PK?", False)
@@ -133,71 +149,51 @@ CROSS JOIN numbers d
                 is_pk = is_pk.strip().upper() in ['TRUE', 'YES', '1']
             else:
                 is_pk = bool(is_pk and not pd.isna(is_pk))
-            
-            ref_fk = col.get("References (Foreign Keys)")
+                
+            local_ref_key = f"{table_name}.{c_name_lower}"
             custom_measures = col.get("Custom Measures (Optional)")
-            
-            # --- SMART ALIAS LOGIC ---
-            raw_alias = col.get(alias_col)
-            str_ref = str(ref_fk).strip() if pd.notna(ref_fk) else ""
-            
-            alias_list = []
-            if pd.notna(raw_alias) and str(raw_alias).strip() != "" and str(raw_alias).strip().lower() != "nan":
-                alias_list = [sanitize_dbt_name(a.strip()) for a in re.split(r'[;,]', str(raw_alias)) if a.strip()]
-
-            if alias_list:
-                final_name = alias_list[0]
-            else:
-                final_name = safe_col_name
-            # -------------------------
             
             val_mode = col.get("Distinct Value Mode")
             static_vals = col.get("Static Allowed Values")
             base_desc = str(col.get("Description", "")).strip()
+            if base_desc.lower() == 'nan': base_desc = ""
 
-            # 1. Primary Key Declaration (Supports multiple primary/unique aliases)
-            if is_pk:
-                if alias_list:
-                    for i, al in enumerate(alias_list):
-                        e_type = "primary" if i == 0 else "unique"
-                        entities.append({"name": al, "type": e_type, "expr": raw_col_name})
-                else:
-                    entities.append({"name": safe_col_name, "type": "primary", "expr": raw_col_name})
-            
-            # 2. Explicit Foreign Keys (Handles semicolons, commas, dots, and multi-aliases)
-            elif pd.notna(ref_fk) and str_ref.lower() not in ["", "nan", "true", "yes", "1"]:
-                refs = [r.strip() for r in re.split(r'[;,]', str_ref) if r.strip()]
-                for i, r in enumerate(refs):
-                    lookup_key = r.lower()
+            # 1. Entity Resolution (Supports Auto Role-Playing)
+            if is_pk and local_ref_key in target_entities:
+                assigned_entities = target_entities[local_ref_key]
+                for i, ent in enumerate(assigned_entities):
+                    e_type = "primary" if i == 0 else "unique"
+                    entities.append({"name": ent, "type": e_type, "expr": raw_col_name})
                     
-                    if i < len(alias_list):
-                        fk_name = alias_list[i]
-                    elif lookup_key in target_pk_map:
-                        fk_name = target_pk_map[lookup_key]
-                    else:
-                        fk_name = r.split(".")[-1] if "." in r else r
-                        
-                    entities.append({"name": sanitize_dbt_name(fk_name), "type": "foreign", "expr": raw_col_name})
+            elif local_ref_key in fk_entity_map:
+                for ent in fk_entity_map[local_ref_key]:
+                    entities.append({"name": ent, "type": "foreign", "expr": raw_col_name})
+                    
+            # Implicit Global Keys
+            elif c_name_lower in global_entities:
+                entities.append({"name": safe_col_name, "type": "foreign", "expr": raw_col_name})
             
-            # 3. Implicit Global Keys
-            elif raw_col_name in global_entities:
-                entities.append({"name": final_name, "type": "foreign", "expr": raw_col_name})
-            
-            # 4. Standard Dimensions
+            # 2. Standard Dimensions
             else:
                 col_type_str = str(col.get("Data Type", "")).upper()
-                col_name_str = raw_col_name.lower()
                 
                 # Robust time dimension detection to prevent categorical vs time conflicts
                 is_time_col = (
                     "DATE" in col_type_str or 
                     "TIME" in col_type_str or 
-                    col_name_str == "as_of_date" or 
-                    col_name_str.endswith("_date") or 
-                    col_name_str.endswith("_time")
+                    c_name_lower == "as_of_date" or 
+                    c_name_lower.endswith("_date") or 
+                    c_name_lower.endswith("_time")
                 )
                 dim_type = "time" if is_time_col else "categorical"
                 
+                # Explicit Agg Time Dimension Check
+                is_agg_time = col.get("Agg Time Dimension", False)
+                if isinstance(is_agg_time, str):
+                    is_agg_time = is_agg_time.strip().upper() in ['TRUE', 'YES', '1']
+                else:
+                    is_agg_time = bool(is_agg_time and not pd.isna(is_agg_time))
+
                 meta_parts = []
                 if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
                     meta_parts.append(f"Mode: {str(val_mode).strip()}")
@@ -205,9 +201,9 @@ CROSS JOIN numbers d
                 if pd.notna(static_vals):
                     meta_parts.append(f"Allowed: [{str(static_vals).strip()}]")
 
-                # ✅ Map value-level Database Values, Synonyms, and Context
+                # Map value-level Database Values, Synonyms, and Context
                 if not vals_df.empty:
-                    col_mappings = vals_df[(vals_df["Table Name"] == table_name) & (vals_df["Column Name"] == raw_col_name)]
+                    col_mappings = vals_df[(vals_df["Table Name"].str.lower() == table_name) & (vals_df["Column Name"].str.lower() == c_name_lower)]
                     if not col_mappings.empty:
                         value_entries = []
                         for _, mapping_row in col_mappings.iterrows():
@@ -231,7 +227,7 @@ CROSS JOIN numbers d
                     base_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
 
                 dim_obj = {
-                    "name": final_name, 
+                    "name": safe_col_name, 
                     "type": dim_type, 
                     "expr": raw_col_name, 
                     "description": base_desc.strip()
@@ -240,41 +236,46 @@ CROSS JOIN numbers d
                 if dim_type == "time":
                     dim_obj["type_params"] = {"time_granularity": "day"}
                     if not first_time_dim:
-                        first_time_dim = final_name
+                        first_time_dim = safe_col_name
+                    if is_agg_time:
+                        explicit_time_dim = safe_col_name
                 
                 dimensions.append(dim_obj)
 
-            if pd.notna(custom_measures):
+            if pd.notna(custom_measures) and str(custom_measures).strip() != "nan":
                 aggs = [a.strip().lower() for a in str(custom_measures).split(",")]
                 for agg in aggs:
                     dbt_agg_type = "average" if agg == "avg" else agg
-                    m_name = f"{table_name}_{final_name}_{agg}"
+                    m_name = sanitize_dbt_name(f"{table_name}_{safe_col_name}_{agg}")
                     
                     measures.append({
                         "name": m_name, 
                         "expr": raw_col_name, 
                         "agg": dbt_agg_type,
                         "_base_desc": base_desc,
-                        "_col_name": final_name,
+                        "_col_name": safe_col_name,
                         "_agg": agg
                     })
 
+        # Determine the final agg time dimension to use
+        chosen_time_dim = explicit_time_dim if explicit_time_dim else first_time_dim
+
         # Fallback: If model has measures but no date column, inject dummy time dimension
-        if measures and not first_time_dim:
+        if measures and not chosen_time_dim:
             dimensions.append({
                 "name": "dbt_dummy_time",
                 "type": "time",
                 "expr": "CAST('2020-01-01' AS TIMESTAMP)",
                 "type_params": {"time_granularity": "day"}
             })
-            first_time_dim = "dbt_dummy_time"
+            chosen_time_dim = "dbt_dummy_time"
 
         # Fallback for Impala/Flat tables: If no PRIMARY entity exists,
         # inject a synthetic primary entity to satisfy MetricFlow's semantic parser.
         has_primary_entity = any(e.get("type") == "primary" for e in entities)
         if not has_primary_entity and (dimensions or measures):
             entities.append({
-                "name": f"{table_name}_id",
+                "name": sanitize_dbt_name(f"{table_name}_id"),
                 "type": "primary",
                 "expr": "1"
             })
@@ -286,14 +287,15 @@ CROSS JOIN numbers d
             col_name = m.pop("_col_name")
             agg = m.pop("_agg")
             
-            if first_time_dim:
-                m["agg_time_dimension"] = first_time_dim
+            if chosen_time_dim:
+                m["agg_time_dimension"] = chosen_time_dim
                 
             formatted_measures.append(m)
             
+            metric_name = sanitize_dbt_name(f"{table_name}_{col_name}_{agg}_metric")
             metrics.append({
-                "name": f"{table_name}_{col_name}_{agg}_metric",
-                "label": f"{table_name} {col_name} {agg}".title(),
+                "name": metric_name,
+                "label": f"{table_name} {col_name} {agg}".title()[:100],
                 "description": base_desc,
                 "type": "simple",
                 "type_params": {"measure": m["name"]}
@@ -307,8 +309,18 @@ CROSS JOIN numbers d
             "measures": formatted_measures
         })
 
+    # Assemble the final schema with explicit models block for time_spine
     dbt_schema = {
         "version": 2,
+        "models": [
+            {
+                "name": "metricflow_time_spine",
+                "description": "Required time spine for MetricFlow aggregations",
+                "time_spine": {
+                    "standard_granularity_column": "date_day"
+                }
+            }
+        ],
         "semantic_models": semantic_models,
         "metrics": metrics
     }

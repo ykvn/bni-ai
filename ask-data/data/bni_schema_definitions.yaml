@@ -1,4 +1,4 @@
-version: "1.0"
+version: "2.0"
 domain: "Bank Negara Indonesia Customer Analytics"
 database_type: "Cloudera Impala"
 database_name: "test"
@@ -15,11 +15,11 @@ tables:
         description: "Waktu Transaksi"
       - name: cif_key
         type: "bigint"
-        references: "customer_icons.cif_key"
+        references: "dm_customer.customer_icons.cif_key"
         description: "CIF Key nasabah (ID Nasabah)"
       - name: account_number
         type: "bigint"
-        references: "funding.account_number; lending.account_number"
+        references: "dm_funding.funding.account_number; dm_lending.lending.account_number"
         description: "No rekening Nasabah"
       - name: issuer_bank_name
         type: "varchar(100)"
@@ -92,10 +92,11 @@ tables:
         description: "Industri Pengirim"
       - name: target_cif
         type: "bigint"
+        references: "dm_customer.customer_icons.cif_key"
         description: "CIF Penerima"
       - name: target_account_number
         type: "bigint"
-        references: "funding.account_number; lending.account_number"
+        references: "dm_funding.funding.account_number; dm_lending.lending.account_number"
         description: "No Rek Penerima"
       - name: destination_bankname
         type: "varchar(50)"
@@ -126,7 +127,7 @@ tables:
         description: "Jumlah Asli (Sebelum Convert Ke IDR)"
 
   - name: dm_customer.customer_icons
-    description: "Table datamart informasi nasabah"
+    description: "Table datamart informasi nasabah, table master nasabah berisi informasi yang dibutuhkan terkait nasabah"
     columns:
       - name: mdm_id
         type: "varchar(100)"
@@ -431,7 +432,7 @@ tables:
         description: "Consent Date Nasabah"
 
   - name: dm_funding.funding
-    description: "Table datamart informasi funding nasabah"
+    description: "Table datamart informasi funding nasabah, berisi informasi terkait account funding nasabah (tabungan, giro, deposito)"
     columns:
       - name: account_number
         type: "bigint"
@@ -439,7 +440,7 @@ tables:
         description: "Account Number Nasabah"
       - name: cif_key
         type: "bigint"
-        references: "customer_icons.cif_key"
+        references: "dm_customer.customer_icons.cif_key"
         description: "Cif Key Nasabah"
       - name: cust_type_code
         type: "varchar(10)"
@@ -737,7 +738,7 @@ tables:
         description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
 
   - name: dm_lending.lending
-    description: "Table datamart informasi lending nasabah"
+    description: "Table datamart informasi lending nasabah, berisi informasi terkait account lending nasabah (loan, pinjaman, kredit)"
     columns:
       - name: as_of_date
         type: "date"
@@ -751,7 +752,7 @@ tables:
         description: "Account Number Nasabah"
       - name: cif_key
         type: "bigint"
-        references: "customer_icons.cif_key"
+        references: "dm_customer.customer_icons.cif_key"
         description: "Cif Key Nasabah"
       - name: account_number_affiliated
         type: "bigint"
@@ -1043,15 +1044,14 @@ tables:
         description: "Short Name Nasabah"
 
   - name: prd_db_sbx_ind.mapping_group_whs
-    description: "Table datamart informasi group nasabah"
+    description: "Table datamart informasi group nasabah yang dikelompokkan berdasarkan CIF key"
     columns:
       - name: cif_principal
         type: "bigint"
-        references: "customer_icons.cif_key"
+        references: "dm_customer.customer_icons.cif_key"
         description: "Cif Principal Nasabah"
       - name: group_principal
         type: "string"
-        primary_key: true
         description: "Group Principal Nasabah"
       - name: segment_div_owner
         type: "varchar(10)"
