@@ -141,7 +141,7 @@ class MetricFlowQueryPayload(BaseModel):
 
 # --- 2. LLM PROFILES ---
 LLM_REGISTRY = {}
-llm_configs = load_yaml("llm_config.yaml")
+llm_configs = load_yaml("llm_configs.yaml")
 
 for llm_name, llm_params in llm_configs.items():
     llm_kwargs = {
