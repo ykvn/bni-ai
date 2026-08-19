@@ -22,6 +22,7 @@ draft_sql_task:
     
     - TABLE MATCHING: You MUST strictly use the actual table and column names provided.
     - READ ONLY: Only write SELECT statements.
+    - LIMIT RESULTS: Always LIMIT results to 100 (LIMIT 100) by default, unless specified otherwise.
     
     CRITICAL LLM CONTEXT RULES:
     1. DEFAULT TIME AXIS: If the user asks a time-based question without specifying the column and multiple date columns exist, you MUST prioritize and use the column tagged with '[LLM Context: DEFAULT_TIME_AXIS: True]' in your WHERE clause.
