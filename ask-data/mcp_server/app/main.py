@@ -32,10 +32,6 @@ sse = SseServerTransport("/messages")
 # 🛠️ AGENTIC MCP TOOLS
 # =====================================================================
 
-# =====================================================================
-# 🛠️ AGENTIC MCP TOOLS
-# =====================================================================
-
 @mcp.tool(name="search_database_schema")
 async def mcp_search_database_schema(user_question: str) -> str:
     """
