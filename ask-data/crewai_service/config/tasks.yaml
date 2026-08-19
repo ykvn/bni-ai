@@ -27,7 +27,8 @@ draft_sql_task:
     
     CRITICAL LLM CONTEXT RULES:
     1. DEFAULT TIME AXIS: If the user asks a time-based question without specifying the column and multiple date columns exist, you MUST prioritize and use the column tagged with '[LLM Context: DEFAULT_TIME_AXIS: True]' in your WHERE clause.
-    2. STATIC ENUMS: If you are filtering on a categorical column tagged with '[LLM Context: Mode: STATIC_ENUM]', you MUST use the exact database values provided in the 'Value Mappings' array. Do not invent spellings.
+    2. STATIC ENUMS: If you are filtering on a categorical column tagged with '[LLM Context: Mode: STATIC_ENUM]', you MUST use the exact values provided in the 'Value Mappings' array. Do not invent spellings.
+    3. GOLDEN QUERIES: If filtering on a categorical column is not specified, try to use the logic of related GOLDEN QUERIES to get the SQL reference and combine with the existing query.
   expected_output: "Output ONLY the raw Cloudera Impala SELECT statement."
 
 execute_sql_task:
