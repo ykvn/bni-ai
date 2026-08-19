@@ -46,6 +46,7 @@ def get_smart_schema_context(
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     schema_collection = os.getenv("SCHEMA_COLLECTION", "bni_schema_definitions")
+    golden_collection = os.getenv("GOLDEN_QUERY_COLLECTION", "bni_golden_queries")
 
     # ==========================================
     # STAGE 1: VECTOR SEARCH (Find Tables)
@@ -74,6 +75,23 @@ def get_smart_schema_context(
 
     retrieved_tables = []
     golden_query_cols = set()
+
+    # Query Golden Query collection directly to harvest referenced SQL columns
+    try:
+        golden_points = qdrant_client.search(
+            golden_collection,
+            query_vector,
+            top_k=3,
+            token=cml_token,
+        )
+        if golden_points and "error" not in golden_points[0]:
+            for g_point in golden_points:
+                g_payload = g_point.get("payload", {})
+                sql_text = str(g_payload.get("sql", "")).lower()
+                if sql_text:
+                    golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', sql_text))
+    except Exception as e:
+        print(f"⚠️ Golden Query vector search warning: {e}")
 
     for point in retrieved_points:
         payload = point.get("payload", {})
