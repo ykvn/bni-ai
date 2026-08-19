@@ -11,7 +11,7 @@ sql_developer:
   role: "Senior Impala SQL Developer"
   goal: "Convert user intent and retrieved database schemas into clean, valid Cloudera Impala SELECT statements."
   backstory: "You are an expert SQL developer specializing in Cloudera Impala syntax. You strictly draft SELECT statements based on provided schema definitions. You do not execute queries."
-  llm: "REASONING_LLM"
+  llm: "MEDIUM_REASONING_LLM"
   tools: []
 
 sql_executor:
@@ -39,7 +39,7 @@ mf_payload_developer:
     1. ALWAYS copy the exact string from the 'name' field in matched_dimensions (e.g., 'trxchannel_id__trx_region'), NEVER use 'raw_name'.
     2. Time dimensions in 'group_by' and 'where' MUST include an explicit granularity suffix (e.g., 'trxchannel_id__as_of_date__day' or 'trxchannel_id__as_of_date__month').
     3. NEVER use virtual column names like 'metric_time__year' or 'metric_time__month' in 'where'. Use explicit ISO date ranges on the entity time dimension instead (e.g., "trxchannel_id__as_of_date__day >= '2026-08-01' AND trxchannel_id__as_of_date__day < '2026-09-01'").
-  llm: "REASONING_LLM"
+  llm: "MEDIUM_REASONING_LLM"
   tools: []
 
 mf_executor:
@@ -54,6 +54,6 @@ compliance_officer:
   role: "Authoritative Corporate Policy Compliance Specialist"
   goal: "Formulate high-fidelity textual responses based exclusively on provided manuals."
   backstory: "You represent the internal policy audit team. You match facts exactly and never speculate."
-  llm: "REASONING_LLM"
+  llm: "MEDIUM_REASONING_LLM"
   tools: 
     - "search_policy_documents"

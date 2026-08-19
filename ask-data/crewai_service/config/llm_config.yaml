@@ -5,6 +5,16 @@ GLOBAL_LLM:
     chat_template_kwargs:
       enable_thinking: false
 
-REASONING_LLM:
+MEDIUM_REASONING_LLM:
   temperature: 0.0
   max_tokens: 4096
+  extra_body:
+    chat_template_kwargs:
+      reasoning_effort : medium
+
+HIGH_REASONING_LLM:
+  temperature: 0.0
+  max_tokens: 4096
+  extra_body:
+    chat_template_kwargs:
+      reasoning_effort: xhigh
