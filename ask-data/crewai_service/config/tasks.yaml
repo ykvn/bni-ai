@@ -19,8 +19,13 @@ draft_sql_task:
     INSTRUCTIONS:
     Write a valid Cloudera Impala SELECT query based on the schema above.
     If PREVIOUS ERROR TO FIX contains an Impala error, correct your SQL syntax.
+    
     - TABLE MATCHING: You MUST strictly use the actual table and column names provided.
     - READ ONLY: Only write SELECT statements.
+    
+    CRITICAL LLM CONTEXT RULES:
+    1. DEFAULT TIME AXIS: If the user asks a time-based question without specifying the column and multiple date columns exist, you MUST prioritize and use the column tagged with '[LLM Context: DEFAULT_TIME_AXIS: True]' in your WHERE clause.
+    2. STATIC ENUMS: If you are filtering on a categorical column tagged with '[LLM Context: Mode: STATIC_ENUM]', you MUST use the exact database values provided in the 'Value Mappings' array. Do not invent spellings.
   expected_output: "Output ONLY the raw Cloudera Impala SELECT statement."
 
 execute_sql_task:
