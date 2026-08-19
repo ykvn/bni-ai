@@ -36,7 +36,7 @@ semantic_models:
   - name: as_of_date
     type: time
     expr: as_of_date
-    description: Tanggal Data
+    description: Tanggal Transaksi Data, digunakan untuk filter tanggal, bulan, tahun
     type_params:
       time_granularity: day
   - name: trx_datetime
@@ -88,7 +88,7 @@ semantic_models:
   - name: amount
     type: categorical
     expr: amount
-    description: Nilai Transaksi
+    description: Nilai Transaksi / Amount
   - name: channel
     type: categorical
     expr: channel
@@ -2400,25 +2400,25 @@ metrics:
     measure: trxchannel_journal_no_count
 - name: trxchannel_amount_sum_metric
   label: Trxchannel Amount Sum
-  description: Nilai Transaksi
+  description: Nilai Transaksi / Amount
   type: simple
   type_params:
     measure: trxchannel_amount_sum
 - name: trxchannel_amount_average_metric
   label: Trxchannel Amount Average
-  description: Nilai Transaksi
+  description: Nilai Transaksi / Amount
   type: simple
   type_params:
     measure: trxchannel_amount_average
 - name: trxchannel_amount_min_metric
   label: Trxchannel Amount Min
-  description: Nilai Transaksi
+  description: Nilai Transaksi / Amount
   type: simple
   type_params:
     measure: trxchannel_amount_min
 - name: trxchannel_amount_max_metric
   label: Trxchannel Amount Max
-  description: Nilai Transaksi
+  description: Nilai Transaksi / Amount
   type: simple
   type_params:
     measure: trxchannel_amount_max

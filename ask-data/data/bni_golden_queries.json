@@ -3,5 +3,10 @@
     "user_intent": "Tampilkan nasabah aktif",
     "sql_template": "SELECT * FROM dm_customer.customer_icons WHERE cust_status = 'AKTIF';",
     "complexity": "simple"
+  },
+  {
+    "user_intent": "Tampilkan cash out",
+    "sql_template": "nan",
+    "complexity": "nan"
   }
 ]
