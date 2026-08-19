@@ -40,7 +40,7 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
 def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
-    top_columns: int = 20,
+    top_columns: int = 40,
     threshold: float = 0.0
 ) -> str:
     cml_token = get_cml_token()
@@ -146,11 +146,13 @@ def get_smart_schema_context(
             mandatory_columns = []
             for col in table.get("columns", []):
                 c_name = col.get("name")
+                c_desc = str(col.get("description", ""))
+                
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]  # 🚀 NEW: Map score back to column
                     mandatory_columns.append(col)
-                elif col.get("primary_key") or "references" in col:
-                    # Keep PK/FK even if they didn't win the rerank, but no score is attached
+                elif col.get("primary_key") or "references" in col or "DEFAULT_TIME_AXIS: True" in c_desc:
+                    # Keep PK/FK and DEFAULT_TIME_AXIS even if they didn't win the rerank, but no score is attached
                     mandatory_columns.append(col)
 
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
