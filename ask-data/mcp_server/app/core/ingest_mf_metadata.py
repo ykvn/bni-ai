@@ -1,98 +1,142 @@
 """
-MetricFlow (mf) metadata ingestion from REST API endpoint.
+MetricFlow (mf) metadata ingestion from Local YAML Schema.
 
-Fetches metadata from DBT_METRICFLOW_URL + '/api/v1/meta',
-parses metrics, dimensions, and entities, maps entity join keys,
-and indexes them into the Qdrant vector database.
+Reads bni_dbt_schema.yaml directly, parses metrics, dimensions, entities, 
+resolves default time dimensions, and indexes them into Qdrant.
 """
 import os
 import json
-import httpx
+import yaml
+from pathlib import Path
 
-from shared.cml_auth import build_cml_headers
 from app.core.ingest_common import bootstrap_env, reset_and_index
 
 # Standardized project-root bootstrap (loads .env)
 bootstrap_env()
 
-
-def get_default_api_url() -> str:
-    base_url = os.getenv("DBT_METRICFLOW_URL", "https://dbt.cai.apps.dataservices.bni.co.id")
-    return f"{base_url.rstrip('/')}/api/v1/meta"
-
-
-def fetch_mf_metadata(api_url: str = None, cml_token: str = None) -> dict:
-    """Fetches dbt MetricFlow metadata JSON from the REST API endpoint with Bearer authentication."""
-    if not api_url:
-        api_url = get_default_api_url()
-
-    print(f"🌐 Fetching MetricFlow metadata from API: {api_url}...", flush=True)
-    
-    # Build authentication headers using CML token or fallback to environment
-    token = cml_token or os.getenv("CML_TOKEN") or os.getenv("LITELLM_API_KEY")
-    headers = {}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    
-    # Merge with standard CML headers if build_cml_headers exists
-    try:
-        headers.update(build_cml_headers(token))
-    except Exception:
-        pass
-
-    try:
-        with httpx.Client(verify=False, timeout=30.0) as client:
-            response = client.get(api_url, headers=headers)
-            response.raise_for_status()
-            return response.json()
-    except Exception as e:
-        print(f"❌ Error fetching metadata from {api_url}: {e}", flush=True)
-        return {}
-
+def get_yaml_path() -> Path:
+    """Resolves the path to the generated dbt schema YAML."""
+    ask_data_root = Path("/home/cdsw/ask-data")
+    return ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
 
 def ingest_mf_schema(
-    api_url: str = None,
+    api_url: str = None, # Left for backward compatibility, but unused
     vectordb_server_url: str = None,
     embed_rerank_url: str = None,
     collection_name: str = None,
     cml_token: str = None,
 ):
-    """Parses MetricFlow API metadata (metrics, dimensions, entities) and indexes it into Vector DB."""
-    if not api_url:
-        api_url = get_default_api_url()
-
-    schema = fetch_mf_metadata(api_url, cml_token)
-    if not schema or not isinstance(schema, dict):
-        print("⚠️ Invalid or empty metadata retrieved from API. Aborting ingestion.", flush=True)
+    """Parses local bni_dbt_schema.yaml and indexes enriched payloads into Vector DB."""
+    yaml_path = get_yaml_path()
+    
+    if not yaml_path.exists():
+        print(f"❌ Error: Schema YAML not found at {yaml_path}. Aborting ingestion.", flush=True)
         return
 
-    # Extract top-level components explicitly
-    metrics = schema.get("metrics", [])
-    dimensions = schema.get("dimensions", [])
-    entities = schema.get("entities", [])
+    print(f"🌐 Loading local MetricFlow schema from: {yaml_path}...", flush=True)
+    
+    with open(yaml_path, "r") as f:
+        schema = yaml.safe_load(f)
 
-    # Build a lookup map of semantic_model -> primary_entity_name
-    # Example: "cai_customers" -> "customer_id", "cai_savings" -> "savings_id"
-    model_to_primary_entity = {}
-    for entity in entities:
-        if entity.get("type") == "primary":
-            model_to_primary_entity[entity.get("semantic_model")] = entity.get("name")
+    metrics = schema.get("metrics", [])
+    semantic_models = schema.get("semantic_models", [])
 
     catalog_texts = []
     metadatas = []
 
-    # 1. Process Metrics
+    # 1. Build lookup maps from Semantic Models
+    sm_primary_entity = {}
+    measure_to_time_dim = {}
+
+    for sm in semantic_models:
+        sm_name = sm.get("name")
+        primary_entity = sm_name # Fallback
+        
+        # Find Primary Entity
+        for ent in sm.get("entities", []):
+            if ent.get("type") == "primary":
+                primary_entity = ent.get("name")
+        sm_primary_entity[sm_name] = primary_entity
+
+        # Map Measures -> Time Dimension
+        for m in sm.get("measures", []):
+            m_name = m.get("name")
+            agg_time_col = m.get("agg_time_dimension")
+            if m_name and agg_time_col:
+                measure_to_time_dim[m_name] = f"{primary_entity}__{agg_time_col}"
+
+        # 2. Process Dimensions inside the Semantic Model
+        for d in sm.get("dimensions", []):
+            d_name = d.get("name")
+            d_type = d.get("type", "categorical") # Identifies 'time' vs 'categorical'
+            d_desc = d.get("description", "No description provided.")
+            
+            group_by_path = f"{primary_entity}__{d_name}"
+            
+            searchable_text = (
+                f"Dimension Path (Group By): {group_by_path}\n"
+                f"Data Type: {d_type}\n"
+                f"Description: {d_desc}"
+            )
+
+            structured_payload = {
+                "item_type": "dimension",
+                "name": group_by_path,
+                "raw_name": f"{sm_name}__{d_name}",
+                "data_type": d_type, # Exposed explicitly to LLM!
+                "description": d_desc
+            }
+
+            catalog_texts.append(searchable_text)
+            metadatas.append({
+                "item_type": "dimension",
+                "name": group_by_path,
+                "raw_json": json.dumps(structured_payload, indent=2),
+            })
+
+        # 3. Process Entities inside the Semantic Model
+        for e in sm.get("entities", []):
+            e_name = e.get("name")
+            e_type = e.get("type", "unknown")
+            e_expr = e.get("expr", e_name)
+
+            searchable_text = (
+                f"Entity Key: {e_name}\n"
+                f"Key Type: {e_type}\n"
+                f"Semantic Model / Table: {sm_name}\n"
+                f"Expression: {e_expr}"
+            )
+
+            structured_payload = {
+                "item_type": "entity",
+                "name": e_name,
+                "type": e_type,
+                "semantic_model": sm_name,
+                "expr": e_expr
+            }
+
+            catalog_texts.append(searchable_text)
+            metadatas.append({
+                "item_type": "entity",
+                "name": e_name,
+                "raw_json": json.dumps(structured_payload, indent=2),
+            })
+
+    # 4. Process Top-Level Metrics
     for m in metrics:
         m_name = m.get("name", "unknown")
         m_label = m.get("label", m_name)
         m_desc = m.get("description", "No description provided.")
-        m_syns = m.get("synonyms", [])
+        
+        # Look up default time dimension using the underlying measure!
+        measure_ref = m.get("type_params", {}).get("measure")
+        default_time_dim = measure_to_time_dim.get(measure_ref, "None")
 
         searchable_text = (
             f"Metric Name: {m_name}\n"
             f"Label: {m_label}\n"
             f"Description: {m_desc}\n"
-            f"Synonyms: {', '.join(m_syns) if m_syns else 'None'}"
+            f"Default Time Dimension: {default_time_dim}"
         )
 
         structured_payload = {
@@ -100,7 +144,7 @@ def ingest_mf_schema(
             "name": m_name,
             "label": m_label,
             "description": m_desc,
-            "synonyms": m_syns
+            "default_time_dimension": default_time_dim # Exposed explicitly to LLM!
         }
 
         catalog_texts.append(searchable_text)
@@ -110,79 +154,9 @@ def ingest_mf_schema(
             "raw_json": json.dumps(structured_payload, indent=2),
         })
 
-    # 2. Process Dimensions & Map Valid Entity Join Paths
-    for d in dimensions:
-        d_name = d.get("name", "unknown")  # e.g., "cai_customers__bank_name"
-        d_desc = d.get("description", "No description provided.")
-        d_meta = d.get("meta", {})
+    print(f"📊 Extracted Total Chunks directly from YAML: {len(metrics)} Metrics, {len(catalog_texts) - len(metrics)} Dims/Entities", flush=True)
 
-        # Transform 'cai_customers__bank_name' -> 'customer_id__bank_name'
-        group_by_path = d_name
-        if "__" in d_name:
-            parts = d_name.split("__", 1)
-            model_prefix, col_name = parts[0], parts[1]
-            
-            if model_prefix in model_to_primary_entity:
-                primary_entity = model_to_primary_entity[model_prefix]
-                group_by_path = f"{primary_entity}__{col_name}"
-
-        searchable_text = (
-            f"Dimension Path (Group By): {group_by_path}\n"
-            f"Raw Metadata Name: {d_name}\n"
-            f"Description: {d_desc}"
-        )
-
-        structured_payload = {
-            "item_type": "dimension",
-            "name": group_by_path,  # Exposes 'customer_id__bank_name' directly to LLM
-            "raw_name": d_name,
-            "description": d_desc,
-            "meta": d_meta
-        }
-
-        catalog_texts.append(searchable_text)
-        metadatas.append({
-            "item_type": "dimension",
-            "name": group_by_path,
-            "raw_json": json.dumps(structured_payload, indent=2),
-        })
-
-    # 3. Process Entities
-    for e in entities:
-        e_name = e.get("name", "unknown")
-        e_type = e.get("type", "unknown")
-        e_model = e.get("semantic_model", "unknown")
-        e_expr = e.get("expr", e_name)
-
-        searchable_text = (
-            f"Entity Key: {e_name}\n"
-            f"Key Type: {e_type}\n"
-            f"Semantic Model / Table: {e_model}\n"
-            f"Expression: {e_expr}"
-        )
-
-        structured_payload = {
-            "item_type": "entity",
-            "name": e_name,
-            "type": e_type,
-            "semantic_model": e_model,
-            "expr": e_expr
-        }
-
-        catalog_texts.append(searchable_text)
-        metadatas.append({
-            "item_type": "entity",
-            "name": e_name,
-            "raw_json": json.dumps(structured_payload, indent=2),
-        })
-
-    print(f"📊 Extracted Total Chunks: {len(metrics)} Metrics, {len(dimensions)} Dimensions, {len(entities)} Entities", flush=True)
-
-    if not catalog_texts:
-        print("⚠️ No metadata items found to index.", flush=True)
-        return
-
-    # 4. Index Chunks into Qdrant
+    # 5. Index chunks into Qdrant
     reset_and_index(
         collection_name=collection_name,
         documents=catalog_texts,
@@ -190,5 +164,5 @@ def ingest_mf_schema(
         vectordb_server_url=vectordb_server_url,
         embed_rerank_url=embed_rerank_url,
         cml_token=cml_token,
-        dataset_name="MetricFlow Catalog API",
+        dataset_name="MetricFlow Catalog (YAML-Based)",
     )
