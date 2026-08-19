@@ -10,7 +10,7 @@ draft_sql_task:
   description: >
     Process the user query: '{user_question}'
 
-    DATABASE SCHEMA:
+    DATABASE SCHEMA & VERIFIED GOLDEN QUERIES:
     {db_schema}
 
     PREVIOUS ERROR TO FIX (If Empty, ignore):
@@ -28,7 +28,10 @@ draft_sql_task:
     CRITICAL LLM CONTEXT RULES:
     1. DEFAULT TIME AXIS: If the user asks a time-based question without specifying the column and multiple date columns exist, you MUST prioritize and use the column tagged with '[LLM Context: DEFAULT_TIME_AXIS: True]' in your WHERE clause.
     2. STATIC ENUMS: If you are filtering on a categorical column tagged with '[LLM Context: Mode: STATIC_ENUM]', you MUST use the exact values provided in the 'Value Mappings' array. Do not invent spellings.
-    3. GOLDEN QUERIES: If filtering on a categorical column is not specified, try to use the logic of related GOLDEN QUERIES to get the SQL reference and combine with the existing query.
+    3. GOLDEN QUERIES (ADAPT & COMBINE PATTERNS):
+       - Treat Golden Queries as syntax and business logic references (e.g., standard join paths, default status filters like `cust_status = 'AKTIF'`).
+       - NEVER copy a Golden Query 100% verbatim when the user query asks for dynamic timeframes, aggregates, or custom filters.
+       - PATTERN MERGING: Extract the core filter/join logic from the related Golden Query, then combine it with the explicit query parameters (e.g., merge `cust_status = 'AKTIF'` from Golden Query with `as_of_date = '2026-08-01'` and `SUM(amount)` from the user question).
   expected_output: "Output ONLY the raw Cloudera Impala SELECT statement."
 
 execute_sql_task:
