@@ -15,7 +15,7 @@ from mcp.server.sse import SseServerTransport
 # --- ACTIVE TOOL REGISTRATION ---
 from app.tools.config import settings  
 from app.tools.execute_banking_query import execute_banking_query
-from app.tools.get_database_schema import get_database_schema
+from app.tools.search_database_schema import get_database_schema
 from app.tools.search_golden_queries import search_golden_queries
 from app.tools.rag_search import search_policy_documents as perform_rag_search
 from app.tools.search_mf_catalog import search_mf_catalog
