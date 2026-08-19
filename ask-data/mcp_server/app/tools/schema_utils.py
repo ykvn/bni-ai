@@ -73,16 +73,29 @@ def get_smart_schema_context(
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
     retrieved_tables = []
+    golden_query_cols = set()
+
     for point in retrieved_points:
         payload = point.get("payload", {})
         point_score = point.get("score")
         raw_yaml_str = payload.get("raw_yaml")
+
+        # Collect columns referenced in any Golden Queries inside point payloads
+        gq_list = payload.get("golden_queries", []) or payload.get("examples", [])
+        for gq in gq_list:
+            sql_text = (gq.get("sql", "") if isinstance(gq, dict) else str(gq)).lower()
+            golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', sql_text))
 
         if raw_yaml_str:
             parsed_table = yaml.safe_load(raw_yaml_str)
             if point_score is not None:
                 parsed_table["score"] = round(point_score, 4)
             retrieved_tables.append(parsed_table)
+
+            # Collect columns from golden queries embedded inside table YAMLs
+            for gq in parsed_table.get("golden_queries", []):
+                sql_text = (gq.get("sql", "") if isinstance(gq, dict) else str(gq)).lower()
+                golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', sql_text))
 
     if not retrieved_tables:
         error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
@@ -185,12 +198,17 @@ def get_smart_schema_context(
                 c_name = col.get("name", "")
                 c_desc = str(col.get("description", ""))
 
+                # 1. Column passed per-table relative thresholding
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
+                # 2. Structural Schema Safeguards (Primary Keys, Foreign Keys, or Default Time Axis)
                 elif (col.get("primary_key") or 
                       "references" in col or 
                       "DEFAULT_TIME_AXIS: True" in c_desc):
+                    mandatory_columns.append(col)
+                # 3. Golden Query Safeguard: Preserve columns referenced in Golden Queries
+                elif c_name.lower() in golden_query_cols:
                     mandatory_columns.append(col)
 
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
