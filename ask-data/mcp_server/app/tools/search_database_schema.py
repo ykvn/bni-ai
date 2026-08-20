@@ -22,7 +22,10 @@ from app.tools.search_golden_queries import search_golden_queries
 # and the response parser can detect the "no data" situation and reply politely
 # instead of returning an empty `tables: []` to the front end.
 NO_RELEVANT_SCHEMA = "NO_RELEVANT_SCHEMA"
-NO_SCHEMA_RESPONSE = f"{NO_RELEVANT_SCHEMA}: I am sorry, I don't have this information on my database."
+# The user-facing refusal returned by this tool. It is intentionally plain text
+# (no marker prefix) so the front end can display it verbatim. Internal
+# detection uses the `_has_no_tables` helper / NO_RELEVANT_SCHEMA YAML marker.
+NO_SCHEMA_RESPONSE = "I am sorry, I don't have this information on my database."
 
 
 def clean_schema_yaml(raw_yaml_str: str) -> str:

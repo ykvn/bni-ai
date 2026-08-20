@@ -2,8 +2,8 @@ fetch_schema_task:
   agent: schema_analyst
   description: >
     Retrieve the live database schema for the user query: '{user_question}'
-    INSTRUCTION: Execute the `search_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response, INCLUDING when it returns the 'NO_RELEVANT_SCHEMA' refusal (empty schema). Never invent tables or columns.
-  expected_output: "The exact, raw tool response string returned by `search_database_schema` (including the 'NO_RELEVANT_SCHEMA: I am sorry, I don't have this information on my database.' refusal when no tables match)."
+    INSTRUCTION: Execute the `search_database_schema` tool with the user question. Do not think, explain, or output text. Pass the exact tool output as your response, INCLUDING when it returns the 'I am sorry, I don't have this information on my database.' refusal (empty schema). Never invent tables or columns.
+  expected_output: "The exact, raw tool response string returned by `search_database_schema` (including the 'I am sorry, I don't have this information on my database.' refusal when no tables match)."
 
 draft_sql_task:
   agent: sql_developer
@@ -19,7 +19,7 @@ draft_sql_task:
     INSTRUCTIONS:
     Write a valid Cloudera Impala SELECT query based on the schema above.
     If PREVIOUS ERROR TO FIX contains an Impala error, correct your SQL syntax.
-    NO-MATCH HANDLING: If the DATABASE SCHEMA section is empty or contains 'NO_RELEVANT_SCHEMA', do NOT invent table or column names and do NOT write SQL. Output EXACTLY the refusal line: "NO_RELEVANT_SCHEMA: I am sorry, I don't have this information on my database."
+    NO-MATCH HANDLING: If the DATABASE SCHEMA section is empty or contains the refusal 'I am sorry, I don't have this information on my database.', do NOT invent table or column names and do NOT write SQL. Output EXACTLY the refusal line: "I am sorry, I don't have this information on my database."
     
     - TABLE MATCHING: You MUST strictly use the actual table and column names provided.
     - READ ONLY: Only write SELECT statements.
@@ -33,7 +33,7 @@ draft_sql_task:
        - Treat Golden Queries as syntax and business logic references (e.g., standard join paths, default status filters like `cust_status = 'AKTIF'`).
        - NEVER copy a Golden Query 100% verbatim when the user query asks for dynamic timeframes, aggregates, or custom filters.
        - PATTERN MERGING: Extract the core filter/join logic from the related Golden Query, then combine it with the explicit query parameters (e.g., merge `cust_status = 'AKTIF'` from Golden Query with `as_of_date = '2026-08-01'` and `SUM(amount)` from the user question).
-  expected_output: "Output ONLY the raw Cloudera Impala SELECT statement, OR the refusal line 'NO_RELEVANT_SCHEMA: I am sorry, I don't have this information on my database.' when the DATABASE SCHEMA section has no matching tables."
+  expected_output: "Output ONLY the raw Cloudera Impala SELECT statement, OR the refusal line 'I am sorry, I don't have this information on my database.' when the DATABASE SCHEMA section has no matching tables."
 
 execute_sql_task:
   agent: sql_executor

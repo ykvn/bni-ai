@@ -50,14 +50,31 @@ def test_no_schema_detection():
     assert _has_no_tables(markered_schema) is True, "NO_RELEVANT_SCHEMA marker should count as no schema"
     assert _has_no_tables(populated_schema) is False, "populated schema should NOT count as no schema"
     assert "tables: []" not in NO_SCHEMA_RESPONSE, "refusal must not leak an empty tables block"
-    assert "I am sorry, I don't have this information on my database." in NO_SCHEMA_RESPONSE
-    assert NO_RELEVANT_SCHEMA in NO_SCHEMA_RESPONSE
+    assert NO_SCHEMA_RESPONSE == "I am sorry, I don't have this information on my database.", \
+        f"refusal must be the plain message, got: {NO_SCHEMA_RESPONSE!r}"
+    assert NO_RELEVANT_SCHEMA not in NO_SCHEMA_RESPONSE, "refusal must NOT leak the internal marker prefix"
 
     print("✅ test_no_schema_detection PASSED")
 
 
 def run_schema_test(user_question: str):
     """Executes search_database_schema and displays the resulting schema YAML."""
+    from app.tools.search_database_schema import NO_SCHEMA_RESPONSE
+
+    # STALE-DEPLOYMENT GUARD -------------------------------------------------
+    # The message text below MUST match the current NO_SCHEMA_RESPONSE constant.
+    # If the running machine is executing an old copy of the module (or an old
+    # .pyc bytecode), this aborts immediately with a clear message instead of
+    # silently returning the outdated "no information" text.
+    _expected_refusal = "I am sorry, I don't have this information on my database."
+    if NO_SCHEMA_RESPONSE != _expected_refusal:
+        print("❌ STALE DEPLOYMENT DETECTED: the loaded module is NOT the latest code.")
+        print(f"   Expected message: {_expected_refusal!r}")
+        print(f"   Loaded message:   {NO_SCHEMA_RESPONSE!r}")
+        print("   -> Clear __pycache__ caches and redeploy the updated")
+        print("      ask-data/mcp_server/app/tools/search_database_schema.py, then re-run.")
+        return
+
     print(f"\n🔍 Testing search_database_schema with query: '{user_question}'")
     print("=" * 80)
 

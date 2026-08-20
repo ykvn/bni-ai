@@ -18,10 +18,6 @@ def _is_cancelled(job_id: str) -> bool:
 
 _ROW_LIST_KEYS = ("data", "rows", "results", "result", "records")
 
-# Prefix used by the "no relevant schema" refusal so it can be stripped from
-# the user-facing response text before being sent to the front end.
-_REFUSAL_PREFIX = "NO_RELEVANT_SCHEMA:"
-
 
 def _extract_records(parsed) -> list:
     """Best-effort extraction of a tabular record list from parsed JSON.
@@ -73,10 +69,6 @@ async def _process_single_job(job: dict):
                 # Fallback: If it couldn't parse, treat it as conversational text
                 if not agent_response:
                     agent_response = raw_data
-                # Clean the internal "no-relevant-schema" refusal marker from the
-                # user-facing text so the front end shows a polite message only.
-                if isinstance(agent_response, str) and agent_response.startswith(_REFUSAL_PREFIX):
-                    agent_response = agent_response[len(_REFUSAL_PREFIX):].strip()
 
         # 3. Assemble Frontend JSON Contract
         payload = {
