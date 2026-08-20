@@ -347,6 +347,11 @@ def execute_metric_query(payload: MetricQueryRequest):
             args.extend(["--group-by", ",".join(payload.group_by)])
         if payload.where:
             args.extend(["--where", payload.where])
+        if payload.order_by:
+            args.extend(["--order-by", ",".join(payload.order_by)])
+        if payload.limit is not None:
+            args.extend(["--limit", str(payload.limit)])
+            
         args.append("--explain")
 
         with _MF_LOCK:
@@ -394,32 +399,9 @@ def execute_metric_query(payload: MetricQueryRequest):
         # Clean up dummy schema/database references
         compiled_sql = re.sub(r'`?dummy`?\.', '', compiled_sql)
 
-        # Append ORDER BY and LIMIT clauses if supplied
-        clean_sql = compiled_sql.strip().rstrip(";")
-        clauses = []
-
-        if payload.order_by:
-            formatted_orders = []
-            for item in payload.order_by:
-                col_str = str(item).strip()
-                if col_str.startswith("-"):
-                    formatted_orders.append(f"{col_str[1:]} DESC")
-                else:
-                    formatted_orders.append(f"{col_str} ASC")
-            if formatted_orders:
-                clauses.append(f"ORDER BY {', '.join(formatted_orders)}")
-
-        if payload.limit is not None:
-            clauses.append(f"LIMIT {payload.limit}")
-
-        if clauses:
-            final_sql = clean_sql + "\n" + "\n".join(clauses)
-        else:
-            final_sql = clean_sql
-
         return MetricQueryResponse(
             status="success",
-            sql=final_sql,
+            sql=compiled_sql,
             data=[]
         )
 
