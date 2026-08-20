@@ -17,6 +17,14 @@ from shared.qdrant_client import QdrantClient
 from app.tools.search_golden_queries import search_golden_queries
 
 
+# Marker emitted by this tool when schema search / pruning yields no matching
+# tables for the user's question. It is a plain token so the CrewAI agent layer
+# and the response parser can detect the "no data" situation and reply politely
+# instead of returning an empty `tables: []` to the front end.
+NO_RELEVANT_SCHEMA = "NO_RELEVANT_SCHEMA"
+NO_SCHEMA_RESPONSE = f"{NO_RELEVANT_SCHEMA}: I am sorry, I don't have this information."
+
+
 def clean_schema_yaml(raw_yaml_str: str) -> str:
     """Strips internal reranking score fields from the pure YAML string."""
     try:
@@ -204,7 +212,10 @@ def get_smart_schema_context_with_golden(
     if not retrieved_tables:
         error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
         print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False), golden_context
+        return yaml.dump(
+            {"database_type": "Cloudera Impala", "tables": [], "error": f"{NO_RELEVANT_SCHEMA}: {error_msg}"},
+            sort_keys=False
+        ), golden_context
     
     clean_query = user_query.lower()
     for char in ['?', '!', '.', ',', ':', ';']:
@@ -337,6 +348,17 @@ def get_smart_schema_context_with_golden(
     # ORDER BY: Sort tables by vector score DESC
     pruned_tables.sort(key=lambda tbl: tbl.get("score", 0.0) or 0.0, reverse=True)
 
+    # No-relevant-schema guard: if every candidate table was pruned away (all
+    # below the global relevance threshold with no golden-query protection), the
+    # final schema would be `tables: []`. Return an explicit marker instead so
+    # the agent layer can respond with the polite "no information" message.
+    if not pruned_tables:
+        print("🚫 [NO_RELEVANT_SCHEMA] No relevant tables survived schema pruning.")
+        return yaml.dump(
+            {"database_type": "Cloudera Impala", "tables": [], "error": NO_RELEVANT_SCHEMA},
+            sort_keys=False
+        ), golden_context
+
     final_schema = {
         "database_type": "Cloudera Impala",
         "tables": pruned_tables
@@ -364,10 +386,30 @@ def get_smart_schema_context(
     return schema_yaml
 
 
+def _has_no_tables(schema_context: str) -> bool:
+    """Returns True when the schema context contains no usable tables."""
+    if NO_RELEVANT_SCHEMA in schema_context:
+        return True
+    try:
+        data = yaml.safe_load(schema_context)
+    except Exception:
+        return False
+    if isinstance(data, dict):
+        tables = data.get("tables")
+        return isinstance(tables, list) and len(tables) == 0
+    return False
+
+
 def search_database_schema(user_question: str) -> str:
     raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_query=user_question)
-    
+
+    # If no tables matched the question, send a friendly refusal back to the
+    # front end instead of a bare `tables: []` YAML block.
+    if _has_no_tables(raw_schema_context):
+        print(f"🚫 [search_database_schema] No matching schema for query: '{user_question}'. Returning refusal.")
+        return NO_SCHEMA_RESPONSE
+
     if golden_context and "No verified golden queries found" not in golden_context:
         return f"{raw_schema_context}\n\n{golden_context}"
-        
+
     return raw_schema_context

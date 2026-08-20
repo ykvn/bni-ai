@@ -14,6 +14,10 @@ from mcp import ClientSession
 from mcp.client.sse import sse_client
 from shared.cml_auth import build_cml_headers
 
+# Marker emitted by the `search_database_schema` MCP tool when no table matches
+# the user's question. Used to short-circuit SQL execution and reply politely.
+_NO_RELEVANT_SCHEMA = "NO_RELEVANT_SCHEMA"
+
 _CONFIG_DIR = Path(__file__).resolve().parent.parent.parent / "config"
 
 def log_ts(msg: str):
@@ -308,6 +312,22 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
             state.compiled_mf_sql = raw_output
         elif task_name in ["execute_sql_task", "evaluate_policy_task"]:
             state.final_data = raw_output
+
+        # ============================================================
+        # NO-RELEVANT-SCHEMA SHORT-CIRCUIT
+        # If schema discovery found no matching tables, the drafting agent
+        # returns a polite refusal line (marked NO_RELEVANT_SCHEMA) instead of
+        # SQL. Do NOT send that text to Impala (it would fail as invalid SQL).
+        # Instead, surface the refusal as the user-facing response and stop the
+        # workflow for this question.
+        # ============================================================
+        if (task_name in ["draft_sql_task", "mf_draft_payload_task"]
+                and _NO_RELEVANT_SCHEMA in raw_output):
+            state.final_data = raw_output
+            if task_name == "draft_sql_task":
+                state.sql_query = ""
+            log_ts("⚠️ [Flow] No relevant schema found; skipping SQL execution and returning refusal to user.")
+            break
 
         # Retry Logic Interceptor
         if retry_logic:

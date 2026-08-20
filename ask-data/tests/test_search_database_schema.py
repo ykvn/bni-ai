@@ -25,6 +25,37 @@ except Exception:
 from app.tools.search_database_schema import search_database_schema
 
 
+def test_no_schema_detection():
+    """Offline regression test (no network) for the no-relevant-schema guard."""
+    from app.tools.search_database_schema import (
+        _has_no_tables,
+        NO_SCHEMA_RESPONSE,
+        NO_RELEVANT_SCHEMA,
+    )
+
+    empty_schema = "database_type: Cloudera Impala\ntables: []\n"
+    markered_schema = (
+        "database_type: Cloudera Impala\ntables: []\nerror: NO_RELEVANT_SCHEMA\n"
+    )
+    populated_schema = (
+        "database_type: Cloudera Impala\n"
+        "tables:\n"
+        "  - name: tbl\n"
+        "    description: x\n"
+        "    columns:\n"
+        "      - name: id\n"
+    )
+
+    assert _has_no_tables(empty_schema) is True, "empty tables list should count as no schema"
+    assert _has_no_tables(markered_schema) is True, "NO_RELEVANT_SCHEMA marker should count as no schema"
+    assert _has_no_tables(populated_schema) is False, "populated schema should NOT count as no schema"
+    assert "tables: []" not in NO_SCHEMA_RESPONSE, "refusal must not leak an empty tables block"
+    assert "I am sorry, I don't have this information." in NO_SCHEMA_RESPONSE
+    assert NO_RELEVANT_SCHEMA in NO_SCHEMA_RESPONSE
+
+    print("✅ test_no_schema_detection PASSED")
+
+
 def run_schema_test(user_question: str):
     """Executes search_database_schema and displays the resulting schema YAML."""
     print(f"\n🔍 Testing search_database_schema with query: '{user_question}'")
@@ -48,6 +79,14 @@ if __name__ == "__main__":
         default="Berapa rata rata nilai cash out di bulan Agustus 2026 ?",
         help="User question to test against schema retrieval."
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Run offline unit checks only (no network / vector DB required)."
+    )
     args = parser.parse_args()
 
-    run_schema_test(user_question=args.question)
+    if args.check:
+        test_no_schema_detection()
+    else:
+        run_schema_test(user_question=args.question)
