@@ -1,11 +1,11 @@
 [
   {
-    "user_intent": "Tampilkan nasabah aktif",
+    "user_intent": "Nasabah aktif",
     "sql_template": "SELECT * FROM dm_customer.customer_icons WHERE cust_status = 'AKTIF';",
     "complexity": "simple"
   },
   {
-    "user_intent": "Aktivitas Cash out",
+    "user_intent": "Aktivitas cashout / cash out",
     "sql_template": "SELECT * FROM dm_transaction.trxchannel WHERE destination_bankname <> 'BANK NEGARA INDONESIA';",
     "complexity": "simple"
   }

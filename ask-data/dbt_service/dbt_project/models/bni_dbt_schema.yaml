@@ -147,7 +147,7 @@ semantic_models:
   - name: destination_bankname
     type: categorical
     expr: destination_bankname
-    description: Bank Penerima
+    description: Nama Bank Penerima / Nama Bank Tujuan
   - name: destination_name
     type: categorical
     expr: destination_name
@@ -636,6 +636,10 @@ semantic_models:
     type_params:
       time_granularity: day
   measures:
+  - name: customer_icons_mdm_id_count
+    expr: mdm_id
+    agg: count
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_age_sum
     expr: cust_age
     agg: sum
@@ -2446,6 +2450,12 @@ metrics:
   type: simple
   type_params:
     measure: trxchannel_amount_ori_max
+- name: customer_icons_mdm_id_count_metric
+  label: Customer_Icons Mdm_Id Count
+  description: MDM ID
+  type: simple
+  type_params:
+    measure: customer_icons_mdm_id_count
 - name: customer_icons_cust_age_sum_metric
   label: Customer_Icons Cust_Age Sum
   description: Umur Nasabah

@@ -97,10 +97,10 @@ tables:
       - name: target_account_number
         type: "bigint"
         references: "dm_funding.funding.account_number; dm_lending.lending.account_number"
-        description: "No Rek Penerima"
+        description: "Nomor Rekening Penerima"
       - name: destination_bankname
         type: "varchar(50)"
-        description: "Bank Penerima"
+        description: "Nama Bank Penerima / Nama Bank Tujuan"
       - name: destination_name
         type: "varchar(50)"
         description: "Nama Penerima"

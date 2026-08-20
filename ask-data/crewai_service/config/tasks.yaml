@@ -65,13 +65,18 @@ mf_draft_payload_task:
 
     CRITICAL INSTRUCTIONS:
     1. EXACT ENTITY-PREFIXED NAMES: Use the 'name' attribute from matched_dimensions (e.g. 'trxchannel_id__trx_region'). NEVER use 'raw_name' (e.g. 'trxchannel__trx_region').
-    2. TIME DIMENSIONS IN GROUP_BY & WHERE: Any time dimension used in 'where' MUST ALSO be included in 'group_by' with the exact same granularity suffix (day / month / year)
-       (e.g. '<default_time_dimension>__month' or '<default_time_dimension>__day' or '<default_time_dimension>__year').
-    3. DATE RANGE (MONTHLY/DAILY/YEARLY) FILTERS: Write date filters in 'where' using explicit ISO date strings with single quotes on the entity-prefixed dimension name, e.g.:
-       "<default_time_dimension>__day >= 'YYYY-MM-DD' AND <default_time_dimension>__day < 'YYYY-MM-DD'".
-       For monthly questions (e.g. 'Agustus 2026'), use '<default_time_dimension>__month' (e.g. "<default_time_dimension>__month = 'YYYY-MM-01'").
-       For yearly questions (e.g. '2026'), use '<default_time_dimension>__year' (e.g. "<default_time_dimension>__year = 'YYYY-01-01'").
-    4. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month'.
+    2. MANDATORY GROUP_BY FOR FILTERED DIMENSIONS: ANY dimension (categorical or time) used in 'where' MUST ALSO be included in 'group_by' so MetricFlow projects it into the SELECT statement (e.g., if `where` contains `trxchannel_id__channel = 'ATM'`, you MUST add `'trxchannel_id__channel'` into `group_by`).
+    3. TIME DIMENSION GRANULARITY: Any time dimension used in 'group_by' or 'where' MUST include an explicit granularity suffix
+       (e.g., '<default_time_dimension>__day', '<default_time_dimension>__month', or '<default_time_dimension>__year').
+    4. EXACT DATE FILTERS: For a single specific date (e.g., '1 Agustus 2026'), use the `__day` suffix with exact equality and single quotes:
+       "<default_time_dimension>__day = 'YYYY-MM-DD'"
+    5. DATE RANGE FILTERS: For explicit date intervals, use the `__day` suffix with comparison operators and single quotes:
+       "<default_time_dimension>__day >= 'YYYY-MM-DD' AND <default_time_dimension>__day < 'YYYY-MM-DD'"
+    6. MONTHLY FILTERS: For monthly questions (e.g., 'Agustus 2026'), use the `__month` suffix set to the 1st of that month:
+       "<default_time_dimension>__month = 'YYYY-MM-01'"
+    7. YEARLY FILTERS: For full year questions (e.g., '2026'), use the `__year` suffix set to Jan 1st of that year:
+       "<default_time_dimension>__year = 'YYYY-01-01'"
+    8. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month'.
   expected_output: "A structured JSON MetricFlow query payload object."
 
 mf_execute_task:
