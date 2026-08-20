@@ -5,6 +5,13 @@ from shared.embed_client import get_embedding_vector, rerank_documents
 from shared.qdrant_client import QdrantClient
 from shared.cml_auth import get_cml_token
 
+# Internal marker emitted when the MetricFlow search returns no matching
+# metrics, dimensions, or entities. The tool maps this to the plain
+# user-facing refusal text (NO_MF_RESPONSE) so the front end displays the
+# polite message instead of an empty `matched_*: []` YAML block.
+NO_MF_MATCH = "NO_MF_MATCH"
+NO_MF_RESPONSE = "I am sorry, I don't have this information on my database."
+
 def search_mf_catalog(
     user_query: str, 
     top_candidates: int = 50,
@@ -23,8 +30,6 @@ def search_mf_catalog(
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
 
-    empty_response = yaml.dump({"matched_metrics": [], "matched_dimensions": [], "matched_entities": []})
-
     try:
         # 1. Fetch broad candidate net
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
@@ -38,7 +43,8 @@ def search_mf_catalog(
         )
         
         if not results or (isinstance(results, list) and len(results) > 0 and "error" in results[0]):
-            return empty_response
+            print("🚫 [NO_MF_MATCH] No MetricFlow results or query returned an error.")
+            return NO_MF_RESPONSE
 
         # 2. Parse Candidates
         candidate_items = []
@@ -68,7 +74,8 @@ def search_mf_catalog(
                     continue
 
         if not candidate_items:
-            return empty_response
+            print("🚫 [NO_MF_MATCH] No candidate MetricFlow items parsed from results.")
+            return NO_MF_RESPONSE
 
         # 3. Apply Cross-Encoder Reranking and Thresholding
         filtered_candidates = []
@@ -102,7 +109,8 @@ def search_mf_catalog(
             filtered_candidates = candidate_items
 
         if not filtered_candidates:
-            return empty_response
+            print("🚫 [NO_MF_MATCH] No MetricFlow items survived score thresholding.")
+            return NO_MF_RESPONSE
 
         # 4. Enforce Category Quotas on Filtered Candidates
         metrics = []
@@ -123,6 +131,13 @@ def search_mf_catalog(
                 len(dimensions) >= max_dimensions and 
                 len(entities) >= max_entities):
                 break
+
+        # No-relevant-catalog guard: even when candidates survived thresholding,
+        # if category quotas left zero metrics/dimensions/entities, reply with
+        # the same polite refusal as search_database_schema.
+        if not metrics and not dimensions and not entities:
+            print("🚫 [NO_MF_MATCH] No relevant metrics/dimensions/entities survived category quotas.")
+            return NO_MF_RESPONSE
 
         catalog_output = {
             "matched_metrics": metrics,

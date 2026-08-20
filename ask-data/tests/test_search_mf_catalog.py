@@ -22,11 +22,25 @@ except Exception:
     except Exception:
         pass
 
-from app.tools.search_mf_catalog import search_mf_catalog
+from app.tools.search_mf_catalog import NO_MF_RESPONSE, search_mf_catalog
 
 
 def run_mf_catalog_test(user_question: str):
-    """Executes search_mf_catalog and displays the resulting catalog YAML."""
+    """Executes search_mf_catalog and displays the resulting catalog (or refusal)."""
+    # STALE-DEPLOYMENT GUARD ------------------------------------------------
+    # If the running machine is executing an old copy of the module (or an
+    # older .pyc bytecode), it would still emit an empty `matched_*: []` YAML
+    # instead of the refusal. Abort with a clear message so the outdated text
+    # is never silently shown.
+    _expected_refusal = "I am sorry, I don't have this information on my database."
+    if NO_MF_RESPONSE != _expected_refusal:
+        print("❌ STALE DEPLOYMENT DETECTED: the loaded module is NOT the latest code.")
+        print(f"   Expected message: {_expected_refusal!r}")
+        print(f"   Loaded message:   {NO_MF_RESPONSE!r}")
+        print("   -> Clear __pycache__ caches and redeploy the updated")
+        print("      ask-data/mcp_server/app/tools/search_mf_catalog.py, then re-run.")
+        return
+
     print(f"\n🔍 Testing search_mf_catalog with query: '{user_question}'")
     print("=" * 80)
 

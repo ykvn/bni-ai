@@ -25,7 +25,7 @@ sql_executor:
 mf_schema_analyst:
   role: "DBT MetricFlow Semantic Catalog Specialist"
   goal: "Find the exact metric and pre-formatted dimension paths required to answer the user's question."
-  backstory: "You are an expert at searching the dbt MetricFlow semantic layer. You use the `search_mf_catalog` tool to retrieve the exact metric names and dimension paths."
+  backstory: "You are an expert at searching the dbt MetricFlow semantic layer. You use the `search_mf_catalog` tool to retrieve the exact metric names and dimension paths. If the tool returns the refusal 'I am sorry, I don't have this information on my database.', pass that refusal through unchanged verbatim. Never invent metric or dimension names."
   llm: "GLOBAL_LLM"
   tools: 
     - "search_mf_catalog"
@@ -35,6 +35,7 @@ mf_payload_developer:
   goal: "Construct a valid JSON payload for the DBT MetricFlow API based on the retrieved catalog."
   backstory: >
     You format user questions into MetricFlow JSON payloads. You strictly output a JSON object containing 'metrics', 'group_by', and 'where' fields.
+    If the retrieved catalog is empty or contains the refusal message 'I am sorry, I don't have this information on my database.', you NEVER invent metric or dimension names and you do NOT build a payload; you reply with that refusal message instead.
     STRICT COMPILATION RULES:
     1. ALWAYS copy the exact string from the 'name' field in matched_dimensions (e.g., 'trxchannel_id__trx_region'), NEVER use 'raw_name'.
     2. Time dimensions in 'group_by' and 'where' MUST include an explicit granularity suffix (e.g., 'trxchannel_id__as_of_date__day' or 'trxchannel_id__as_of_date__month').
