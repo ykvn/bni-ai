@@ -53,7 +53,7 @@ tables:
         description: "No Jurnal Transaksi"
       - name: amount
         type: "decimal(22,2)"
-        description: "Nilai Transaksi"
+        description: "Nilai Transaksi / Transaction Amount / Amount Transaksi"
       - name: channel
         type: "string"
         description: "Channel Transaksi [LLM Context: Mode: STATIC_ENUM | Value Mappings: [API - Transaksi API; ACQUIRING - Transaksi Acquiring; SPAN - Transaksi SPAN; WONDR (Synonyms: Wonder) - Transaksi via Wonder / WONDR; TELLER - Transaksi via Teller; SMS - Transaksi via SMS; OTHERS - Transaksi lainnya; BOP - Transaksi BOP; AUTODEBET - Transaksi via Autodebet; EDC_NON_BNI - Transaksi via EDC Non BNI (EDC Bank Lain); NEW_MOB - Transaksi New MOB; REMITTANCE - Transaksi Remittance; AGEN_TRX - Transaksi via Agen; BNIDIRECT - Transaksi via BNI Direct; NON API - Transaksi Non API; ATM - Transaksi via ATM]]"
