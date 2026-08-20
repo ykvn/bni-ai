@@ -30,11 +30,11 @@ def search_mf_catalog(
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
 
-    # Clean query tokens for lexical match boosting
+    # Clean query tokens (replace underscores and ignore words <= 2 chars like "di", "ke")
     clean_query = user_query.lower()
-    for char in ['?', '!', '.', ',', ':', ';', '/', '-']:
+    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
         clean_query = clean_query.replace(char, ' ')
-    query_tokens = set(clean_query.split())
+    query_tokens = set(word for word in clean_query.split() if len(word) > 2)
 
     try:
         # 1. Fetch broad candidate net
@@ -77,11 +77,11 @@ def search_mf_catalog(
                     else:
                         doc_str = f"Catalog Item: {item.get('name', '')} | Description: {item.get('description', '')}"
 
-                    # Lexical intersection count
+                    # Lexical intersection count (split by underscore, ignore short words)
                     item_search_text = doc_str.lower()
-                    for char in ['?', '!', '.', ',', ':', ';', '/', '-']:
+                    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
                         item_search_text = item_search_text.replace(char, ' ')
-                    item_tokens = set(item_search_text.split())
+                    item_tokens = set(word for word in item_search_text.split() if len(word) > 2)
                     token_matches = len(query_tokens.intersection(item_tokens))
 
                     candidate_items.append(item)
@@ -114,9 +114,10 @@ def search_mf_catalog(
 
                     if idx is not None and idx < len(candidate_items):
                         matches = token_match_counts[idx]
-                        # Multiply score by 1.5x per direct keyword match
-                        match_multiplier = 1.0 + (0.5 * matches) if matches > 0 else 1.0
-                        boosted_score = raw_score * match_multiplier
+                        
+                        # ADDITIVE BOOST: +0.5 absolute points per exact keyword match
+                        # This mathematically forces exact matches to beat out neural noise.
+                        boosted_score = raw_score + (0.5 * matches)
 
                         boosted_hits.append({
                             "item": candidate_items[idx],
