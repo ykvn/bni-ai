@@ -151,6 +151,7 @@ def search_mf_catalog(
 
         for item in filtered_candidates:
             item_type = item.pop("item_type", None)
+            item.pop("raw_name", None)  # Strip raw_name to trim LLM prompt context
             
             if item_type == "metric" and len(metrics) < max_metrics:
                 metrics.append(item)
