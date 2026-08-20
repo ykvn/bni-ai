@@ -1,5 +1,8 @@
 import os
+import re
 import yaml
+import sqlglot
+from sqlglot import exp
 
 from shared.cml_auth import get_cml_token
 from shared.embed_client import get_embedding_vector, rerank_documents
@@ -139,28 +142,13 @@ def get_smart_schema_context(
                 if "name" in col:
                     valid_schema_columns.add(str(col["name"]).lower())
 
-    # 1b. Query Golden Query collection directly to harvest referenced SQL columns
-    target_collections = [golden_collection, "bni_golden_queries", "golden_queries"]
-    for g_col in dict.fromkeys(target_collections):
-        try:
-            golden_points = qdrant_client.search(
-                g_col,
-                query_vector,
-                top_k=5,
-                token=cml_token,
-            )
-            if golden_points and "error" not in golden_points[0]:
-                for g_point in golden_points:
-                    g_payload = g_point.get("payload", {})
-                    # Scan all payload string values for SQL statements
-                    for val in g_payload.values():
-                        val_str = str(val)
-                        if any(kw in val_str.upper() for kw in ["SELECT", "FROM", "WHERE"]):
-                            golden_query_cols.update(extract_sql_columns(val_str, valid_schema_columns))
-                if golden_query_cols:
-                    break
-        except Exception:
-            continue
+    # 1b. Fetch Golden Queries via search_golden_queries tool BEFORE pruning
+    try:
+        golden_context = search_golden_queries(user_question=user_query)
+        if golden_context and "No verified golden queries found" not in golden_context:
+            golden_query_cols.update(extract_sql_columns(golden_context, valid_schema_columns))
+    except Exception as e:
+        print(f"⚠️ Golden Query extraction warning: {e}")
 
     # 1c. Scan point payloads for embedded Golden Query SQLs
     for point in retrieved_points:
