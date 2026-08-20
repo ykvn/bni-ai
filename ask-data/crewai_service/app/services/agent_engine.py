@@ -315,8 +315,21 @@ async def run_universal_agent(job_type: str, user_question: str) -> dict:
         elif task_name in ["execute_sql_task", "evaluate_policy_task"]:
             state.final_data = raw_output
 
+        # Early no-relevant-schema short-circuit -------------------------------
+        # The `fetch_schema_task` / `mf_fetch_schema_task` discovery step stores
+        # the tool output into `state.db_schema`. If that output is the polite
+        # refusal (no tables / no matching catalog), stop the workflow BEFORE the
+        # drafting task runs. Drafting tasks are often forced into structured
+        # JSON (e.g. mf_draft_payload_task uses output_pydantic), so waiting for
+        # the refusal to appear in the *draft* output is unreliable.
+        if (task_name in ["fetch_schema_task", "mf_fetch_schema_task"]
+                and _REFUSAL_MESSAGE in state.db_schema):
+            state.final_data = state.db_schema
+            log_ts("⚠️ [Flow] No relevant schema found at discovery; skipping workflow and returning refusal to user.")
+            break
+
         # ============================================================
-        # NO-RELEVANT-SCHEMA SHORT-CIRCUIT
+        # NO-RELEVANT-SCHEMA SHORT-CIRCUIT (draft stage)
         # If schema discovery found no matching tables, the drafting agent
         # returns a polite refusal line (marked NO_RELEVANT_SCHEMA) instead of
         # SQL. Do NOT send that text to Impala (it would fail as invalid SQL).
