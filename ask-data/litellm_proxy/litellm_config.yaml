@@ -12,10 +12,10 @@ model_list:
       api_base: os.environ/AI_INFERENCE_URL
       api_key: os.environ/CDP_TOKEN
       ssl_verify: false
-      request_timeout: 300
+      request_timeout: 3600
       num_retries: 3
 
 router_settings:
   routing_strategy: simple-shuffle
-  timeout: 300
+  timeout: 3600
   num_retries: 3
