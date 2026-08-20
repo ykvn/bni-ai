@@ -47,13 +47,11 @@ The names of the two helper functions we call come from ``qdrant_client.py``:
 import os
 from app.tools.qdrant_client import search_documents, rerank_documents
 
-import os
-from app.tools.qdrant_client import search_documents, rerank_documents
 
 def search_golden_queries(user_question: str, top_k: int = 5, top_n: int = 3) -> str:
     """
     Searches the Golden Queries vector database for verified SQL templates matching the user's intent.
-    Uses Cross-Encoder reranking to ensure high relevance.
+    Forces Cross-Encoder reranking to evaluate ONLY the 'user_intent' field.
     """
     collection_name = os.getenv("GOLDEN_COLLECTION", "bni_golden_queries")
     
@@ -63,10 +61,20 @@ def search_golden_queries(user_question: str, top_k: int = 5, top_n: int = 3) ->
     if not raw_results or "error" in raw_results[0]:
         return "No verified golden queries found for this intent."
 
-    # 2. Re-score candidates against the exact user question
+    # 2. FORCE INTENT-ONLY EVALUATION: Overwrite document text with user_intent
+    for doc in raw_results:
+        payload = doc.get("raw_payload", {})
+        intent = payload.get("user_intent", "").strip()
+        if intent:
+            # Overwrite all document text fields so Cross-Encoder scores purely against intent description
+            doc["page_content"] = intent
+            doc["text"] = intent
+            doc["excerpt"] = intent
+
+    # 3. Re-score candidates against user_question using ONLY user_intent text
     reranked = rerank_documents(query=user_question, raw_documents=raw_results, top_n=top_n)
 
-    # 3. Format into a clean LLM context block
+    # 4. Format into a clean LLM context block
     output = ["### VERIFIED GOLDEN QUERIES (Use as references for SQL syntax) ###\n"]
     for idx, doc in enumerate(reranked):
         payload = doc.get("raw_payload", {})
