@@ -119,9 +119,10 @@ def get_smart_schema_context_with_golden(
     top_tables: int = 5,
     top_columns_per_table: int = 10,
     relative_threshold_ratio: float = 0.05,
-    absolute_min_score: float = 0.001
+    absolute_min_score: float = 0.001,
+    global_table_threshold_ratio: float = 0.15
 ) -> tuple[str, str]:
-    """Retrieves schema context and golden queries, enforcing score floor and descending sort."""
+    """Retrieves schema context and golden queries with per-column and global per-table pruning."""
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
@@ -278,7 +279,7 @@ def get_smart_schema_context_with_golden(
 
             max_boosted_score = top_table_hits[0]["score"] if top_table_hits else 0.0
             
-            # Enforce score floor to prevent micro-scores on off-topic tables
+            # Enforce absolute score floor to prevent micro-scores
             relative_threshold = max(max_boosted_score * relative_threshold_ratio, absolute_min_score)
 
             for col_data in top_table_hits:
@@ -290,10 +291,19 @@ def get_smart_schema_context_with_golden(
             print(f"⚠️ Per-table reranking failed for {t_name}: {e}")
 
     # ==========================================
-    # STAGE 3: RECONSTRUCT PRUNED SCHEMA
+    # STAGE 3: GLOBAL TABLE PRUNING & SCHEMA RECONSTRUCTION
     # ==========================================
-    # Union winning reranked tables with tables explicitly protected by Golden Queries
-    relevant_table_names = {item['table'] for item in winning_columns}.union(golden_query_tables)
+    # 1. Compute global max score across all candidate column hits
+    global_max_score = max([item['score'] for item in winning_columns], default=0.0)
+
+    # 2. Filter tables that meet at least 15% of the global max score
+    strong_table_names = {
+        item['table'] for item in winning_columns 
+        if item['score'] >= (global_max_score * global_table_threshold_ratio)
+    }
+
+    # 3. Union strong tables with tables explicitly protected by Golden Queries
+    relevant_table_names = strong_table_names.union(golden_query_tables)
     pruned_tables = []
 
     for table in retrieved_tables:
@@ -306,16 +316,16 @@ def get_smart_schema_context_with_golden(
                 c_name = col.get("name", "")
                 c_desc = str(col.get("description", ""))
 
-                # 1. Column passed per-table relative thresholding (and absolute min score floor)
+                # A. Column passed per-table relative thresholding & absolute floor
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
-                # 2. Structural Schema Safeguards
+                # B. Structural Schema Safeguards (PK, FK, or DEFAULT_TIME_AXIS)
                 elif (col.get("primary_key") or
                       "references" in col or
                       "DEFAULT_TIME_AXIS: True" in c_desc):
                     mandatory_columns.append(col)
-                # 3. Golden Query Safeguard (Protected within referenced Golden Query tables)
+                # C. Golden Query Safeguard (Protected within referenced Golden Query tables)
                 elif c_name.lower() in golden_query_cols and table_name.lower() in golden_query_tables:
                     mandatory_columns.append(col)
 
@@ -340,20 +350,22 @@ def get_smart_schema_context(
     top_tables: int = 5,
     top_columns_per_table: int = 10,
     relative_threshold_ratio: float = 0.05,
-    absolute_min_score: float = 0.001
+    absolute_min_score: float = 0.001,
+    global_table_threshold_ratio: float = 0.15
 ) -> str:
     schema_yaml, _ = get_smart_schema_context_with_golden(
         user_query=user_query,
         top_tables=top_tables,
         top_columns_per_table=top_columns_per_table,
         relative_threshold_ratio=relative_threshold_ratio,
-        absolute_min_score=absolute_min_score
+        absolute_min_score=absolute_min_score,
+        global_table_threshold_ratio=global_table_threshold_ratio
     )
     return schema_yaml
 
 
 def search_database_schema(user_question: str) -> str:
-    raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_query=user_question)
+    raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_question=user_question)
     
     if golden_context and "No verified golden queries found" not in golden_context:
         return f"{raw_schema_context}\n\n{golden_context}"
