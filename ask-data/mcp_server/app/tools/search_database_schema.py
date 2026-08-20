@@ -402,6 +402,7 @@ def _has_no_tables(schema_context: str) -> bool:
 
 def search_database_schema(user_question: str) -> str:
     raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_query=user_question)
+    raw_schema_context = clean_schema_yaml(raw_schema_context)
 
     # If no tables matched the question, send a friendly refusal back to the
     # front end instead of a bare `tables: []` YAML block.
