@@ -1,5 +1,4 @@
 import os
-import re
 import yaml
 
 from shared.cml_auth import get_cml_token
@@ -51,6 +50,37 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
     return clean_table
 
 
+def extract_sql_columns(text: str, valid_columns: set) -> set:
+    """Extracts column names using sqlglot, falling back to strict set intersection."""
+    extracted = set()
+    text_lower = text.lower()
+    
+    if SQLGLOT_AVAILABLE:
+        try:
+            # Isolate SQL if embedded in YAML
+            sql_start = text_lower.find("select ")
+            sql_str = text[sql_start:] if sql_start != -1 else text
+            
+            # Parse the AST and find all Column nodes
+            for stmt in sqlglot.parse(sql_str, read="impala"):
+                if stmt:
+                    for col in stmt.find_all(exp.Column):
+                        if col.name:
+                            extracted.add(col.name.lower())
+            
+            if extracted:
+                return extracted.intersection(valid_columns)
+        except Exception:
+            pass  # Fallback if parsing fails
+
+    # Fallback: No regex. Replace punctuation, split to words, intersect with valid schema.
+    for char in ['(', ')', ',', '=', '<', '>', '!', "'", '"', ';', '\n', '\t']:
+        text_lower = text_lower.replace(char, ' ')
+        
+    words = set(text_lower.split())
+    return words.intersection(valid_columns)
+
+
 def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
@@ -89,9 +119,27 @@ def get_smart_schema_context(
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
 
     retrieved_tables = []
+    valid_schema_columns = set()
     golden_query_cols = set()
 
-    # Query Golden Query collection directly to harvest referenced SQL columns
+    # 1a. Build retrieved_tables and collect all valid column names first
+    for point in retrieved_points:
+        payload = point.get("payload", {})
+        point_score = point.get("score")
+        raw_yaml_str = payload.get("raw_yaml")
+
+        if raw_yaml_str:
+            parsed_table = yaml.safe_load(raw_yaml_str)
+            if point_score is not None:
+                parsed_table["score"] = round(point_score, 4)
+            retrieved_tables.append(parsed_table)
+            
+            # Populate valid columns for filtering
+            for col in parsed_table.get("columns", []):
+                if "name" in col:
+                    valid_schema_columns.add(str(col["name"]).lower())
+
+    # 1b. Query Golden Query collection directly to harvest referenced SQL columns
     target_collections = [golden_collection, "bni_golden_queries", "golden_queries"]
     for g_col in dict.fromkeys(target_collections):
         try:
@@ -108,28 +156,19 @@ def get_smart_schema_context(
                     for val in g_payload.values():
                         val_str = str(val)
                         if any(kw in val_str.upper() for kw in ["SELECT", "FROM", "WHERE"]):
-                            golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', val_str.lower()))
+                            golden_query_cols.update(extract_sql_columns(val_str, valid_schema_columns))
                 if golden_query_cols:
                     break
         except Exception:
             continue
 
+    # 1c. Scan point payloads for embedded Golden Query SQLs
     for point in retrieved_points:
         payload = point.get("payload", {})
-        point_score = point.get("score")
-        raw_yaml_str = payload.get("raw_yaml")
-
-        # Scan point payloads and raw YAML strings for embedded Golden Query SQLs
         for val in payload.values():
             val_str = str(val)
             if any(kw in val_str.upper() for kw in ["SELECT", "FROM", "WHERE"]):
-                golden_query_cols.update(re.findall(r'\b[a-z_][a-z0-9_]*\b', val_str.lower()))
-
-        if raw_yaml_str:
-            parsed_table = yaml.safe_load(raw_yaml_str)
-            if point_score is not None:
-                parsed_table["score"] = round(point_score, 4)
-            retrieved_tables.append(parsed_table)
+                golden_query_cols.update(extract_sql_columns(val_str, valid_schema_columns))
 
     print(f"🔑 [Schema Safeguard] Extracted Golden Query columns to protect: {sorted(list(golden_query_cols))}")
 
@@ -137,8 +176,12 @@ def get_smart_schema_context(
         error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
         print(f"🚨 {error_msg}")
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
-    # Tokenize user query for keyword matching
-    query_tokens = set(re.findall(r'\w+', user_query.lower()))
+    
+    # Simple word tokenization for user query keyword matching (no regex)
+    clean_query = user_query.lower()
+    for char in ['?', '!', '.', ',', ':', ';']:
+        clean_query = clean_query.replace(char, ' ')
+    query_tokens = set(clean_query.split())
 
     # ==========================================
     # STAGE 2: LEXICAL-BOOSTED PER-TABLE RERANKING
@@ -153,8 +196,13 @@ def get_smart_schema_context(
             c_name = col.get("name", "")
             raw_desc = str(col.get("description", "")).strip()
 
-            # Strip heavy [LLM Context: ...] metadata so enum repetitions do not distort attention
-            clean_desc = re.sub(r'\[LLM Context:.*\]', '', raw_desc, flags=re.DOTALL).strip() or "No description provided."
+            # Clean description for matching
+            clean_desc = raw_desc
+            if "[LLM Context" in clean_desc:
+                clean_desc = clean_desc.split("[LLM Context")[0].strip()
+            if not clean_desc:
+                clean_desc = "No description provided."
+            
             c_type = col.get("type", "")
 
             # Document string evaluated by cross-encoder
@@ -163,7 +211,9 @@ def get_smart_schema_context(
 
             # Count exact token overlaps between query and (Column Name + Clean Description)
             col_search_text = f"{c_name} {clean_desc}".lower()
-            col_tokens = set(re.findall(r'\w+', col_search_text))
+            for char in ['?', '!', '.', ',', ':', ';', '(', ')', '[', ']']:
+                col_search_text = col_search_text.replace(char, ' ')
+            col_tokens = set(col_search_text.split())
             token_matches = len(query_tokens.intersection(col_tokens))
 
             table_mapping.append({

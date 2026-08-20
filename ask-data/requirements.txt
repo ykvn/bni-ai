@@ -63,6 +63,7 @@ uv==0.11.28
 uvicorn==0.52.0
 websockets==15.0.1
 yarl==1.24.2
-sqlparse
-dbt-impala
-dbt-metricflow
+sqlparse==0.5.5
+dbt-impala==1.11.0
+dbt-metricflow==0.13.0
+sqlglot==30.16.0
