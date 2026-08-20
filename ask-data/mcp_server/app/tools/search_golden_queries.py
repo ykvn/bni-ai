@@ -52,7 +52,7 @@ def search_golden_queries(
     user_question: str,
     top_k: int = 5,
     top_n: int = 3,
-    min_relevance_score: float = 0.10
+    min_relevance_score: float = 0.01
 ) -> str:
     """
     Searches the Golden Queries vector database for verified SQL templates matching the user's intent.
