@@ -375,7 +375,7 @@ def get_smart_schema_context(
     top_columns_per_table: int = 10,
     relative_threshold_ratio: float = 0.05,
     absolute_min_score: float = 0.001,
-    global_table_threshold_ratio: float = 0.30
+    global_table_threshold_ratio: float = 0.10
 ) -> str:
     schema_yaml, _ = get_smart_schema_context_with_golden(
         user_query=user_query,
