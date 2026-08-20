@@ -118,9 +118,10 @@ def get_smart_schema_context_with_golden(
     user_query: str,
     top_tables: int = 5,
     top_columns_per_table: int = 10,
-    relative_threshold_ratio: float = 0.05
+    relative_threshold_ratio: float = 0.05,
+    absolute_min_score: float = 0.001
 ) -> tuple[str, str]:
-    """Retrieves schema context and golden queries, returning both as a tuple."""
+    """Retrieves schema context and golden queries, enforcing score floor and descending sort."""
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
@@ -276,7 +277,9 @@ def get_smart_schema_context_with_golden(
             top_table_hits = boosted_hits[:top_columns_per_table]
 
             max_boosted_score = top_table_hits[0]["score"] if top_table_hits else 0.0
-            relative_threshold = max_boosted_score * relative_threshold_ratio
+            
+            # Enforce score floor to prevent micro-scores on off-topic tables
+            relative_threshold = max(max_boosted_score * relative_threshold_ratio, absolute_min_score)
 
             for col_data in top_table_hits:
                 if col_data["score"] >= relative_threshold:
@@ -303,7 +306,7 @@ def get_smart_schema_context_with_golden(
                 c_name = col.get("name", "")
                 c_desc = str(col.get("description", ""))
 
-                # 1. Column passed per-table relative thresholding
+                # 1. Column passed per-table relative thresholding (and absolute min score floor)
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
@@ -336,13 +339,15 @@ def get_smart_schema_context(
     user_query: str,
     top_tables: int = 5,
     top_columns_per_table: int = 10,
-    relative_threshold_ratio: float = 0.05
+    relative_threshold_ratio: float = 0.05,
+    absolute_min_score: float = 0.001
 ) -> str:
     schema_yaml, _ = get_smart_schema_context_with_golden(
         user_query=user_query,
         top_tables=top_tables,
         top_columns_per_table=top_columns_per_table,
-        relative_threshold_ratio=relative_threshold_ratio
+        relative_threshold_ratio=relative_threshold_ratio,
+        absolute_min_score=absolute_min_score
     )
     return schema_yaml
 
