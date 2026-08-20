@@ -16,11 +16,11 @@ tables:
       - name: cif_key
         type: "bigint"
         references: "dm_customer.customer_icons.cif_key"
-        description: "CIF Key nasabah (ID Nasabah)"
+        description: "CIF Key Nasabah (ID Nasabah)"
       - name: account_number
         type: "bigint"
         references: "dm_funding.funding.account_number; dm_lending.lending.account_number"
-        description: "No rekening Nasabah"
+        description: "Nomor Rekening"
       - name: issuer_bank_name
         type: "varchar(100)"
         description: "Bank Pengirim"
@@ -53,7 +53,7 @@ tables:
         description: "No Jurnal Transaksi"
       - name: amount
         type: "decimal(22,2)"
-        description: "Nilai Transaksi / Amount"
+        description: "Nilai Transaksi"
       - name: channel
         type: "string"
         description: "Channel Transaksi [LLM Context: Mode: STATIC_ENUM | Value Mappings: [API - Transaksi API; ACQUIRING - Transaksi Acquiring; SPAN - Transaksi SPAN; WONDR (Synonyms: Wonder) - Transaksi via Wonder / WONDR; TELLER - Transaksi via Teller; SMS - Transaksi via SMS; OTHERS - Transaksi lainnya; BOP - Transaksi BOP; AUTODEBET - Transaksi via Autodebet; EDC_NON_BNI - Transaksi via EDC Non BNI (EDC Bank Lain); NEW_MOB - Transaksi New MOB; REMITTANCE - Transaksi Remittance; AGEN_TRX - Transaksi via Agen; BNIDIRECT - Transaksi via BNI Direct; NON API - Transaksi Non API; ATM - Transaksi via ATM]]"
@@ -97,10 +97,10 @@ tables:
       - name: target_account_number
         type: "bigint"
         references: "dm_funding.funding.account_number; dm_lending.lending.account_number"
-        description: "Nomor Rekening Penerima"
+        description: "No Rek Penerima"
       - name: destination_bankname
         type: "varchar(50)"
-        description: "Nama Bank Penerima / Nama Bank Tujuan"
+        description: "Bank Penerima"
       - name: destination_name
         type: "varchar(50)"
         description: "Nama Penerima"
@@ -129,6 +129,9 @@ tables:
   - name: dm_customer.customer_icons
     description: "Table datamart informasi nasabah, table master nasabah berisi informasi yang dibutuhkan terkait nasabah"
     columns:
+      - name: as_of_date
+        type: "date"
+        description: "Tanggal snapshot customer, digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: mdm_id
         type: "varchar(100)"
         description: "MDM ID"
@@ -141,7 +144,7 @@ tables:
         description: "Source Data"
       - name: customer_name
         type: "varchar(100)"
-        description: "Nama Nasabah"
+        description: "Nama Lengkap"
       - name: company_name
         type: "string"
         description: "Nama Perusahaan"
@@ -204,22 +207,22 @@ tables:
         description: "Flag Emerald"
       - name: cust_sex_code
         type: "varchar(100)"
-        description: "Kode Kelamin Nasabah"
+        description: "Kode Kelamin"
       - name: cust_birth_place
         type: "varchar(100)"
-        description: "Tempat Lahir Nasabah"
+        description: "Tempat Lahir"
       - name: cust_birth_date
         type: "date"
-        description: "Tanggal Lahir Nasabah"
+        description: "Tanggal Lahir"
       - name: cust_age
         type: "decimal(4,2)"
-        description: "Umur Nasabah"
+        description: "Umur"
       - name: cust_religion
         type: "varchar(100)"
-        description: "Agama Nasabah"
+        description: "Agama"
       - name: citizen_country_code
         type: "varchar(100)"
-        description: "Kode Negara Nasabah"
+        description: "Kode Negara"
       - name: resident_country_code
         type: "varchar(100)"
         description: "Kode Domisili"
@@ -228,7 +231,7 @@ tables:
         description: "Type ID"
       - name: cust_id_number
         type: "varchar(100)"
-        description: "Nomor KTP Nasabah"
+        description: "Nomor KTP / Kartu Tanda Penduduk"
       - name: cust_id_issue_date
         type: "date"
         description: "Tanggal Pengeluaran KTP"
@@ -243,19 +246,19 @@ tables:
         description: "Nama Gadis Ibu Kandung"
       - name: cust_segment_cif
         type: "varchar(100)"
-        description: "Segment Nasabah"
+        description: "Segment"
       - name: cust_marital_code
         type: "varchar(100)"
-        description: "Kode Menikah Nasabah"
+        description: "Kode Menikah"
       - name: cust_education
         type: "varchar(100)"
-        description: "Edukasi Nasabah"
+        description: "Edukasi / Education"
       - name: cust_hobby
         type: "varchar(100)"
-        description: "Hobby Nasabah"
+        description: "Hobby / Hobi"
       - name: cust_email
         type: "varchar(100)"
-        description: "Email Nasabah"
+        description: "Email"
       - name: phone_no_res
         type: "varchar(100)"
         description: ""
@@ -264,7 +267,7 @@ tables:
         description: ""
       - name: fax_no
         type: "varchar(100)"
-        description: "No Fax Nasabah"
+        description: "Nomor Fax"
       - name: hp_no_ktp
         type: "varchar(100)"
         description: ""
@@ -276,37 +279,37 @@ tables:
         description: ""
       - name: home_add_street
         type: "varchar(100)"
-        description: "Alamat Nasabah (Jalan)"
+        description: "Alamat (Jalan)"
       - name: home_add_rtrw
         type: "varchar(100)"
-        description: "Alamat Nasabah (RT/RW)"
+        description: "Alamat (RT/RW)"
       - name: home_add_kelurahan
         type: "varchar(100)"
-        description: "Alamat Nasabah (Keluarahan)"
+        description: "Alamat (Keluarahan)"
       - name: home_add_kecamatan
         type: "varchar(100)"
-        description: "Alamat Nasabah (Kecamatan)"
+        description: "Alamat (Kecamatan)"
       - name: home_postcode
         type: "varchar(100)"
-        description: "Kode Pos Nasabah"
+        description: "Kode Pos"
       - name: home_city
         type: "varchar(100)"
-        description: "Kota Nasabah"
+        description: "Kota"
       - name: office_address_1
         type: "varchar(100)"
-        description: "Alamat Kantor 1 Nasabah"
+        description: "Alamat Kantor 1"
       - name: office_address_2
         type: "varchar(100)"
-        description: "Alamat Kantor 2 Nasabah"
+        description: "Alamat Kantor 2"
       - name: office_postcode
         type: "varchar(100)"
         description: "Kode Pos Kantor"
       - name: occupation
         type: "varchar(100)"
-        description: "Pekerjaan Nasabah"
+        description: "Pekerjaan"
       - name: working_place
         type: "varchar(100)"
-        description: "Tempat Bekerja Nasabah"
+        description: "Tempat Bekerja"
       - name: businessman_flag
         type: "varchar(100)"
         description: "Flag Pembisnis"
@@ -342,85 +345,85 @@ tables:
         description: ""
       - name: segment_div_owner
         type: "varchar(100)"
-        description: "Segment Nasabah ( Divisi Pemegang Nasabah)"
+        description: "Segment Div Owner"
       - name: sub_segment
         type: "varchar(100)"
-        description: "Sub Segment Nasabah"
+        description: "Sub Segment"
       - name: dir_owner
         type: "varchar(100)"
-        description: "Dir Owner Nasabah"
+        description: "Dir Owner"
       - name: segment
         type: "varchar(100)"
-        description: "Nasabah"
+        description: "Segment"
       - name: sentra_code
         type: "varchar(100)"
-        description: "Sentra Code Nasabah"
+        description: "Sentra Code"
       - name: channel_type
         type: "varchar(100)"
-        description: "Channel Type Nasabah"
+        description: "Channel Type / Tipe Channel"
       - name: segment_maverick
         type: "varchar(100)"
-        description: "Segment Maverick Nasabah"
+        description: "Segment Maverick"
       - name: ntb_etb_flag
         type: "varchar(100)"
-        description: "Ntb Nasabah ( Etbisi Pemegang Nasabah)"
+        description: "Ntb / Etb"
       - name: rm_dana_code
         type: "varchar(100)"
-        description: "Rm Nasabah ( Danaisi Pemegang Nasabah)"
+        description: "Rm (Dana)"
       - name: rm_kredit_code
         type: "varchar(100)"
-        description: "Rm Nasabah ( Kreditisi Pemegang Nasabah)"
+        description: "Rm (Kredit)"
       - name: relation_with_bank
         type: "varchar(100)"
-        description: "Relation Nasabah ( Withisi Pemegang Nasabah)"
+        description: "Relation dengan Bank"
       - name: bi_owner_code
         type: "varchar(100)"
-        description: "Bi Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Kode BI Owner"
       - name: corp_group_code
         type: "varchar(100)"
-        description: "Corp Nasabah ( Groupisi Pemegang Nasabah)"
+        description: "Kode Corp (Group)"
       - name: cif_rm_code
         type: "varchar(100)"
-        description: "Cif Nasabah ( Rmisi Pemegang Nasabah)"
+        description: "CIF RM"
       - name: terrorism_related_flag
         type: "varchar(100)"
-        description: "Terrorism Nasabah ( Relatedisi Pemegang Nasabah)"
+        description: "Penanda Terrorism (Related)"
       - name: campaign_flag
         type: "varchar(100)"
-        description: "Campaign Flag Nasabah"
+        description: "Campaign Flag"
       - name: share_data_flag
         type: "varchar(100)"
-        description: "Share Nasabah ( Dataisi Pemegang Nasabah)"
+        description: "Penanda Share / Sharing data"
       - name: esg_flag
         type: "varchar(100)"
-        description: "Esg Flag Nasabah"
+        description: "Penanda ESG / ESG Flag"
       - name: xpora_location
         type: "varchar(100)"
-        description: "Xpora Location Nasabah"
+        description: "Xpora Location / Lokasi Xpora"
       - name: exporter_type
         type: "varchar(100)"
-        description: "Exporter Type Nasabah"
+        description: "Exporter Type / Tipe exporter"
       - name: cust_user_define_code
         type: "varchar(100)"
-        description: "Cust Nasabah ( User_Defineisi Pemegang Nasabah)"
+        description: "User Define Code / Kode User Definisi"
       - name: sector_economi
         type: "string"
-        description: "Sector Economi Nasabah"
+        description: "Sektor Ekonomi"
       - name: consent_marketing
         type: "varchar(100)"
-        description: "Consent Marketing Nasabah"
+        description: "Marketing Consent"
       - name: consent_data_sharing
         type: "varchar(100)"
-        description: "Consent Nasabah ( Dataisi Pemegang Nasabah)"
+        description: "Data Sharing Consent"
       - name: cust_status_bisnis
         type: "varchar(100)"
-        description: "Cust Nasabah ( Statusisi Pemegang Nasabah)"
+        description: "Status Bisnis"
       - name: consent_marketing_before
         type: "varchar(100)"
-        description: "Consent Nasabah ( Marketingisi Pemegang Nasabah)"
+        description: "Marketing Consent / (Sebelum)"
       - name: consent_data_sharing_before
         type: "varchar(100)"
-        description: "Consent Nasabah ( Data_Sharingisi Pemegang Nasabah)"
+        description: "Data Sharing Consent (Sebelum)"
       - name: channel_consent_name
         type: "varchar(100)"
         description: "Channel Nasabah ( Consentisi Pemegang Nasabah)"
@@ -429,7 +432,7 @@ tables:
         description: "Channel Nasabah ( Consent_Nameisi Pemegang Nasabah)"
       - name: consent_date
         type: "date"
-        description: "Consent Date Nasabah"
+        description: "Consent Date"
 
   - name: dm_funding.funding
     description: "Table datamart informasi funding nasabah, berisi informasi terkait account funding nasabah (tabungan, giro, deposito)"
@@ -437,611 +440,611 @@ tables:
       - name: account_number
         type: "bigint"
         primary_key: true
-        description: "Account Number Nasabah"
+        description: "Account Number / Nomor Akun"
       - name: cif_key
         type: "bigint"
         references: "dm_customer.customer_icons.cif_key"
         description: "Cif Key Nasabah"
       - name: cust_type_code
         type: "varchar(10)"
-        description: "Cust Nasabah ( Typeisi Pemegang Nasabah)"
+        description: "Kode tipe nasabah"
       - name: cust_type
         type: "varchar(100)"
-        description: "Cust Type Nasabah"
+        description: "Tipe nasabah"
       - name: cif_open_region_code
         type: "int"
-        description: "Cif Nasabah ( Open_Regionisi Pemegang Nasabah)"
+        description: "Kode Region pembukaan CIF"
       - name: cif_open_region
         type: "varchar(100)"
-        description: "Cif Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Region pembukaan CIF"
       - name: cif_open_branch_code
         type: "int"
-        description: "Cif Nasabah ( Open_Branchisi Pemegang Nasabah)"
+        description: "Kode cabang pembukaan CIF"
       - name: cif_open_branch
         type: "varchar(100)"
-        description: "Cif Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Cabang pembukaan CIF"
       - name: cif_open_date
         type: "date"
-        description: "Cif Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Tanggal pembukaan CIF"
       - name: nama_nasabah
         type: "varchar(250)"
-        description: "Nama Nasabah Nasabah"
+        description: "Nama Nasabah"
       - name: company_name
         type: "varchar(250)"
-        description: "Company Name Nasabah"
+        description: "Nama Perusahaan"
       - name: flag_cust_bansos
         type: "varchar(25)"
-        description: "Flag Nasabah ( Custisi Pemegang Nasabah)"
+        description: "Flag Bansos"
       - name: flag_cif_burekol
         type: "varchar(25)"
-        description: "Flag Nasabah ( Cifisi Pemegang Nasabah)"
+        description: "Flag Burekol"
       - name: pekerjaan
         type: "varchar(100)"
-        description: "Pekerjaan Nasabah ( Pekisi Pemegang Nasabah)"
+        description: "Pekerjaan"
       - name: segment_div_owner
         type: "varchar(10)"
-        description: "Segment Nasabah ( Divisi Pemegang Nasabah)"
+        description: "Segment Div Owner"
       - name: sub_segment
         type: "varchar(200)"
-        description: "Sub Segment Nasabah"
+        description: "Sub Segment"
       - name: account_type
         type: "varchar(10)"
-        description: "Account Type Nasabah"
+        description: "Account Type / Tipe Akun"
       - name: sub_category
         type: "varchar(10)"
-        description: "Sub Category Nasabah"
+        description: "Sub Category"
       - name: product_name
         type: "varchar(100)"
-        description: "Product Name Nasabah"
+        description: "Nama Produk"
       - name: currency
         type: "varchar(5)"
-        description: "Nasabah"
+        description: "Mata uang"
       - name: currency_type
         type: "varchar(100)"
-        description: "Currency Type Nasabah"
+        description: "Tipe mata uang"
       - name: acct_open_region_code
         type: "int"
-        description: "Acct Nasabah ( Open_Regionisi Pemegang Nasabah)"
+        description: "Account Opening Region Code"
       - name: acct_open_region
         type: "varchar(50)"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Account Opening Region "
       - name: acct_open_branch_code
         type: "int"
-        description: "Acct Nasabah ( Open_Branchisi Pemegang Nasabah)"
+        description: "Account Opening Branch Code"
       - name: acct_open_branch
         type: "varchar(150)"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Account Opening Branch"
       - name: acct_open_subbranch_code
         type: "int"
-        description: "Acct Nasabah ( Open_Subbranchisi Pemegang Nasabah)"
+        description: "Account Opening Subbranch Code"
       - name: acct_open_subbranch
         type: "varchar(100)"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Acoount Opening Subbranch"
       - name: acct_open_date
         type: "date"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah) [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Account Open Date [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: acct_renewal_date
         type: "date"
-        description: "Acct Nasabah ( Renewalisi Pemegang Nasabah)"
+        description: "Account Renewal Date"
       - name: acct_close_date
         type: "date"
-        description: "Acct Nasabah ( Closeisi Pemegang Nasabah)"
+        description: "Tanggal penutupan account"
       - name: gl_account_id
         type: "int"
-        description: "Gl Nasabah ( Accountisi Pemegang Nasabah)"
+        description: "ID Account / Akun GL"
       - name: gl_description
         type: "varchar(150)"
-        description: "Gl Description Nasabah"
+        description: "Deskripsi Account / Akun GL"
       - name: market_segment_cd
         type: "int"
-        description: "Market Nasabah ( Segmentisi Pemegang Nasabah)"
+        description: "Kode Segmen Market"
       - name: account_status
         type: "varchar(10)"
-        description: "Account Status Nasabah"
+        description: "Status Akun"
       - name: account_status_desc
         type: "varchar(50)"
-        description: "Account Nasabah ( Statusisi Pemegang Nasabah)"
+        description: "Deskripsi status akun"
       - name: org_term
         type: "varchar(50)"
-        description: "Org Term Nasabah"
+        description: "Term Organisasi"
       - name: org_term_mult
         type: "varchar(50)"
-        description: "Org Nasabah ( Termisi Pemegang Nasabah)"
+        description: "Term Organisasi"
       - name: maturity_date
         type: "date"
-        description: "Maturity Date Nasabah"
+        description: "Tanggal maturity"
       - name: flag_rate
         type: "string"
-        description: "Flag Rate Nasabah"
+        description: "Flag Rate"
       - name: rate
         type: "decimal(38,5)"
-        description: "Nasabah"
+        description: "Rate"
       - name: cur_book_bal
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Bookisi Pemegang Nasabah)"
+        description: "Balance Saat Ini"
       - name: cur_book_bal_idr
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Balisi Pemegang Nasabah)"
+        description: "Balance IDR Saat ini"
       - name: amortisi_idr
         type: "decimal(38,5)"
-        description: "Amortisi Idr Nasabah"
+        description: "Amortisi dalam IDR"
       - name: ending_balance
         type: "decimal(38,5)"
-        description: "Ending Balance Nasabah"
+        description: "Ending Balance"
       - name: affiliated_acct_no
         type: "bigint"
-        description: "Affiliated Nasabah ( Acctisi Pemegang Nasabah)"
+        description: "Akun Afiliasi"
       - name: open_acct_resn
         type: "varchar(100)"
-        description: "Open Nasabah ( Acctisi Pemegang Nasabah)"
+        description: "Open Account"
       - name: src_of_fund
         type: "varchar(100)"
-        description: "Src Nasabah ( Ofisi Pemegang Nasabah)"
+        description: "Sumber Dana"
       - name: debtor_flag
         type: "varchar(100)"
-        description: "Debtor Flag Nasabah"
+        description: "Flag Debitur"
       - name: flag_acct_burekol
         type: "varchar(100)"
-        description: "Flag Nasabah ( Acctisi Pemegang Nasabah)"
+        description: "Flag Burekol"
       - name: dhe_flag
         type: "varchar(100)"
-        description: "Dhe Flag Nasabah"
+        description: "DHE Flag"
       - name: flag_kategori
         type: "string"
-        description: "Flag Kategori Nasabah"
+        description: "Flag Kategori"
       - name: flag_kategori_acct
         type: "string"
-        description: "Flag Nasabah ( Kategoriisi Pemegang Nasabah)"
+        description: "Flag Kategori Akun "
       - name: flag_product
         type: "varchar(100)"
-        description: "Flag Product Nasabah"
+        description: "Flag Produk"
       - name: group_product
         type: "varchar(100)"
-        description: "Group Product Nasabah"
+        description: "Group Product / Produk Grup"
       - name: bi_owner_code
         type: "varchar(50)"
-        description: "Bi Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Kode BI Owner"
       - name: sentra_code
         type: "int"
-        description: "Sentra Code Nasabah"
+        description: "Sentra Code / Kode Sentra"
       - name: channel_owner_l1
         type: "varchar(50)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Channel Owner L1"
       - name: channel_owner_l2
         type: "varchar(50)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Channel Owner L2"
       - name: channel_owner_l3
         type: "varchar(50)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Channel Owner L3"
       - name: product_div_owner
         type: "varchar(50)"
-        description: "Product Nasabah ( Divisi Pemegang Nasabah)"
+        description: "Produk Divisi Owner "
       - name: area
         type: "varchar(50)"
-        description: "Nasabah"
+        description: "Area"
       - name: cab_sentra
         type: "varchar(50)"
-        description: "Cab Sentra Nasabah"
+        description: "Cabang Sentra"
       - name: avg_book_bal_mtd
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Book_Balisi Pemegang Nasabah)"
+        description: "Rata-rata book balance MTD"
       - name: avg_book_bal_mtd_idr
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Book_Bal_Mtdisi Pemegang Nasabah)"
+        description: "Rata-rata book balance MTD dalam IDR"
       - name: avg_book_bal_ytd
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Book_Balisi Pemegang Nasabah)"
+        description: "Rata-rata book balance YTD"
       - name: avg_book_bal_ytd_idr
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Book_Bal_Ytdisi Pemegang Nasabah)"
+        description: "Rata-rata book balance YTD dalam IDR"
       - name: cur_book_bal_mtd
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Balisi Pemegang Nasabah)"
+        description: "CUR BOOK BAL MTD"
       - name: cur_book_bal_idr_mtd
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)"
+        description: "CUR Book bal idr MTD"
       - name: cur_book_bal_ytd
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Balisi Pemegang Nasabah)"
+        description: "Saldo buku berjalan untuk periode Year-to-Date (YTD)."
       - name: cur_book_bal_idr_ytd
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)"
+        description: "Saldo buku YTD yang telah dikonversi ke Rupiah (IDR)."
       - name: cur_book_bal_yoy
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Balisi Pemegang Nasabah)"
+        description: "Saldo buku untuk periode/perbandingan Year-on-Year (YoY)."
       - name: cur_book_bal_idr_yoy
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Bal_Idrisi Pemegang Nasabah)"
+        description: "Saldo buku YoY yang telah dikonversi ke Rupiah."
       - name: flag_rekening_bansos
         type: "varchar(100)"
-        description: "Flag Nasabah ( Rekeningisi Pemegang Nasabah)"
+        description: "Penanda apakah rekening termasuk rekening bantuan sosial (bansos)."
       - name: flag_tabungan_reguler_berbayar
         type: "varchar(100)"
-        description: "Flag Nasabah ( Tabungan_Regulerisi Pemegang Nasabah)"
+        description: "Penanda apakah rekening termasuk tabungan reguler berbayar."
       - name: source_data
         type: "varchar(100)"
-        description: "Source Data Nasabah"
+        description: "Sumber atau sistem asal data."
       - name: ie_daily
         type: "decimal(38,3)"
-        description: "Ie Daily Nasabah"
+        description: "Interest Expense atau beban bunga harian."
       - name: ie_mtd
         type: "decimal(38,3)"
-        description: "Ie Mtd Nasabah"
+        description: "Interest Expense kumulatif Month-to-Date (MTD)."
       - name: ie_pms_eom
         type: "decimal(38,3)"
-        description: "Ie Nasabah ( Pmsisi Pemegang Nasabah)"
+        description: "Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month (EOM)."
       - name: teller_id
         type: "varchar(10)"
-        description: "Teller Id Nasabah"
+        description: "ID teller yang terkait dengan rekening/transaksi."
       - name: teller_name
         type: "varchar(100)"
-        description: "Teller Name Nasabah"
+        description: "Nama teller yang terkait dengan rekening/transaksi."
       - name: rm_funding_code
         type: "string"
-        description: "Rm Nasabah ( Fundingisi Pemegang Nasabah)"
+        description: "Kode Relationship Manager yang menangani funding."
       - name: rm_funding_name
         type: "varchar(150)"
-        description: "Rm Nasabah ( Fundingisi Pemegang Nasabah)"
+        description: "Nama Relationship Manager yang menangani funding."
       - name: user_define_code
         type: "varchar(100)"
-        description: "User Nasabah ( Defineisi Pemegang Nasabah)"
+        description: "Kode klasifikasi tambahan yang didefinisikan oleh user/sistem."
       - name: product_dpk_l1
         type: "varchar(50)"
-        description: "Product Nasabah ( Dpkisi Pemegang Nasabah)"
+        description: "Klasifikasi produk Dana Pihak Ketiga (DPK) level 1."
       - name: product_dpk_l2
         type: "varchar(50)"
-        description: "Product Nasabah ( Dpkisi Pemegang Nasabah)"
+        description: "Klasifikasi produk DPK level 2."
       - name: product_dpk_l3
         type: "varchar(50)"
-        description: "Product Nasabah ( Dpkisi Pemegang Nasabah)"
+        description: "Klasifikasi produk DPK level 3."
       - name: acct_close_reason
         type: "varchar(100)"
-        description: "Acct Nasabah ( Closeisi Pemegang Nasabah)"
+        description: "Alasan penutupan rekening."
       - name: channel_open_acct
         type: "varchar(100)"
-        description: "Channel Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Channel yang digunakan untuk membuka rekening."
       - name: jenis_badan_hukum
         type: "string"
-        description: "Jenis Nasabah ( Badanisi Pemegang Nasabah)"
+        description: "Jenis atau bentuk badan hukum nasabah/perusahaan."
       - name: ending_balance_mtd
         type: "decimal(38,5)"
-        description: "Ending Nasabah ( Balanceisi Pemegang Nasabah)"
+        description: "Saldo akhir untuk periode Month-to-Date."
       - name: ending_balance_idr_mtd
         type: "decimal(38,5)"
-        description: "Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)"
+        description: "Saldo akhir MTD yang telah dikonversi ke Rupiah."
       - name: ending_balance_ytd
         type: "decimal(38,5)"
-        description: "Ending Nasabah ( Balanceisi Pemegang Nasabah)"
+        description: "Saldo akhir untuk periode Year-to-Date."
       - name: ending_balance_idr_ytd
         type: "decimal(38,5)"
-        description: "Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)"
+        description: "Saldo akhir YTD yang telah dikonversi ke Rupiah."
       - name: ending_balance_yoy
         type: "decimal(38,5)"
-        description: "Ending Nasabah ( Balanceisi Pemegang Nasabah)"
+        description: "Saldo akhir untuk periode/perbandingan Year-on-Year."
       - name: ending_balance_idr_yoy
         type: "decimal(38,5)"
-        description: "Ending Nasabah ( Balance_Idrisi Pemegang Nasabah)"
+        description: "Saldo akhir YoY yang telah dikonversi ke Rupiah."
       - name: saldo_dsra
         type: "decimal(38,5)"
-        description: "Saldo Dsra Nasabah"
+        description: "Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran kewajiban utang."
       - name: saldo_dspa
         type: "decimal(38,5)"
-        description: "Saldo Dspa Nasabah"
+        description: "Saldo DSPA sesuai definisi rekening/internal sistem bank."
       - name: lt_trx_date
         type: "date"
-        description: "Lt Nasabah ( Trxisi Pemegang Nasabah)"
+        description: "Tanggal transaksi terakhir (last transaction date)."
       - name: blocked_balance
         type: "decimal(35,5)"
-        description: "Blocked Balance Nasabah"
+        description: "Nilai saldo yang diblokir atau tidak dapat digunakan."
       - name: channel_owner_mirror
         type: "varchar(20)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Hasil mapping/mirror dari pemilik channel."
 
   - name: dm_lending.lending
     description: "Table datamart informasi lending nasabah, berisi informasi terkait account lending nasabah (loan, pinjaman, kredit)"
     columns:
       - name: as_of_date
         type: "date"
-        description: "As Nasabah ( Ofisi Pemegang Nasabah) [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Tanggal posisi atau snapshot data. [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: mdm_id
         type: "string"
-        description: "Mdm Id Nasabah"
+        description: "ID nasabah/entity pada sistem Master Data Management."
       - name: account_number
         type: "bigint"
         primary_key: true
-        description: "Account Number Nasabah"
+        description: "Nomor rekening."
       - name: cif_key
         type: "bigint"
         references: "dm_customer.customer_icons.cif_key"
-        description: "Cif Key Nasabah"
+        description: "Kunci/identifier Customer Information File (CIF)."
       - name: account_number_affiliated
         type: "bigint"
-        description: "Account Nasabah ( Numberisi Pemegang Nasabah)"
+        description: "Nomor rekening yang memiliki hubungan atau afiliasi dengan rekening utama."
       - name: cust_type_code
         type: "varchar(100)"
-        description: "Cust Nasabah ( Typeisi Pemegang Nasabah)"
+        description: "Kode jenis nasabah."
       - name: cust_type
         type: "varchar(100)"
-        description: "Cust Type Nasabah"
+        description: "Deskripsi jenis nasabah, misalnya individu atau badan usaha."
       - name: cif_open_region_code
         type: "int"
-        description: "Cif Nasabah ( Open_Regionisi Pemegang Nasabah)"
+        description: "Kode region tempat CIF dibuka."
       - name: cif_open_region
         type: "varchar(100)"
-        description: "Cif Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Nama region tempat CIF dibuka."
       - name: cif_open_branch_code
         type: "int"
-        description: "Cif Nasabah ( Open_Branchisi Pemegang Nasabah)"
+        description: "Kode cabang tempat CIF dibuka."
       - name: cif_open_branch
         type: "varchar(100)"
-        description: "Cif Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Nama cabang tempat CIF dibuka."
       - name: cif_open_date
         type: "date"
-        description: "Cif Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Tanggal CIF dibuat atau dibuka."
       - name: nama_nasabah
         type: "varchar(100)"
-        description: "Nama Nasabah Nasabah"
+        description: "Nama nasabah."
       - name: company_name
         type: "varchar(100)"
-        description: "Company Name Nasabah"
+        description: "Nama perusahaan/badan usaha."
       - name: flag_cust_bansos
         type: "string"
-        description: "Flag Nasabah ( Custisi Pemegang Nasabah)"
+        description: "Penanda apakah terkait atau merupakan penerima program bansos."
       - name: flag_cif_burekol
         type: "varchar(100)"
-        description: "Flag Nasabah ( Cifisi Pemegang Nasabah)"
+        description: "Penanda apakah CIF terkait proses/produk Burekol atau buka rekening kolektif."
       - name: pekerjaan
         type: "varchar(100)"
-        description: "Pekerjaan Nasabah ( Pekisi Pemegang Nasabah)"
+        description: "Informasi pekerjaan/profesi."
       - name: segment_div_owner
         type: "varchar(100)"
-        description: "Segment Nasabah ( Divisi Pemegang Nasabah)"
+        description: "Divisi yang menjadi pemilik segmen."
       - name: sub_segment
         type: "varchar(100)"
-        description: "Sub Segment Nasabah"
+        description: "Sub segmen nasabah."
       - name: account_type
         type: "varchar(5)"
-        description: "Account Type Nasabah"
+        description: "Jenis atau tipe rekening."
       - name: sub_category
         type: "varchar(5)"
-        description: "Sub Category Nasabah"
+        description: "Subkategori produk/rekening."
       - name: product_name
         type: "varchar(50)"
-        description: "Product Name Nasabah"
+        description: "Nama produk perbankan."
       - name: currency
         type: "varchar(5)"
-        description: "Nasabah"
+        description: "Mata uang rekening, misalnya IDR, USD, SGD, dan lainnya."
       - name: currency_type
         type: "varchar(30)"
-        description: "Currency Type Nasabah"
+        description: "Jenis/kelompok mata uang, misalnya lokal dan valuta asing."
       - name: acct_open_region_code
         type: "int"
-        description: "Acct Nasabah ( Open_Regionisi Pemegang Nasabah)"
+        description: "Kode region tempat rekening dibuka."
       - name: acct_open_region
         type: "varchar(50)"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Nama region tempat rekening dibuka."
       - name: acct_open_branch_code
         type: "int"
-        description: "Acct Nasabah ( Open_Branchisi Pemegang Nasabah)"
+        description: "Kode cabang tempat rekening dibuka."
       - name: acct_open_branch
         type: "varchar(500)"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Nama cabang tempat rekening dibuka."
       - name: acct_open_subbranch_code
         type: "int"
-        description: "Acct Nasabah ( Open_Subbranchisi Pemegang Nasabah)"
+        description: "Kode sub-branch/unit tempat rekening dibuka."
       - name: acct_open_subbranch
         type: "varchar(50)"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Nama sub-branch/unit tempat rekening dibuka."
       - name: acct_open_date
         type: "date"
-        description: "Acct Nasabah ( Openisi Pemegang Nasabah)"
+        description: "Tanggal pembukaan rekening."
       - name: acct_close_date
         type: "date"
-        description: "Acct Nasabah ( Closeisi Pemegang Nasabah)"
+        description: "Tanggal penutupan rekening."
       - name: gl_account_id
         type: "int"
-        description: "Gl Nasabah ( Accountisi Pemegang Nasabah)"
+        description: "Kode atau ID General Ledger yang terkait dengan rekening."
       - name: gl_description
         type: "varchar(40)"
-        description: "Gl Description Nasabah"
+        description: "Deskripsi akun General Ledger."
       - name: account_status
         type: "varchar(5)"
-        description: "Account Status Nasabah"
+        description: "Kode status rekening."
       - name: account_status_desc
         type: "varchar(30)"
-        description: "Account Nasabah ( Statusisi Pemegang Nasabah)"
+        description: "Deskripsi status rekening, seperti aktif, tutup, dormant, dan sebagainya."
       - name: sentra_name
         type: "varchar(30)"
-        description: "Sentra Name Nasabah"
+        description: "Nama sentra atau unit bisnis yang menangani rekening"
       - name: segmen
         type: "varchar(30)"
-        description: "Nasabah"
+        description: "Segmen bisnis."
       - name: sentra_code
         type: "int"
-        description: "Sentra Code Nasabah"
+        description: "Kode sentra atau unit bisnis."
       - name: remap_sentra
         type: "varchar(30)"
-        description: "Remap Sentra Nasabah"
+        description: "Hasil pemetaan ulang sentra ke struktur/klasifikasi tertentu."
       - name: loan_purpose_cd
         type: "int"
-        description: "Loan Nasabah ( Purposeisi Pemegang Nasabah)"
+        description: "Kode tujuan penggunaan kredit/pinjaman."
       - name: economic_sector_cd
         type: "varchar(10)"
-        description: "Economic Nasabah ( Sectorisi Pemegang Nasabah)"
+        description: "Kode sektor ekonomi."
       - name: pk_akhir_dt
         type: "date"
-        description: "Pk Nasabah ( Akhirisi Pemegang Nasabah)"
+        description: "Tanggal akhir Perjanjian Kredit (PK)."
       - name: pk_awal_dt
         type: "date"
-        description: "Pk Nasabah ( Awalisi Pemegang Nasabah)"
+        description: "Tanggal awal Perjanjian Kredit (PK)."
       - name: lst_mnt_date
         type: "date"
-        description: "Lst Nasabah ( Mntisi Pemegang Nasabah)"
+        description: "Tanggal maintenance/perubahan terakhir sesuai sistem sumber."
       - name: restructuring_cd
         type: "varchar(100)"
-        description: "Restructuring Cd Nasabah"
+        description: "Kode yang menunjukkan status atau jenis restrukturisasi kredit."
       - name: grace_periode_term
         type: "int"
-        description: "Grace Nasabah ( Periodeisi Pemegang Nasabah)"
+        description: "Jangka waktu masa tenggang (grace period) kredit."
       - name: credit_application_no
         type: "varchar(50)"
-        description: "Credit Nasabah ( Applicationisi Pemegang Nasabah)"
+        description: "Nomor aplikasi/pengajuan kredit."
       - name: approve_date
         type: "date"
-        description: "Approve Date Nasabah"
+        description: "Tanggal persetujuan kredit."
       - name: loan_approval_no
         type: "varchar(50)"
-        description: "Loan Nasabah ( Approvalisi Pemegang Nasabah)"
+        description: "Nomor persetujuan kredit."
       - name: funding_type
         type: "varchar(5)"
-        description: "Funding Type Nasabah"
+        description: "Jenis atau kategori sumber dana/funding."
       - name: next_loan_review_date
         type: "date"
-        description: "Next Nasabah ( Loan_Reviewisi Pemegang Nasabah)"
+        description: "Tanggal review kredit berikutnya."
       - name: settlement_date
         type: "date"
-        description: "Settlement Date Nasabah"
+        description: "Tanggal penyelesaian atau pelunasan fasilitas/kewajiban."
       - name: maturity_date
         type: "date"
-        description: "Maturity Date Nasabah"
+        description: "Tanggal jatuh tempo fasilitas kredit/rekening."
       - name: org_term
         type: "int"
-        description: "Org Term Nasabah"
+        description: "Jangka waktu awal/original term fasilitas kredit."
       - name: org_term_mult
         type: "varchar(10)"
-        description: "Org Nasabah ( Termisi Pemegang Nasabah)"
+        description: "Satuan atau multiplier yang digunakan pada original term, misalnya hari/bulan/tahun."
       - name: rm_code
         type: "varchar(100)"
-        description: "Rm Code Nasabah"
+        description: "Kode Relationship Manager."
       - name: loan_principal_idr
         type: "decimal(22,3)"
-        description: "Loan Nasabah ( Principalisi Pemegang Nasabah)"
+        description: "Nilai pokok pinjaman dalam Rupiah."
       - name: baki_debet
         type: "decimal(38,5)"
-        description: "Baki Debet Nasabah"
+        description: "Saldo pokok kredit yang masih terutang/outstanding."
       - name: psak_adj_dma
         type: "decimal(38,5)"
-        description: "Psak Nasabah ( Adjisi Pemegang Nasabah)"
+        description: "Nilai penyesuaian PSAK dengan kategori/komponen DMA sesuai definisi internal."
       - name: psak_adj_acc
         type: "decimal(38,5)"
-        description: "Psak Nasabah ( Adjisi Pemegang Nasabah)"
+        description: "Nilai penyesuaian PSAK dengan kategori/komponen ACC sesuai definisi internal."
       - name: avg_loan_principal_psak_mtd
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)"
+        description: "Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date."
       - name: avg_loan_principal_psak_ytd
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Loan_Principal_Psakisi Pemegang Nasabah)"
+        description: "Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date."
       - name: max_credit
         type: "decimal(38,5)"
-        description: "Max Credit Nasabah"
+        description: "Batas/nilai maksimum kredit yang diberikan."
       - name: commitment_bal
         type: "decimal(38,5)"
-        description: "Commitment Bal Nasabah"
+        description: "Saldo komitmen fasilitas kredit dalam mata uang asli."
       - name: commitment_bal_idr
         type: "decimal(38,5)"
-        description: "Commitment Nasabah ( Balisi Pemegang Nasabah)"
+        description: "Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah."
       - name: org_credit_limit
         type: "decimal(38,5)"
-        description: "Org Nasabah ( Creditisi Pemegang Nasabah)"
+        description: "Limit kredit awal/original credit limit."
       - name: add_credit_limit
         type: "decimal(38,5)"
-        description: "Add Nasabah ( Creditisi Pemegang Nasabah)"
+        description: "Tambahan limit kredit yang diberikan."
       - name: avg_loan_principal_ytd
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)"
+        description: "Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli."
       - name: avg_loan_principal_ytd_idr
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Loan_Principal_Ytdisi Pemegang Nasabah)"
+        description: "Rata-rata saldo pokok pinjaman YTD dalam Rupiah."
       - name: avg_loan_principal_mtd
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Loan_Principalisi Pemegang Nasabah)"
+        description: "Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli."
       - name: avg_loan_principal_mtd_idr
         type: "decimal(38,5)"
-        description: "Avg Nasabah ( Loan_Principal_Mtdisi Pemegang Nasabah)"
+        description: "Rata-rata saldo pokok pinjaman MTD dalam Rupiah."
       - name: angsuran_bunga
         type: "decimal(38,5)"
-        description: "Angsuran Bunga Nasabah"
+        description: "Nilai angsuran atau pembayaran bunga."
       - name: angsuran_pokok
         type: "decimal(38,5)"
-        description: "Angsuran Pokok Nasabah"
+        description: "Nilai angsuran atau pembayaran pokok pinjaman."
       - name: del_cur_days
         type: "int"
-        description: "Del Nasabah ( Curisi Pemegang Nasabah)"
+        description: "Jumlah hari keterlambatan/delinquency saat ini."
       - name: last_arrears_date
         type: "date"
-        description: "Last Nasabah ( Arrearsisi Pemegang Nasabah)"
+        description: "Tanggal tunggakan terakhir."
       - name: worst_collectibility
         type: "varchar(5)"
-        description: "Worst Collectibility Nasabah"
+        description: "Kolektibilitas terburuk yang pernah tercatat pada periode tertentu."
       - name: collectibility
         type: "varchar(5)"
-        description: "Collectibility Nasabah ( Bilisi Pemegang Nasabah)"
+        description: "Status kolektibilitas kredit saat ini."
       - name: written_off_date
         type: "date"
-        description: "Written Nasabah ( Offisi Pemegang Nasabah)"
+        description: "Tanggal kredit dihapus buku/write-off."
       - name: product_div_owner
         type: "varchar(30)"
-        description: "Product Nasabah ( Divisi Pemegang Nasabah)"
+        description: "Divisi yang menjadi pemilik produk."
       - name: business_div_owner
         type: "varchar(30)"
-        description: "Business Nasabah ( Divisi Pemegang Nasabah)"
+        description: "Divisi bisnis yang menjadi pemilik/penanggung jawab account."
       - name: output_l1
         type: "varchar(30)"
-        description: "Output L Nasabah"
+        description: "Hasil klasifikasi/output bisnis level 1."
       - name: output_l2
         type: "varchar(30)"
-        description: "Output L Nasabah"
+        description: "Hasil klasifikasi/output bisnis level 2."
       - name: output_l3
         type: "varchar(30)"
-        description: "Output L Nasabah"
+        description: "Hasil klasifikasi/output bisnis level 3."
       - name: lst_worst_coll
         type: "int"
-        description: "Lst Nasabah ( Worstisi Pemegang Nasabah)"
+        description: "Kolektibilitas terburuk terakhir yang tercatat."
       - name: cur_book_bal_idr
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Book_Balisi Pemegang Nasabah)"
+        description: "Saldo buku berjalan/current book balance dalam Rupiah."
       - name: cur_book_bal
         type: "decimal(38,5)"
-        description: "Cur Nasabah ( Bookisi Pemegang Nasabah)"
+        description: "Saldo buku berjalan/current book balance dalam mata uang asli."
       - name: outstanding
         type: "decimal(38,5)"
-        description: "Outstanding Nasabah ( Ingisi Pemegang Nasabah)"
+        description: "Nilai outstanding/exposure yang masih berjalan."
       - name: channel_owner_l1
         type: "varchar(40)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Klasifikasi pemilik channel level 1."
       - name: channel_owner_l2
         type: "varchar(40)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Klasifikasi pemilik channel level 2."
       - name: channel_owner_l3
         type: "varchar(40)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Klasifikasi pemilik channel level 3."
       - name: channel_owner_mirror
         type: "varchar(40)"
-        description: "Channel Nasabah ( Ownerisi Pemegang Nasabah)"
+        description: "Hasil mapping/mirror pemilik channel."
       - name: channel_type_mirror
         type: "varchar(40)"
-        description: "Channel Nasabah ( Typeisi Pemegang Nasabah)"
+        description: "Hasil mapping/mirror jenis channel."
       - name: dspa_balance
         type: "decimal(31,5)"
-        description: "Dspa Balance Nasabah"
+        description: "Saldo DSPA sesuai definisi internal bank."
       - name: dsra_balance
         type: "decimal(31,5)"
-        description: "Dsra Balance Nasabah"
+        description: "Saldo Debt Service Reserve Account (DSRA)."
       - name: loan_purpose_desc
         type: "string"
-        description: "Loan Nasabah ( Purposeisi Pemegang Nasabah)"
+        description: "Deskripsi tujuan penggunaan kredit."
       - name: market_segment_desc
         type: "string"
-        description: "Market Nasabah ( Segmentisi Pemegang Nasabah)"
+        description: "Deskripsi market segment."
       - name: ii_daily
         type: "decimal(38,2)"
-        description: "Ii Daily Nasabah"
+        description: "Interest Income atau pendapatan bunga harian."
       - name: ii_monthly
         type: "decimal(35,2)"
-        description: "Ii Monthly Nasabah"
+        description: "Interest Income atau pendapatan bunga bulanan."
       - name: short_name
         type: "char(60)"
-        description: "Short Name Nasabah"
+        description: "Nama singkat."
 
   - name: prd_db_sbx_ind.mapping_group_whs
     description: "Table datamart informasi group nasabah yang dikelompokkan berdasarkan CIF key"
@@ -1049,13 +1052,13 @@ tables:
       - name: cif_principal
         type: "bigint"
         references: "dm_customer.customer_icons.cif_key"
-        description: "Cif Principal Nasabah"
+        description: "CIF utama/principal apabila nasabah memiliki beberapa CIF terkait."
       - name: group_principal
         type: "string"
-        description: "Group Principal Nasabah"
+        description: "Nasabah/perusahaan utama dalam satu kelompok usaha atau grup."
       - name: segment_div_owner
         type: "varchar(10)"
-        description: "Segment Nasabah ( Divisi Pemegang Nasabah)"
+        description: "Divisi pemilik segmen."
       - name: as_of_date
         type: "date"
-        description: "As Nasabah ( Ofisi Pemegang Nasabah) [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Tanggal posisi/snapshot data. [LLM Context: DEFAULT_TIME_AXIS: True]"
