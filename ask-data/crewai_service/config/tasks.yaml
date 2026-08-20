@@ -81,6 +81,10 @@ mf_draft_payload_task:
     7. YEARLY FILTERS: For full year questions (e.g., '2026'), use the `__year` suffix set to Jan 1st of that year:
        "<default_time_dimension>__year = 'YYYY-01-01'"
     8. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month'.
+    9. TOP N & RANKING QUERIES: For questions asking for 'top N', 'biggest', or 'highest':
+       - You MUST group by an entity or dimension (e.g., 'customer_icons_cif_key' or 'funding_account_number').
+       - Include an 'order_by' array in your JSON payload with a '-' prefix for descending order (e.g., ["-trxchannel_amount_sum_metric"]).
+       - Include a 'limit' integer in your JSON payload matching the requested top count (e.g., 10).
   expected_output: "A structured JSON MetricFlow query payload object, OR the refusal line 'I am sorry, I don't have this information on my database.' when the AVAILABLE CATALOG section has no matching metrics/dimensions."
 
 mf_execute_task:

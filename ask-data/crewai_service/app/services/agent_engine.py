@@ -134,15 +134,23 @@ os.environ["OPENAI_MODEL_NAME"] = f"openai/{os.environ.get('CML_MODEL_NAME', '')
 class MetricFlowQueryPayload(BaseModel):
     metrics: List[str] = Field(
         ..., 
-        description="List of metric names to query, e.g. ['cai_savings_balance_sum_metric']"
+        description="List of metric names to query, e.g. ['trxchannel_amount_sum_metric']"
     )
     group_by: List[str] = Field(
         default_factory=list, 
-        description="List of entity dimensions using double-underscore notation, e.g. ['customer_id__bank_name']"
+        description="List of entity dimensions using double-underscore notation, e.g. ['customer_icons_cif_key']"
     )
     where: Optional[str] = Field(
         default=None, 
-        description="Optional MetricFlow where filter string, e.g. 'metric_time__year = 2025'"
+        description="Optional MetricFlow where filter string"
+    )
+    order_by: Optional[List[str]] = Field(
+        default_factory=list,
+        description="Optional sort order. Use '-' prefix for descending, e.g. ['-trxchannel_amount_sum_metric']"
+    )
+    limit: Optional[int] = Field(
+        default=None,
+        description="Optional limit for Top N queries, e.g. 10"
     )
 
 # --- 2. LLM PROFILES ---
