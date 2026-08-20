@@ -139,6 +139,12 @@ def get_smart_schema_context_with_golden(
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     schema_collection = os.getenv("SCHEMA_COLLECTION", "bni_schema_definitions")
 
+    # Clean query tokens (replace underscores, slashes, dashes, ignore words <= 2 chars)
+    clean_query = user_query.lower()
+    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
+        clean_query = clean_query.replace(char, ' ')
+    query_tokens = set(word for word in clean_query.split() if len(word) > 2)
+
     # ==========================================
     # STAGE 1: VECTOR SEARCH (Find Tables & Golden Queries)
     # ==========================================
@@ -219,11 +225,6 @@ def get_smart_schema_context_with_golden(
             {"database_type": "Cloudera Impala", "tables": [], "error": f"{NO_RELEVANT_SCHEMA}: {error_msg}"},
             sort_keys=False
         ), golden_context
-    
-    clean_query = user_query.lower()
-    for char in ['?', '!', '.', ',', ':', ';']:
-        clean_query = clean_query.replace(char, ' ')
-    query_tokens = set(clean_query.split())
 
     # ==========================================
     # STAGE 2: LEXICAL-BOOSTED PER-TABLE RERANKING
@@ -249,10 +250,11 @@ def get_smart_schema_context_with_golden(
             doc_string = f"Column Name: {c_name} | Description: {clean_desc} | Table: {t_name} | Type: {c_type}"
             table_docs.append(doc_string)
 
-            col_search_text = f"{c_name} {clean_desc}".lower()
-            for char in ['?', '!', '.', ',', ':', ';', '(', ')', '[', ']']:
+            # Lexical token matching (split by underscore, slash, dash, ignore short words)
+            col_search_text = doc_string.lower()
+            for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
                 col_search_text = col_search_text.replace(char, ' ')
-            col_tokens = set(col_search_text.split())
+            col_tokens = set(word for word in col_search_text.split() if len(word) > 2)
             token_matches = len(query_tokens.intersection(col_tokens))
 
             table_mapping.append({
@@ -281,8 +283,9 @@ def get_smart_schema_context_with_golden(
 
                 if idx is not None:
                     matches = table_mapping[idx]["matches"]
-                    match_multiplier = 1.0 + (0.5 * matches) if matches > 0 else 1.0
-                    boosted_score = raw_score * match_multiplier
+                    
+                    # ADDITIVE BOOST: +0.5 absolute points per exact keyword match
+                    boosted_score = raw_score + (0.5 * matches)
 
                     hit_data = table_mapping[idx].copy()
                     hit_data["score"] = boosted_score
@@ -310,7 +313,7 @@ def get_smart_schema_context_with_golden(
     # 1. Compute global max score across all candidate column hits
     global_max_score = max([item['score'] for item in winning_columns], default=0.0)
 
-    # 2. Filter tables that meet at least 15% of the global max score
+    # 2. Filter tables that meet at least 30% of the global max score
     strong_table_names = {
         item['table'] for item in winning_columns 
         if item['score'] >= (global_max_score * global_table_threshold_ratio)
@@ -351,10 +354,6 @@ def get_smart_schema_context_with_golden(
     # ORDER BY: Sort tables by vector score DESC
     pruned_tables.sort(key=lambda tbl: tbl.get("score", 0.0) or 0.0, reverse=True)
 
-    # No-relevant-schema guard: if every candidate table was pruned away (all
-    # below the global relevance threshold with no golden-query protection), the
-    # final schema would be `tables: []`. Return an explicit marker instead so
-    # the agent layer can respond with the polite "no information" message.
     if not pruned_tables:
         print("🚫 [NO_RELEVANT_SCHEMA] No relevant tables survived schema pruning.")
         return yaml.dump(
@@ -376,7 +375,7 @@ def get_smart_schema_context(
     top_columns_per_table: int = 10,
     relative_threshold_ratio: float = 0.05,
     absolute_min_score: float = 0.001,
-    global_table_threshold_ratio: float = 0.15
+    global_table_threshold_ratio: float = 0.30
 ) -> str:
     schema_yaml, _ = get_smart_schema_context_with_golden(
         user_query=user_query,
@@ -407,8 +406,6 @@ def search_database_schema(user_question: str) -> str:
     raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_query=user_question)
     raw_schema_context = clean_schema_yaml(raw_schema_context)
 
-    # If no tables matched the question, send a friendly refusal back to the
-    # front end instead of a bare `tables: []` YAML block.
     if _has_no_tables(raw_schema_context):
         print(f"🚫 [search_database_schema] No matching schema for query: '{user_question}'. Returning refusal.")
         return NO_SCHEMA_RESPONSE
