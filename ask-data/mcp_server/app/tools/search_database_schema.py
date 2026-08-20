@@ -131,7 +131,7 @@ def get_smart_schema_context_with_golden(
     top_columns_per_table: int = 10,
     relative_threshold_ratio: float = 0.05,
     absolute_min_score: float = 0.001,
-    global_table_threshold_ratio: float = 0.30
+    global_table_threshold_ratio: float = 0.10
 ) -> tuple[str, str]:
     """Retrieves schema context and golden queries with per-column and global per-table pruning."""
     cml_token = get_cml_token()
