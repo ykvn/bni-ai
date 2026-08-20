@@ -239,20 +239,16 @@ def get_smart_schema_context_with_golden(
             c_name = col.get("name", "")
             raw_desc = str(col.get("description", "")).strip()
 
-            clean_desc = raw_desc
-            if "[LLM Context" in clean_desc:
-                clean_desc = clean_desc.split("[LLM Context")[0].strip()
-            if not clean_desc:
-                clean_desc = "No description provided."
-            
+            # Preserve full raw description (including ENUM Value Mappings) for reranking & lexical search
+            clean_desc = raw_desc if raw_desc else "No description provided."
             c_type = col.get("type", "")
 
             doc_string = f"Column Name: {c_name} | Description: {clean_desc} | Table: {t_name} | Type: {c_type}"
             table_docs.append(doc_string)
 
-            # Lexical token matching (split by underscore, slash, dash, ignore short words)
+            # Lexical token matching over full description including ENUM mappings
             col_search_text = doc_string.lower()
-            for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
+            for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', '|']:
                 col_search_text = col_search_text.replace(char, ' ')
             col_tokens = set(word for word in col_search_text.split() if len(word) > 2)
             token_matches = len(query_tokens.intersection(col_tokens))
