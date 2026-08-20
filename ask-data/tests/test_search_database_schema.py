@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-# Add ask-data root and mcp_server directory to Python path
+# Set up ask-data root and mcp_server paths
 _TESTS_DIR = Path(__file__).resolve().parent
 _ASK_DATA_ROOT = _TESTS_DIR.parent
 _MCP_SERVER_DIR = _ASK_DATA_ROOT / "mcp_server"
@@ -11,11 +11,18 @@ for path in [_ASK_DATA_ROOT, _MCP_SERVER_DIR]:
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-# Import search_database_schema from mcp_server/app/tools
+# Bootstrap environment variables from ask-data/.env into os.environ
 try:
-    from app.tools.search_database_schema import search_database_schema
-except ImportError:
-    from mcp_server.app.tools.search_database_schema import search_database_schema
+    from shared.entry_utils import bootstrap_service
+    bootstrap_service("test_runner")
+except Exception:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(_ASK_DATA_ROOT / ".env")
+    except Exception:
+        pass
+
+from app.tools.search_database_schema import search_database_schema
 
 
 def run_schema_test(user_question: str):
