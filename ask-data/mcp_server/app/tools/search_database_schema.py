@@ -1,18 +1,20 @@
 import os
 import re
 import yaml
-import sqlglot
-from sqlglot import exp
+
+try:
+    import sqlglot
+    from sqlglot import exp
+    SQLGLOT_AVAILABLE = True
+except ImportError:
+    SQLGLOT_AVAILABLE = False
+    print("⚠️ sqlglot not installed. Falling back to basic word intersection for Golden Query column extraction.")
 
 from shared.cml_auth import get_cml_token
 from shared.embed_client import get_embedding_vector, rerank_documents
 from shared.qdrant_client import QdrantClient
 
 from app.tools.search_golden_queries import search_golden_queries
-
-# sqlglot is imported at module level above. If that import succeeded, parsing is
-# available; this flag simply records that fact so extract_sql_columns can branch.
-SQLGLOT_AVAILABLE = True
 
 
 def clean_schema_yaml(raw_yaml_str: str) -> str:
@@ -58,31 +60,19 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
 
 
 def extract_sql_columns(text: str, valid_columns: set) -> set:
-    """Extracts the column names referenced in Golden Query SQL using sqlglot.
-
-    Falls back to a strict token-vs-schema intersection whenever sqlglot parsing
-    fails (e.g. the text is not pure SQL). Only columns that exist in the retrieved
-    schema (``valid_columns``) are returned, lowercased.
-    """
+    """Extracts column names using sqlglot, falling back to strict set intersection."""
     extracted = set()
-
+    text_lower = text.lower()
+    
     if SQLGLOT_AVAILABLE:
         try:
-            # Golden Query context may embed multiple SQL statements, each prefixed
-            # by a "-- Example N ... / SQL:" header. Split on the "SQL:" marker so
-            # each statement is parsed independently; if there is no such marker,
-            # treat the whole string as a single SQL candidate.
             if "SQL:" in text:
                 sql_blocks = re.split(r"(?is)\s*SQL:\s*", text)[1:]
             else:
                 sql_blocks = [text]
 
             for block in sql_blocks:
-                # Drop trailing commentary (next example header, intent labels, etc.)
                 block = re.split(r"(?is)\s*--\s*Example\b", block)[0]
-
-                # Parse the AST and find every Column node (handles qualified,
-                # aliased, and aggregate-referenced columns via col.name).
                 for stmt in sqlglot.parse(block, read="impala"):
                     if stmt is None:
                         continue
@@ -95,11 +85,10 @@ def extract_sql_columns(text: str, valid_columns: set) -> set:
         except Exception:
             pass  # Fallback if parsing fails
 
-    # Fallback: no regex. Replace separators, split to words, intersect valid schema.
-    text_lower = text.lower()
+    # Fallback: No regex. Replace punctuation, split to words, intersect with valid schema.
     for char in ['(', ')', ',', '=', '<', '>', '!', "'", '"', ';', ':', '?', '\n', '\t']:
         text_lower = text_lower.replace(char, ' ')
-
+        
     words = set(text_lower.split())
     return words.intersection(valid_columns)
 
@@ -157,7 +146,6 @@ def get_smart_schema_context(
                 parsed_table["score"] = round(point_score, 4)
             retrieved_tables.append(parsed_table)
             
-            # Populate valid columns for filtering
             for col in parsed_table.get("columns", []):
                 if "name" in col:
                     valid_schema_columns.add(str(col["name"]).lower())
@@ -185,7 +173,6 @@ def get_smart_schema_context(
         print(f"🚨 {error_msg}")
         return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
     
-    # Simple word tokenization for user query keyword matching (no regex)
     clean_query = user_query.lower()
     for char in ['?', '!', '.', ',', ':', ';']:
         clean_query = clean_query.replace(char, ' ')
@@ -204,7 +191,6 @@ def get_smart_schema_context(
             c_name = col.get("name", "")
             raw_desc = str(col.get("description", "")).strip()
 
-            # Clean description for matching
             clean_desc = raw_desc
             if "[LLM Context" in clean_desc:
                 clean_desc = clean_desc.split("[LLM Context")[0].strip()
@@ -213,11 +199,9 @@ def get_smart_schema_context(
             
             c_type = col.get("type", "")
 
-            # Document string evaluated by cross-encoder
             doc_string = f"Column Name: {c_name} | Description: {clean_desc} | Table: {t_name} | Type: {c_type}"
             table_docs.append(doc_string)
 
-            # Count exact token overlaps between query and (Column Name + Clean Description)
             col_search_text = f"{c_name} {clean_desc}".lower()
             for char in ['?', '!', '.', ',', ':', ';', '(', ')', '[', ']']:
                 col_search_text = col_search_text.replace(char, ' ')
@@ -239,11 +223,10 @@ def get_smart_schema_context(
                 documents=table_docs,
                 engine_url=embed_url,
                 cml_token=cml_token,
-                top_n=len(table_docs),  # Rerank full pool before lexical weighting and top_n filtering
+                top_n=len(table_docs),
                 timeout=15,
             )
 
-            # Apply Lexical Overlap Multiplier to neural scores
             boosted_hits = []
             for hit in rerank_results:
                 raw_score = hit.get("score", hit.get("relevance_score", 0.0))
@@ -251,7 +234,6 @@ def get_smart_schema_context(
 
                 if idx is not None:
                     matches = table_mapping[idx]["matches"]
-                    # Boost score by 50% per matching keyword in column name or description
                     match_multiplier = 1.0 + (0.5 * matches) if matches > 0 else 1.0
                     boosted_score = raw_score * match_multiplier
 
@@ -259,11 +241,9 @@ def get_smart_schema_context(
                     hit_data["score"] = boosted_score
                     boosted_hits.append(hit_data)
 
-            # Sort by boosted score and apply top_n cap per table
             boosted_hits.sort(key=lambda x: x["score"], reverse=True)
             top_table_hits = boosted_hits[:top_columns_per_table]
 
-            # Relative thresholding on boosted scores
             max_boosted_score = top_table_hits[0]["score"] if top_table_hits else 0.0
             relative_threshold = max_boosted_score * relative_threshold_ratio
 
@@ -295,16 +275,22 @@ def get_smart_schema_context(
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
-                # 2. Structural Schema Safeguards (Primary Keys, Foreign Keys, or Default Time Axis)
+                # 2. Structural Schema Safeguards
                 elif (col.get("primary_key") or
                       "references" in col or
                       "DEFAULT_TIME_AXIS: True" in c_desc):
                     mandatory_columns.append(col)
-                # 3. Golden Query Safeguard: Preserve columns referenced in Golden Queries
+                # 3. Golden Query Safeguard
                 elif c_name.lower() in golden_query_cols:
                     mandatory_columns.append(col)
 
+            # ORDER BY: Sort columns by score DESC (unscored safeguard columns sort to bottom with 0.0)
+            mandatory_columns.sort(key=lambda c: c.get("score", 0.0) or 0.0, reverse=True)
+
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
+
+    # ORDER BY: Sort tables by vector score DESC
+    pruned_tables.sort(key=lambda tbl: tbl.get("score", 0.0) or 0.0, reverse=True)
 
     final_schema = {
         "database_type": "Cloudera Impala",
@@ -315,14 +301,9 @@ def get_smart_schema_context(
 
 
 def search_database_schema(user_question: str) -> str:
-    # 1. Fetch pure YAML schema context
     raw_schema_context = get_smart_schema_context(user_query=user_question)
-    
-    # 2. Clean the score fields while it is pure YAML
-    # cleaned_schema = clean_schema_yaml(raw_schema_context)
     cleaned_schema = raw_schema_context
     
-    # 3. Fetch golden queries and append
     try:
         golden_context = search_golden_queries(user_question=user_question)
         if golden_context and "No verified golden queries found" not in golden_context:
