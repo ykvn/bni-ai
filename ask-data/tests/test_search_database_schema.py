@@ -50,7 +50,7 @@ def test_no_schema_detection():
     assert _has_no_tables(markered_schema) is True, "NO_RELEVANT_SCHEMA marker should count as no schema"
     assert _has_no_tables(populated_schema) is False, "populated schema should NOT count as no schema"
     assert "tables: []" not in NO_SCHEMA_RESPONSE, "refusal must not leak an empty tables block"
-    assert "I am sorry, I don't have this information." in NO_SCHEMA_RESPONSE
+    assert "I am sorry, I don't have this information on my database." in NO_SCHEMA_RESPONSE
     assert NO_RELEVANT_SCHEMA in NO_SCHEMA_RESPONSE
 
     print("✅ test_no_schema_detection PASSED")
