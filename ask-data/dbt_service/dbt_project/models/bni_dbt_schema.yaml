@@ -646,71 +646,71 @@ semantic_models:
   - name: customer_icons_mdm_id_count
     expr: mdm_id
     agg: count
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_age_sum
     expr: cust_age
     agg: sum
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_age_average
     expr: cust_age
     agg: average
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_age_min
     expr: cust_age
     agg: min
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_age_max
     expr: cust_age
     agg: max
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_income_sum
     expr: cust_income
     agg: sum
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_income_average
     expr: cust_income
     agg: average
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_income_min
     expr: cust_income
     agg: min
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_income_max
     expr: cust_income
     agg: max
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_rental_income_sum
     expr: cust_rental_income
     agg: sum
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_rental_income_average
     expr: cust_rental_income
     agg: average
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_rental_income_min
     expr: cust_rental_income
     agg: min
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_rental_income_max
     expr: cust_rental_income
     agg: max
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_other_income_sum
     expr: cust_other_income
     agg: sum
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_other_income_average
     expr: cust_other_income
     agg: average
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_other_income_min
     expr: cust_other_income
     agg: min
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
   - name: customer_icons_cust_other_income_max
     expr: cust_other_income
     agg: max
-    agg_time_dimension: cif_open_date
+    agg_time_dimension: as_of_date
 - name: funding
   model: ref('funding')
   entities:

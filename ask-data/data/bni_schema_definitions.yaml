@@ -153,7 +153,7 @@ tables:
         description: "Jenis Entitas Bisnis"
       - name: cif_open_date
         type: "date"
-        description: "Tanggal Pembukaan CIF [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Tanggal Pembukaan CIF"
       - name: cif_open_region_code
         type: "int"
         description: "Region Pembukaan CIF (KODE)"
