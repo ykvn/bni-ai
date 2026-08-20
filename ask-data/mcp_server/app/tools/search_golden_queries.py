@@ -48,10 +48,16 @@ import os
 from app.tools.qdrant_client import search_documents, rerank_documents
 
 
-def search_golden_queries(user_question: str, top_k: int = 5, top_n: int = 3) -> str:
+def search_golden_queries(
+    user_question: str,
+    top_k: int = 5,
+    top_n: int = 3,
+    min_relevance_score: float = 0.50
+) -> str:
     """
     Searches the Golden Queries vector database for verified SQL templates matching the user's intent.
-    Forces Cross-Encoder reranking to evaluate ONLY the 'user_intent' field.
+    Forces Cross-Encoder reranking to evaluate ONLY the 'user_intent' field and enforces
+    a minimum relevance threshold.
     """
     collection_name = os.getenv("GOLDEN_COLLECTION", "bni_golden_queries")
     
@@ -66,7 +72,6 @@ def search_golden_queries(user_question: str, top_k: int = 5, top_n: int = 3) ->
         payload = doc.get("raw_payload", {})
         intent = payload.get("user_intent", "").strip()
         if intent:
-            # Overwrite all document text fields so Cross-Encoder scores purely against intent description
             doc["page_content"] = intent
             doc["text"] = intent
             doc["excerpt"] = intent
@@ -74,9 +79,19 @@ def search_golden_queries(user_question: str, top_k: int = 5, top_n: int = 3) ->
     # 3. Re-score candidates against user_question using ONLY user_intent text
     reranked = rerank_documents(query=user_question, raw_documents=raw_results, top_n=top_n)
 
-    # 4. Format into a clean LLM context block
+    # 4. FILTER BY MINIMUM RELEVANCE SCORE THRESHOLD
+    valid_examples = []
+    for doc in reranked:
+        score = doc.get("rerank_score", doc.get("score", 0))
+        if score >= min_relevance_score:
+            valid_examples.append(doc)
+
+    if not valid_examples:
+        return "No verified golden queries found for this intent."
+
+    # 5. Format into a clean LLM context block
     output = ["### VERIFIED GOLDEN QUERIES (Use as references for SQL syntax) ###\n"]
-    for idx, doc in enumerate(reranked):
+    for idx, doc in enumerate(valid_examples):
         payload = doc.get("raw_payload", {})
         intent = payload.get("user_intent", "Unknown Intent")
         sql = payload.get("sql_template", "SQL NOT FOUND")
