@@ -10,19 +10,23 @@ def search_mf_catalog(
     top_candidates: int = 50,
     max_metrics: int = 3,
     max_dimensions: int = 20,
-    max_entities: int = 10
+    max_entities: int = 10,
+    absolute_min_score: float = 0.001,
+    relative_threshold_ratio: float = 0.15
 ) -> str:
     """
-    Searches Qdrant for MetricFlow items and uses Category Quotas to guarantee 
-    that metrics do not crowd out necessary dimensions and entities.
+    Searches Qdrant for MetricFlow items, applies Cross-Encoder reranking,
+    and enforces score thresholds to filter out off-topic queries before applying Category Quotas.
     """
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
 
+    empty_response = yaml.dump({"matched_metrics": [], "matched_dimensions": [], "matched_entities": []})
+
     try:
-        # 1. Fetch a broad candidate net (50 items) across the entire vector space
+        # 1. Fetch broad candidate net
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
         qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
         
@@ -34,7 +38,7 @@ def search_mf_catalog(
         )
         
         if not results or (isinstance(results, list) and len(results) > 0 and "error" in results[0]):
-            return yaml.dump({"matched_metrics": [], "matched_dimensions": [], "matched_entities": []})
+            return empty_response
 
         # 2. Parse Candidates
         candidate_items = []
@@ -64,34 +68,48 @@ def search_mf_catalog(
                     continue
 
         if not candidate_items:
-            return yaml.dump({"matched_metrics": [], "matched_dimensions": [], "matched_entities": []})
+            return empty_response
 
-        # 3. Apply Cross-Encoder Reranking across all candidates
+        # 3. Apply Cross-Encoder Reranking and Thresholding
+        filtered_candidates = []
         try:
             rerank_results = rerank_documents(
                 query=user_query,
                 documents=rerank_docs,
                 engine_url=embed_url,
                 cml_token=cml_token,
-                top_n=len(rerank_docs),  # Rerank full candidate list
+                top_n=len(rerank_docs),
                 timeout=15,
             )
             
-            ordered_candidates = []
-            for hit in rerank_results:
-                idx = hit.get("index")
-                if idx is not None and idx < len(candidate_items):
-                    ordered_candidates.append(candidate_items[idx])
+            if rerank_results:
+                # Find the global highest score among candidates
+                top_score = max([hit.get("score", hit.get("relevance_score", 0.0)) for hit in rerank_results], default=0.0)
+                
+                # Calculate threshold (at least absolute_min_score and relative_threshold_ratio of top score)
+                score_threshold = max(top_score * relative_threshold_ratio, absolute_min_score)
+
+                for hit in rerank_results:
+                    score = hit.get("score", hit.get("relevance_score", 0.0))
+                    idx = hit.get("index")
+                    
+                    # Keep item only if it meets the score threshold
+                    if score >= score_threshold and idx is not None and idx < len(candidate_items):
+                        filtered_candidates.append(candidate_items[idx])
+
         except Exception as e:
             print(f"⚠️ Reranker failed, falling back to raw vector results: {e}", flush=True)
-            ordered_candidates = candidate_items
+            filtered_candidates = candidate_items
 
-        # 4. Enforce Category Quotas
+        if not filtered_candidates:
+            return empty_response
+
+        # 4. Enforce Category Quotas on Filtered Candidates
         metrics = []
         dimensions = []
         entities = []
 
-        for item in ordered_candidates:
+        for item in filtered_candidates:
             item_type = item.pop("item_type", None)
             
             if item_type == "metric" and len(metrics) < max_metrics:
@@ -101,7 +119,6 @@ def search_mf_catalog(
             elif item_type == "entity" and len(entities) < max_entities:
                 entities.append(item)
 
-            # Stop scanning early if all quotas are satisfied
             if (len(metrics) >= max_metrics and 
                 len(dimensions) >= max_dimensions and 
                 len(entities) >= max_entities):
