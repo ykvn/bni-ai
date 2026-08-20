@@ -10,6 +10,10 @@ from shared.qdrant_client import QdrantClient
 
 from app.tools.search_golden_queries import search_golden_queries
 
+# sqlglot is imported at module level above. If that import succeeded, parsing is
+# available; this flag simply records that fact so extract_sql_columns can branch.
+SQLGLOT_AVAILABLE = True
+
 
 def clean_schema_yaml(raw_yaml_str: str) -> str:
     """Strips internal reranking score fields from the pure YAML string."""
@@ -54,32 +58,48 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
 
 
 def extract_sql_columns(text: str, valid_columns: set) -> set:
-    """Extracts column names using sqlglot, falling back to strict set intersection."""
+    """Extracts the column names referenced in Golden Query SQL using sqlglot.
+
+    Falls back to a strict token-vs-schema intersection whenever sqlglot parsing
+    fails (e.g. the text is not pure SQL). Only columns that exist in the retrieved
+    schema (``valid_columns``) are returned, lowercased.
+    """
     extracted = set()
-    text_lower = text.lower()
-    
+
     if SQLGLOT_AVAILABLE:
         try:
-            # Isolate SQL if embedded in YAML
-            sql_start = text_lower.find("select ")
-            sql_str = text[sql_start:] if sql_start != -1 else text
-            
-            # Parse the AST and find all Column nodes
-            for stmt in sqlglot.parse(sql_str, read="impala"):
-                if stmt:
+            # Golden Query context may embed multiple SQL statements, each prefixed
+            # by a "-- Example N ... / SQL:" header. Split on the "SQL:" marker so
+            # each statement is parsed independently; if there is no such marker,
+            # treat the whole string as a single SQL candidate.
+            if "SQL:" in text:
+                sql_blocks = re.split(r"(?is)\s*SQL:\s*", text)[1:]
+            else:
+                sql_blocks = [text]
+
+            for block in sql_blocks:
+                # Drop trailing commentary (next example header, intent labels, etc.)
+                block = re.split(r"(?is)\s*--\s*Example\b", block)[0]
+
+                # Parse the AST and find every Column node (handles qualified,
+                # aliased, and aggregate-referenced columns via col.name).
+                for stmt in sqlglot.parse(block, read="impala"):
+                    if stmt is None:
+                        continue
                     for col in stmt.find_all(exp.Column):
                         if col.name:
                             extracted.add(col.name.lower())
-            
+
             if extracted:
                 return extracted.intersection(valid_columns)
         except Exception:
             pass  # Fallback if parsing fails
 
-    # Fallback: No regex. Replace punctuation, split to words, intersect with valid schema.
-    for char in ['(', ')', ',', '=', '<', '>', '!', "'", '"', ';', '\n', '\t']:
+    # Fallback: no regex. Replace separators, split to words, intersect valid schema.
+    text_lower = text.lower()
+    for char in ['(', ')', ',', '=', '<', '>', '!', "'", '"', ';', ':', '?', '\n', '\t']:
         text_lower = text_lower.replace(char, ' ')
-        
+
     words = set(text_lower.split())
     return words.intersection(valid_columns)
 
