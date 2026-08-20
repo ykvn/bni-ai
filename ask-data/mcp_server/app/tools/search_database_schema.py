@@ -365,7 +365,7 @@ def get_smart_schema_context(
 
 
 def search_database_schema(user_question: str) -> str:
-    raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_question=user_question)
+    raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_query=user_question)
     
     if golden_context and "No verified golden queries found" not in golden_context:
         return f"{raw_schema_context}\n\n{golden_context}"
