@@ -8,7 +8,7 @@ try:
     SQLGLOT_AVAILABLE = True
 except ImportError:
     SQLGLOT_AVAILABLE = False
-    print("⚠️ sqlglot not installed. Falling back to basic word intersection for Golden Query column extraction.")
+    print("⚠️ sqlglot not installed. Falling back to basic word intersection for Golden Query table/column extraction.")
 
 from shared.cml_auth import get_cml_token
 from shared.embed_client import get_embedding_vector, rerank_documents
@@ -29,6 +29,7 @@ def clean_schema_yaml(raw_yaml_str: str) -> str:
         return yaml.dump(data, sort_keys=False, default_flow_style=False)
     except Exception:
         return raw_yaml_str
+
 
 def _normalize_table_dict(table: dict, columns: list) -> dict:
     """Helper to enforce strict key order for tables and columns."""
@@ -59,11 +60,11 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
     return clean_table
 
 
-def extract_sql_columns(text: str, valid_columns: set) -> set:
-    """Extracts column names using sqlglot, falling back to strict set intersection."""
-    extracted = set()
-    text_lower = text.lower()
-    
+def extract_sql_metadata(text: str, valid_tables: set, valid_columns: set) -> tuple[set, set]:
+    """Extracts qualified table names and column names referenced in Golden Queries."""
+    found_tables = set()
+    found_columns = set()
+
     if SQLGLOT_AVAILABLE:
         try:
             if "SQL:" in text:
@@ -76,34 +77,54 @@ def extract_sql_columns(text: str, valid_columns: set) -> set:
                 for stmt in sqlglot.parse(block, read="impala"):
                     if stmt is None:
                         continue
+
+                    # Extract Table nodes (handles schema.table and aliases)
+                    for tbl in stmt.find_all(exp.Table):
+                        if tbl.this:
+                            db_part = str(tbl.db).lower().strip('`"') if tbl.db else ""
+                            tbl_part = str(tbl.this.name).lower().strip('`"')
+                            full_tbl = f"{db_part}.{tbl_part}" if db_part else tbl_part
+
+                            if full_tbl in valid_tables:
+                                found_tables.add(full_tbl)
+                            elif tbl_part in valid_tables:
+                                found_tables.add(tbl_part)
+
+                    # Extract Column nodes
                     for col in stmt.find_all(exp.Column):
                         if col.name:
-                            extracted.add(col.name.lower())
+                            c_name = col.name.lower()
+                            if c_name in valid_columns:
+                                found_columns.add(c_name)
 
-            if extracted:
-                return extracted.intersection(valid_columns)
+            if found_tables or found_columns:
+                return found_tables, found_columns
         except Exception:
-            pass  # Fallback if parsing fails
+            pass  # Fallback if AST parsing fails
 
-    # Fallback: No regex. Replace punctuation, split to words, intersect with valid schema.
-    for char in ['(', ')', ',', '=', '<', '>', '!', "'", '"', ';', ':', '?', '\n', '\t']:
+    # Fallback: String splitting without regex
+    text_lower = text.lower()
+    for char in ['(', ')', ',', '=', '<', '>', '!', "'", '"', '`', ';', ':', '?', '\n', '\t']:
         text_lower = text_lower.replace(char, ' ')
-        
+
     words = set(text_lower.split())
-    return words.intersection(valid_columns)
+    found_tables = words.intersection(valid_tables)
+    found_columns = words.intersection(valid_columns)
+
+    return found_tables, found_columns
 
 
-def get_smart_schema_context(
+def get_smart_schema_context_with_golden(
     user_query: str,
     top_tables: int = 5,
     top_columns_per_table: int = 10,
     relative_threshold_ratio: float = 0.05
-) -> str:
+) -> tuple[str, str]:
+    """Retrieves schema context and golden queries, returning both as a tuple."""
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     schema_collection = os.getenv("SCHEMA_COLLECTION", "bni_schema_definitions")
-    golden_collection = os.getenv("GOLDEN_QUERY_COLLECTION", "bni_golden_queries")
 
     # ==========================================
     # STAGE 1: VECTOR SEARCH (Find Tables & Golden Queries)
@@ -113,7 +134,7 @@ def get_smart_schema_context(
     except Exception as e:
         error_msg = f"CRITICAL ERROR: Embedding API failed at {embed_url}: {e}"
         print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False), ""
 
     try:
         qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
@@ -128,13 +149,15 @@ def get_smart_schema_context(
     except Exception as e:
         error_msg = f"CRITICAL ERROR: Qdrant search failed at {vectordb_url}: {e}"
         print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False), ""
 
     retrieved_tables = []
+    valid_schema_tables = set()
     valid_schema_columns = set()
+    golden_query_tables = set()
     golden_query_cols = set()
 
-    # 1a. Build retrieved_tables and collect all valid column names first
+    # 1a. Build retrieved_tables and collect all valid table/column names first
     for point in retrieved_points:
         payload = point.get("payload", {})
         point_score = point.get("score")
@@ -146,15 +169,21 @@ def get_smart_schema_context(
                 parsed_table["score"] = round(point_score, 4)
             retrieved_tables.append(parsed_table)
             
+            if "name" in parsed_table:
+                valid_schema_tables.add(str(parsed_table["name"]).lower())
+
             for col in parsed_table.get("columns", []):
                 if "name" in col:
                     valid_schema_columns.add(str(col["name"]).lower())
 
     # 1b. Fetch Golden Queries via search_golden_queries tool BEFORE pruning
+    golden_context = ""
     try:
         golden_context = search_golden_queries(user_question=user_query)
         if golden_context and "No verified golden queries found" not in golden_context:
-            golden_query_cols.update(extract_sql_columns(golden_context, valid_schema_columns))
+            g_tables, g_cols = extract_sql_metadata(golden_context, valid_schema_tables, valid_schema_columns)
+            golden_query_tables.update(g_tables)
+            golden_query_cols.update(g_cols)
     except Exception as e:
         print(f"⚠️ Golden Query extraction warning: {e}")
 
@@ -164,14 +193,16 @@ def get_smart_schema_context(
         for val in payload.values():
             val_str = str(val)
             if any(kw in val_str.upper() for kw in ["SELECT", "FROM", "WHERE"]):
-                golden_query_cols.update(extract_sql_columns(val_str, valid_schema_columns))
+                g_tables, g_cols = extract_sql_metadata(val_str, valid_schema_tables, valid_schema_columns)
+                golden_query_tables.update(g_tables)
+                golden_query_cols.update(g_cols)
 
-    print(f"🔑 [Schema Safeguard] Extracted Golden Query columns to protect: {sorted(list(golden_query_cols))}")
+    print(f"🔑 [Schema Safeguard] Golden Query Protected Tables: {sorted(list(golden_query_tables))} | Columns: {sorted(list(golden_query_cols))}")
 
     if not retrieved_tables:
         error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
         print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False)
+        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False), golden_context
     
     clean_query = user_query.lower()
     for char in ['?', '!', '.', ',', ':', ';']:
@@ -258,7 +289,8 @@ def get_smart_schema_context(
     # ==========================================
     # STAGE 3: RECONSTRUCT PRUNED SCHEMA
     # ==========================================
-    relevant_table_names = {item['table'] for item in winning_columns}
+    # Union winning reranked tables with tables explicitly protected by Golden Queries
+    relevant_table_names = {item['table'] for item in winning_columns}.union(golden_query_tables)
     pruned_tables = []
 
     for table in retrieved_tables:
@@ -280,11 +312,11 @@ def get_smart_schema_context(
                       "references" in col or
                       "DEFAULT_TIME_AXIS: True" in c_desc):
                     mandatory_columns.append(col)
-                # 3. Golden Query Safeguard
-                elif c_name.lower() in golden_query_cols:
+                # 3. Golden Query Safeguard (Protected within referenced Golden Query tables)
+                elif c_name.lower() in golden_query_cols and table_name.lower() in golden_query_tables:
                     mandatory_columns.append(col)
 
-            # ORDER BY: Sort columns by score DESC (unscored safeguard columns sort to bottom with 0.0)
+            # ORDER BY: Sort columns by score DESC
             mandatory_columns.sort(key=lambda c: c.get("score", 0.0) or 0.0, reverse=True)
 
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
@@ -297,18 +329,28 @@ def get_smart_schema_context(
         "tables": pruned_tables
     }
 
-    return yaml.dump(final_schema, sort_keys=False, default_flow_style=False)
+    return yaml.dump(final_schema, sort_keys=False, default_flow_style=False), golden_context
+
+
+def get_smart_schema_context(
+    user_query: str,
+    top_tables: int = 5,
+    top_columns_per_table: int = 10,
+    relative_threshold_ratio: float = 0.05
+) -> str:
+    schema_yaml, _ = get_smart_schema_context_with_golden(
+        user_query=user_query,
+        top_tables=top_tables,
+        top_columns_per_table=top_columns_per_table,
+        relative_threshold_ratio=relative_threshold_ratio
+    )
+    return schema_yaml
 
 
 def search_database_schema(user_question: str) -> str:
-    raw_schema_context = get_smart_schema_context(user_query=user_question)
-    cleaned_schema = raw_schema_context
+    raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_query=user_question)
     
-    try:
-        golden_context = search_golden_queries(user_question=user_question)
-        if golden_context and "No verified golden queries found" not in golden_context:
-            return f"{cleaned_schema}\n\n{golden_context}"
-    except Exception as e:
-        print(f"⚠️ Warning: Golden query lookup failed: {e}")
+    if golden_context and "No verified golden queries found" not in golden_context:
+        return f"{raw_schema_context}\n\n{golden_context}"
         
-    return cleaned_schema
+    return raw_schema_context
