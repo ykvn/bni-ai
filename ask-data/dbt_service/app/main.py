@@ -88,6 +88,8 @@ class MetricQueryRequest(BaseModel):
     metrics: List[str] = Field(..., description="List of metric names to query")
     group_by: Optional[List[str]] = Field(default=[], description="List of dimension names")
     where: Optional[str] = Field(default=None, description="Optional filter expression")
+    order_by: Optional[List[str]] = Field(default=[], description="List of sort expressions, e.g. ['-trxchannel_amount_sum_metric']")
+    limit: Optional[int] = Field(default=None, description="Optional limit count, e.g. 10")
 
 
 class MetricQueryResponse(BaseModel):
@@ -392,9 +394,32 @@ def execute_metric_query(payload: MetricQueryRequest):
         # Clean up dummy schema/database references
         compiled_sql = re.sub(r'`?dummy`?\.', '', compiled_sql)
 
+        # Append ORDER BY and LIMIT clauses if supplied
+        clean_sql = compiled_sql.strip().rstrip(";")
+        clauses = []
+
+        if payload.order_by:
+            formatted_orders = []
+            for item in payload.order_by:
+                col_str = str(item).strip()
+                if col_str.startswith("-"):
+                    formatted_orders.append(f"{col_str[1:]} DESC")
+                else:
+                    formatted_orders.append(f"{col_str} ASC")
+            if formatted_orders:
+                clauses.append(f"ORDER BY {', '.join(formatted_orders)}")
+
+        if payload.limit is not None:
+            clauses.append(f"LIMIT {payload.limit}")
+
+        if clauses:
+            final_sql = clean_sql + "\n" + "\n".join(clauses)
+        else:
+            final_sql = clean_sql
+
         return MetricQueryResponse(
             status="success",
-            sql=compiled_sql,
+            sql=final_sql,
             data=[]
         )
 
