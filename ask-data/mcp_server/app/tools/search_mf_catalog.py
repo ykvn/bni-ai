@@ -17,24 +17,18 @@ def search_mf_catalog(
     top_candidates: int = 50,
     max_metrics: int = 3,
     max_dimensions: int = 20,
-    max_entities: int = 10,
-    absolute_min_score: float = 0.001,
-    relative_threshold_ratio: float = 0.15
+    max_entities: int = 10
+    #absolute_min_score: float = 0.001,
+    #relative_threshold_ratio: float = 0.15
 ) -> str:
     """
-    Searches Qdrant for MetricFlow items, applies Lexical-Boosted Cross-Encoder reranking,
+    Searches Qdrant for MetricFlow items, applies Cross-Encoder reranking,
     and enforces score thresholds to filter out off-topic queries before applying Category Quotas.
     """
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
-
-    # Clean query tokens (replace underscores and ignore words <= 2 chars like "di", "ke")
-    clean_query = user_query.lower()
-    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
-        clean_query = clean_query.replace(char, ' ')
-    query_tokens = set(word for word in clean_query.split() if len(word) > 2)
 
     try:
         # 1. Fetch broad candidate net
@@ -52,10 +46,9 @@ def search_mf_catalog(
             print("🚫 [NO_MF_MATCH] No MetricFlow results or query returned an error.")
             return NO_MF_RESPONSE
 
-        # 2. Parse Candidates with Enriched Context & Lexical Counts
+        # 2. Parse Candidates
         candidate_items = []
         rerank_docs = []
-        token_match_counts = []
 
         for point in results:
             payload = point.get("payload", {})
@@ -66,27 +59,17 @@ def search_mf_catalog(
                     item = json.loads(raw_json)
                     item_type = item.get("item_type", "metric")
                     
-                    # Enriched metadata strings for neural cross-encoder
                     if item_type == "metric":
-                        time_dim = item.get('default_time_dimension', '')
-                        doc_str = f"Metric: {item.get('name', '')} | Label: {item.get('label', '')} | Description: {item.get('description', '')} | Time Dimension: {time_dim}"
+                        doc_str = f"Metric: {item.get('name', '')} | Label: {item.get('label', '')} | Description: {item.get('description', '')}"
                     elif item_type == "dimension":
-                        doc_str = f"Dimension Path: {item.get('name', '')} | Description: {item.get('description', '')} | Type: {item.get('data_type', '')}"
+                        doc_str = f"Dimension Path: {item.get('name', '')} | Description: {item.get('description', '')}"
                     elif item_type == "entity":
                         doc_str = f"Entity Key: {item.get('name', '')} | Key Type: {item.get('type', '')} | Table: {item.get('semantic_model', '')}"
                     else:
                         doc_str = f"Catalog Item: {item.get('name', '')} | Description: {item.get('description', '')}"
 
-                    # Lexical intersection count (split by underscore, ignore short words)
-                    item_search_text = doc_str.lower()
-                    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
-                        item_search_text = item_search_text.replace(char, ' ')
-                    item_tokens = set(word for word in item_search_text.split() if len(word) > 2)
-                    token_matches = len(query_tokens.intersection(item_tokens))
-
                     candidate_items.append(item)
                     rerank_docs.append(doc_str)
-                    token_match_counts.append(token_matches)
                 except Exception:
                     continue
 
@@ -94,7 +77,7 @@ def search_mf_catalog(
             print("🚫 [NO_MF_MATCH] No candidate MetricFlow items parsed from results.")
             return NO_MF_RESPONSE
 
-        # 3. Apply Cross-Encoder Reranking, Lexical Boosting, and Score Thresholding
+        # 3. Apply Cross-Encoder Reranking and Thresholding
         filtered_candidates = []
         try:
             rerank_results = rerank_documents(
@@ -107,34 +90,19 @@ def search_mf_catalog(
             )
             
             if rerank_results:
-                boosted_hits = []
+                # Find the global highest score among candidates
+                top_score = max([hit.get("score", hit.get("relevance_score", 0.0)) for hit in rerank_results], default=0.0)
+                
+                # Calculate threshold (at least absolute_min_score and relative_threshold_ratio of top score)
+                score_threshold = max(top_score * relative_threshold_ratio, absolute_min_score)
+
                 for hit in rerank_results:
-                    raw_score = hit.get("score", hit.get("relevance_score", 0.0))
+                    score = hit.get("score", hit.get("relevance_score", 0.0))
                     idx = hit.get("index")
-
-                    if idx is not None and idx < len(candidate_items):
-                        matches = token_match_counts[idx]
-                        
-                        # ADDITIVE BOOST: +0.5 absolute points per exact keyword match
-                        # This mathematically forces exact matches to beat out neural noise.
-                        boosted_score = raw_score + (0.5 * matches)
-
-                        boosted_hits.append({
-                            "item": candidate_items[idx],
-                            "score": boosted_score
-                        })
-
-                # Sort DESC by boosted score
-                boosted_hits.sort(key=lambda x: x["score"], reverse=True)
-
-                if boosted_hits:
-                    top_score = boosted_hits[0]["score"]
-                    # Calculate relative thresholding floor
-                    score_threshold = max(top_score * relative_threshold_ratio, absolute_min_score)
-
-                    for hit_data in boosted_hits:
-                        if hit_data["score"] >= score_threshold:
-                            filtered_candidates.append(hit_data["item"])
+                    
+                    # Keep item only if it meets the score threshold
+                    if score >= score_threshold and idx is not None and idx < len(candidate_items):
+                        filtered_candidates.append(candidate_items[idx])
 
         except Exception as e:
             print(f"⚠️ Reranker failed, falling back to raw vector results: {e}", flush=True)
@@ -164,7 +132,9 @@ def search_mf_catalog(
                 len(entities) >= max_entities):
                 break
 
-        # No-relevant-catalog guard
+        # No-relevant-catalog guard: even when candidates survived thresholding,
+        # if category quotas left zero metrics/dimensions/entities, reply with
+        # the same polite refusal as search_database_schema.
         if not metrics and not dimensions and not entities:
             print("🚫 [NO_MF_MATCH] No relevant metrics/dimensions/entities survived category quotas.")
             return NO_MF_RESPONSE
