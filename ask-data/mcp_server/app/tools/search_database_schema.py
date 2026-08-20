@@ -313,7 +313,7 @@ def get_smart_schema_context_with_golden(
     # 1. Compute global max score across all candidate column hits
     global_max_score = max([item['score'] for item in winning_columns], default=0.0)
 
-    # 2. Filter tables that meet at least 30% of the global max score
+    # 2. Filter tables that meet at least 10% of the global max score
     strong_table_names = {
         item['table'] for item in winning_columns 
         if item['score'] >= (global_max_score * global_table_threshold_ratio)
@@ -367,25 +367,6 @@ def get_smart_schema_context_with_golden(
     }
 
     return yaml.dump(final_schema, sort_keys=False, default_flow_style=False), golden_context
-
-
-def get_smart_schema_context(
-    user_query: str,
-    top_tables: int = 5,
-    top_columns_per_table: int = 10,
-    relative_threshold_ratio: float = 0.05,
-    absolute_min_score: float = 0.001,
-    global_table_threshold_ratio: float = 0.10
-) -> str:
-    schema_yaml, _ = get_smart_schema_context_with_golden(
-        user_query=user_query,
-        top_tables=top_tables,
-        top_columns_per_table=top_columns_per_table,
-        relative_threshold_ratio=relative_threshold_ratio,
-        absolute_min_score=absolute_min_score,
-        global_table_threshold_ratio=global_table_threshold_ratio
-    )
-    return schema_yaml
 
 
 def _has_no_tables(schema_context: str) -> bool:
