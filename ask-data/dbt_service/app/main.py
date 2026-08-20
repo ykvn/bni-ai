@@ -348,7 +348,7 @@ def execute_metric_query(payload: MetricQueryRequest):
         if payload.where:
             args.extend(["--where", payload.where])
         if payload.order_by:
-            args.extend(["--order-by", ",".join(payload.order_by)])
+            args.extend(["--order", ",".join(payload.order_by)])
         if payload.limit is not None:
             args.extend(["--limit", str(payload.limit)])
             
