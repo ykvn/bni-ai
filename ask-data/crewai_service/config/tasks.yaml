@@ -86,6 +86,7 @@ mf_draft_payload_task:
          Group by the target entity, set 'order_by' with a '-' prefix (e.g., ["-trxchannel_amount_sum_metric"]), and set 'limit' (e.g., 10).
        - GROUPED RANKING ("per branch", "setiap cabang", "masing-masing region"):
          Group by the target entity AND the category. Set 'order_by' for the sort metric. Set 'partition_by' to the category dimension (e.g., ["trxchannel_id__trx_branch"]). Set 'window_type' to DENSE_RANK (default), RANK, or ROW_NUMBER depending on the user's tie-breaking preference. Set 'max_rank' to the requested top count (e.g., 3). DO NOT use 'limit' for grouped rankings.
+    10. AVAILABILITY DATE FILTERS: If any matched metric or dimension contains an `availability_date` attribute (e.g., `availability_date: '2026-08-20'`), you MUST include a `where` clause filter specifying exact equality on that entity's default time dimension using the exact date value (e.g., `"<default_time_dimension>__day = '2026-08-20'"`), unless the user query explicitly specifies a date filter for that dataset.
   expected_output: "A structured JSON MetricFlow query payload object, OR the refusal line 'I am sorry, I don't have this information on my database.' when the AVAILABLE CATALOG section has no matching metrics/dimensions."
 
 mf_execute_task:
