@@ -90,6 +90,8 @@ class MetricQueryRequest(BaseModel):
     where: Optional[str] = Field(default=None, description="Optional filter expression")
     order_by: Optional[List[str]] = Field(default=[], description="List of sort expressions, e.g. ['-trxchannel_amount_sum_metric']")
     limit: Optional[int] = Field(default=None, description="Optional limit count, e.g. 10")
+    partition_by: Optional[List[str]] = Field(default=[], description="Dimensions to PARTITION BY")
+    max_rank: Optional[int] = Field(default=None, description="Filter for Top N per partition")
 
 
 class MetricQueryResponse(BaseModel):
@@ -347,10 +349,14 @@ def execute_metric_query(payload: MetricQueryRequest):
             args.extend(["--group-by", ",".join(payload.group_by)])
         if payload.where:
             args.extend(["--where", payload.where])
-        if payload.order_by:
-            args.extend(["--order", ",".join(payload.order_by)])
-        if payload.limit is not None:
-            args.extend(["--limit", str(payload.limit)])
+            
+        # If doing a PARTITIONED rank, DO NOT pass global order/limit to MetricFlow.
+        # We need all rows from MetricFlow so we can rank them in the CTE wrapper.
+        if not payload.partition_by:
+            if payload.order_by:
+                args.extend(["--order", ",".join(payload.order_by)])
+            if payload.limit is not None:
+                args.extend(["--limit", str(payload.limit)])
             
         args.append("--explain")
 
@@ -398,6 +404,35 @@ def execute_metric_query(payload: MetricQueryRequest):
         
         # Clean up dummy schema/database references
         compiled_sql = re.sub(r'`?dummy`?\.', '', compiled_sql)
+
+        # =================================================================
+        # SQL TEMPLATE LOGIC FOR DYNAMIC WINDOW RANKING
+        # =================================================================
+        if payload.partition_by:
+            part_cols = ", ".join(payload.partition_by)
+            
+            if payload.order_by:
+                order_list = [f"{c[1:]} DESC" if c.startswith("-") else f"{c} ASC" for c in payload.order_by]
+                order_cols = ", ".join(order_list)
+            else:
+                order_cols = f"{payload.metrics[0]} DESC"
+
+            clean_sql = compiled_sql.strip().rstrip(";")
+            rank_threshold = payload.max_rank or 10
+            
+            # Safe default fallback just in case the LLM hallucinates a weird function
+            win_func = payload.window_type.upper() if payload.window_type.upper() in ["DENSE_RANK", "RANK", "ROW_NUMBER"] else "DENSE_RANK"
+
+            compiled_sql = f"""SELECT * FROM (
+    SELECT 
+        *,
+        {win_func}() OVER (PARTITION BY {part_cols} ORDER BY {order_cols}) AS dynamic_rank
+    FROM (
+        {clean_sql}
+    ) mf_base
+) ranked_subq
+WHERE dynamic_rank <= {rank_threshold}
+ORDER BY {part_cols}, dynamic_rank ASC"""
 
         return MetricQueryResponse(
             status="success",

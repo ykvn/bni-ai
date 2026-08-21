@@ -150,7 +150,19 @@ class MetricFlowQueryPayload(BaseModel):
     )
     limit: Optional[int] = Field(
         default=None,
-        description="Optional limit for Top N queries, e.g. 10"
+        description="Optional limit for Global Top N queries, e.g. 10"
+    )
+    partition_by: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of dimensions to partition by for Grouped Ranking queries (e.g., 'top N per branch')"
+    )
+    max_rank: Optional[int] = Field(
+        default=None,
+        description="Limit for Top N within each partition (used alongside partition_by instead of limit)"
+    )
+    window_type: Optional[str] = Field(
+        default="DENSE_RANK",
+        description="Type of window function: DENSE_RANK, RANK, or ROW_NUMBER"
     )
 
 # --- 2. LLM PROFILES ---

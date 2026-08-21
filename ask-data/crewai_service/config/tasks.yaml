@@ -81,10 +81,11 @@ mf_draft_payload_task:
     7. YEARLY FILTERS: For full year questions (e.g., '2026'), use the `__year` suffix set to Jan 1st of that year:
        "<default_time_dimension>__year = 'YYYY-01-01'"
     8. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month'.
-    9. TOP N & RANKING QUERIES: For questions asking for 'top N', 'biggest', or 'highest':
-       - You MUST group by an entity or dimension (e.g., 'customer_icons_cif_key' or 'funding_account_number').
-       - Include an 'order_by' array in your JSON payload with a '-' prefix for descending order (e.g., ["-trxchannel_amount_sum_metric"]).
-       - Include a 'limit' integer in your JSON payload matching the requested top count (e.g., 10).
+    9. TOP N & RANKING QUERIES: Differentiate between GLOBAL ranking and GROUPED/PARTITIONED ranking based on the phrasing:
+       - GLOBAL RANKING ("Top 10", "10 terbesar", "overall"):
+         Group by the target entity, set 'order_by' with a '-' prefix (e.g., ["-trxchannel_amount_sum_metric"]), and set 'limit' (e.g., 10).
+       - GROUPED RANKING ("per branch", "setiap cabang", "masing-masing region"):
+         Group by the target entity AND the category. Set 'order_by' for the sort metric. Set 'partition_by' to the category dimension (e.g., ["trxchannel_id__trx_branch"]). Set 'window_type' to DENSE_RANK (default), RANK, or ROW_NUMBER depending on the user's tie-breaking preference. Set 'max_rank' to the requested top count (e.g., 3). DO NOT use 'limit' for grouped rankings.
   expected_output: "A structured JSON MetricFlow query payload object, OR the refusal line 'I am sorry, I don't have this information on my database.' when the AVAILABLE CATALOG section has no matching metrics/dimensions."
 
 mf_execute_task:
