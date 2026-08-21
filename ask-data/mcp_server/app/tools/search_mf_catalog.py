@@ -28,7 +28,8 @@ def search_mf_catalog(
     relative_threshold_ratio: float = 0.15
 ) -> str:
 
-    env_top = int(os.getenv("MF_TOP_CANDIDATES", "300"))
+    # Enforce candidate net to at least 300 regardless of .env override
+    env_top = int(os.getenv("MF_TOP_CANDIDATES", "150"))
     
     max_metrics = int(os.getenv("MF_MAX_METRICS", max_metrics))
     max_dimensions = int(os.getenv("MF_MAX_DIMENSIONS", max_dimensions))
@@ -39,7 +40,7 @@ def search_mf_catalog(
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
 
-    # 2. Extract words and 2-word exact phrases
+    # 1. Extract words and 2-word exact phrases (e.g. "nilai transaksi")
     clean_query = user_query.lower()
     for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', 'null']:
         clean_query = clean_query.replace(char, ' ')
@@ -69,7 +70,7 @@ def search_mf_catalog(
         rerank_docs = []
         description_boost_scores = []
 
-        # 3. Inspect descriptions and assign tier multipliers
+        # 2. Inspect descriptions, availability dates, and assign tier multipliers
         for point in results:
             payload = point.get("payload", {})
             raw_json = payload.get("raw_json")
@@ -82,18 +83,23 @@ def search_mf_catalog(
                     item_name = item.get('name', '')
                     item_label = item.get('label', '')
                     item_desc = item.get('description', '')
+                    item_avail_date = item.get('availability_date', '')
 
                     if item_type == "metric":
                         time_dim = item.get('default_time_dimension', '')
                         doc_str = f"Metric: {item_name} | Label: {item_label} | Description: {item_desc} | Time Dimension: {time_dim}"
+                        if item_avail_date:
+                            doc_str += f" | Availability Date: {item_avail_date}"
                     elif item_type == "dimension":
                         doc_str = f"Dimension Path: {item_name} | Description: {item_desc} | Type: {item.get('data_type', '')}"
+                        if item_avail_date:
+                            doc_str += f" | Availability Date: {item_avail_date}"
                     elif item_type == "entity":
                         doc_str = f"Entity Key: {item_name} | Key Type: {item.get('type', '')} | Table: {item.get('semantic_model', '')}"
                     else:
                         doc_str = f"Catalog Item: {item_name} | Description: {item_desc}"
 
-                    searchable_text = f"{item_name} {item_label} {item_desc}".lower()
+                    searchable_text = f"{item_name} {item_label} {item_desc} {item_avail_date}".lower()
                     for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', '|']:
                         searchable_text = searchable_text.replace(char, ' ')
 
@@ -101,7 +107,7 @@ def search_mf_catalog(
                     item_tokens = set(w for w in searchable_text.split() if len(w) > 2 and w not in INDONESIAN_STOP_WORDS)
                     token_matches = len(query_tokens.intersection(item_tokens))
 
-                    # Multi-word phrase matches get +100.0 to override neural logit scale
+                    # Multi-word phrase matches get +100.0 to override raw neural logit scale
                     desc_score = (phrase_matches * 100.0) + (token_matches * 2.0)
 
                     candidate_items.append(item)
@@ -113,7 +119,7 @@ def search_mf_catalog(
         if not candidate_items:
             return NO_MF_RESPONSE
 
-        # 4. Neural Cross-Encoder Reranking
+        # 3. Neural Cross-Encoder Reranking
         filtered_candidates = []
         try:
             rerank_results = rerank_documents(
@@ -151,7 +157,7 @@ def search_mf_catalog(
         if not filtered_candidates:
             return NO_MF_RESPONSE
 
-        # 5. Category Quota Filtering
+        # 4. Category Quota Filtering & Output Assembly
         metrics = []
         dimensions = []
         entities = []
