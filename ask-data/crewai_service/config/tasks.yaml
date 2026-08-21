@@ -66,16 +66,6 @@ mf_draft_payload_task:
     PREVIOUS ERROR (If any):
     {error_context}
 
-    JSON BLUEPRINT TEMPLATE:
-    Construct a single valid JSON object adhering to this schema:
-    {{
-      "metrics": ["<metric_name>"],
-      "group_by": ["<entity_or_dimension_name>"],
-      "where": ["<dimension_with_suffix> = '<value>'"],
-      "order_by": ["-<metric_name>"],
-      "limit": 10
-    }}
-
     CRITICAL INSTRUCTIONS:
     1. EXACT NAMES: Use exact 'name' strings from matched_metrics, matched_dimensions, and matched_entities.
     2. NO-MATCH HANDLING: If AVAILABLE CATALOG is empty or contains 'I am sorry, I don't have this information on my database.', output EXACTLY: "I am sorry, I don't have this information on my database."
@@ -87,8 +77,8 @@ mf_draft_payload_task:
        - Yearly ('2026'): "<default_time_dimension>__year = '2026-01-01'"
     5. JOINED ENTITY AVAILABILITY DATES: If a matched dimension/entity belonging to a secondary joined table has an `availability_date` attribute (e.g. `availability_date: '2026-08-20'`), add a filter for THAT entity's time dimension (e.g. "customer_icons_cif_key__as_of_date__day = '2026-08-20'"), UNLESS the user question explicitly specifies a date for that entity.
     6. TOP N & RANKING QUERIES:
-       - GLOBAL RANKING ("Top 10", "10 terbesar", "overall"):
-         Group by target entity key, set 'order_by' with '-' prefix (e.g., ["-trxchannel_amount_sum_metric"]), and set 'limit' (e.g., 10).
+       - GLOBAL RANKING ("Top 10", "10 terbesar", "10 terkecil"):
+         Group by target entity key, set 'order_by' with '-' prefix (e.g., ["-trxchannel_amount_sum_metric"] for descending and without '-' prefix for ascending), and set 'limit' (e.g., 10).
        - GROUPED RANKING ("per branch", "setiap cabang"):
          Group by target entity AND category. Set 'order_by', 'partition_by' (e.g., ["trxchannel_id__trx_branch"]), 'window_type' (DENSE_RANK), and 'max_rank' (e.g., 3). DO NOT use 'limit'.
   expected_output: "A structured JSON MetricFlow query payload object, OR the refusal line 'I am sorry, I don't have this information on my database.' when the AVAILABLE CATALOG section has no matching metrics/dimensions."
