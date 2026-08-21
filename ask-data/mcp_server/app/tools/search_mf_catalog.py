@@ -15,21 +15,21 @@ INDONESIAN_STOP_WORDS = {
 
 def search_mf_catalog(
     user_query: str, 
-    top_candidates: int = 300,
-    max_metrics: int = 10,
+    top_candidates: int = 500,
+    max_metrics: int = 5,
     max_dimensions: int = 20,
     max_entities: int = 10,
-    absolute_min_score: float = 0.000,
-    relative_threshold_ratio: float = 0.00
+    absolute_min_score: float = 0.001,
+    relative_threshold_ratio: float = 0.15
 ) -> str:
 
     # Enforce candidate net to at least 300 to beat Qdrant candidate starvation
-    env_top = int(os.getenv("MF_TOP_CANDIDATES", "300"))
-    top_candidates = max(env_top, 300)
-    
+    top_candidates = int(os.getenv("MF_TOP_CANDIDATES", top_candidates))
     max_metrics = int(os.getenv("MF_MAX_METRICS", max_metrics))
     max_dimensions = int(os.getenv("MF_MAX_DIMENSIONS", max_dimensions))
     max_entities = int(os.getenv("MF_MAX_ENTITIES", max_entities))
+    absolute_min_score = int(os.getenv("MF_ABSOLUTE_MIN_SCORE", absolute_min_score))
+    relative_threshold_ratio = int(os.getenv("MF_RELATIVE_THRESHOLD_RATIO", relative_threshold_ratio))
 
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
