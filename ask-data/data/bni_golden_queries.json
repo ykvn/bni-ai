@@ -1,19 +1,19 @@
 [
   {
     "user_intent": "Nasabah aktif",
-    "description": "Mencari nasabah aktif",
+    "description": "",
     "sql_template": "SELECT * FROM dm_customer.customer_icons WHERE cust_status = 'AKTIF';",
     "complexity": "simple"
   },
   {
     "user_intent": "Aktivitas cashout / cash out",
-    "description": "Mencari aktivitas cash out",
+    "description": "",
     "sql_template": "SELECT * FROM dm_transaction.trxchannel WHERE destination_bankname <> 'BANK NEGARA INDONESIA';",
     "complexity": "simple"
   },
   {
     "user_intent": "Informasi DPK / total DPK",
-    "description": "Mencari informasi DPK / total DPK",
+    "description": "",
     "sql_template": "SELECT cur_book_bal FROM dm_funding.funding;",
     "complexity": "simple"
   },
