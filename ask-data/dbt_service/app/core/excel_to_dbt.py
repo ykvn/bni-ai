@@ -116,10 +116,6 @@ CROSS JOIN numbers d
         
         custom_schema = str(table.get("Schema / Database", "")).strip()
 
-        # Extract Availability Date for MetricFlow context
-        avail_date_raw = table.get("Availability Date")
-        avail_date = str(avail_date_raw).strip() if pd.notna(avail_date_raw) and str(avail_date_raw).strip().lower() != 'nan' else ""
-
         table_cols = cols_df[cols_df["Table Name"].astype(str).str.strip().str.lower() == table_name]
 
         # Generate dbt stub SQL file with dynamic schema support
@@ -162,7 +158,7 @@ CROSS JOIN numbers d
 
             is_entity = False
 
-            # 1. Entity Resolution (Evaluates Independently)
+            # 1. Entity Resolution
             if local_ref_key in target_entities:
                 assigned_entities = target_entities[local_ref_key]
                 for i, ent in enumerate(assigned_entities):
@@ -179,7 +175,7 @@ CROSS JOIN numbers d
                 entities.append({"name": safe_col_name, "type": "foreign", "expr": raw_col_name})
                 is_entity = True
             
-            # 2. Dimensions & Time Parsing (Evaluates Independently)
+            # 2. Dimensions & Time Parsing
             col_type_str = str(col.get("Data Type", "")).upper()
             
             is_agg_time = col.get("Agg Time Dimension", False)
@@ -195,7 +191,6 @@ CROSS JOIN numbers d
             )
             dim_type = "time" if is_time_col else "categorical"
 
-            # Allow column to be a dimension if it's NOT an Entity, OR if it's explicitly a time column
             if not is_entity or is_time_col:
                 meta_parts = []
 
@@ -295,18 +290,17 @@ CROSS JOIN numbers d
                 m["agg_time_dimension"] = chosen_time_dim
                 
             formatted_measures.append(m)
-            
-            metric_desc = base_desc
 
             metric_name = sanitize_dbt_name(f"{table_name}_{col_name}_{agg}_metric")
             metrics.append({
                 "name": metric_name,
                 "label": f"{table_name} {col_name} {agg}".title()[:100],
-                "description": metric_desc,
+                "description": base_desc,
                 "type": "simple",
                 "type_params": {"measure": m["name"]}
             })
 
+        # Pure dbt-compliant semantic model object
         sm_dict = {
             "name": table_name,
             "model": f"ref('{table_name}')",
@@ -314,12 +308,10 @@ CROSS JOIN numbers d
             "dimensions": dimensions,
             "measures": formatted_measures
         }
-        if avail_date:
-            sm_dict["availability_date"] = avail_date
 
         semantic_models.append(sm_dict)
 
-    # Assemble the final schema
+    # Assemble final dbt-compliant schema
     dbt_schema = {
         "version": 2,
         "models": [
@@ -364,7 +356,7 @@ if __name__ == "__main__":
 
     try:
         convert_excel_to_dbt_yaml(str(input_excel), str(output_yaml))
-        print("\n✅ Successfully generated dbt bni_dbt_schema.yaml from bni_dbt_definitions.xlsx!")
+        print("\n✅ Successfully generated clean, dbt-compliant bni_dbt_schema.yaml!")
     except Exception as e:
         print(f"\n❌ Generation failed: {str(e)}")
         sys.exit(1)

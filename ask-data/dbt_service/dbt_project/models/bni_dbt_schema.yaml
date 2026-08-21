@@ -712,7 +712,6 @@ semantic_models:
     expr: NVL(cust_other_income, 0)
     agg: max
     agg_time_dimension: as_of_date
-  availability_date: D-1
 - name: funding
   model: ref('funding')
   entities:
@@ -1572,7 +1571,6 @@ semantic_models:
     expr: NVL(blocked_balance, 0)
     agg: max
     agg_time_dimension: as_of_date
-  availability_date: D-1
 - name: lending
   model: ref('lending')
   entities:
@@ -2393,7 +2391,6 @@ semantic_models:
     expr: NVL(ii_monthly, 0)
     agg: max
     agg_time_dimension: as_of_date
-  availability_date: D-1
 - name: mapping_group_whs
   model: ref('mapping_group_whs')
   entities:
