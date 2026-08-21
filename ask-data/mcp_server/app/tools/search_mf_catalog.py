@@ -28,8 +28,9 @@ def search_mf_catalog(
     relative_threshold_ratio: float = 0.15
 ) -> str:
 
-    # Enforce candidate net to at least 300 regardless of .env override
+    # ✅ FIX: Explicitly enforce candidate net to at least 300 to beat Qdrant candidate starvation
     env_top = int(os.getenv("MF_TOP_CANDIDATES", "300"))
+    top_candidates = max(env_top, 300)
     
     max_metrics = int(os.getenv("MF_MAX_METRICS", max_metrics))
     max_dimensions = int(os.getenv("MF_MAX_DIMENSIONS", max_dimensions))
@@ -56,6 +57,7 @@ def search_mf_catalog(
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
         qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
         
+        # Executes search with top_k=300 minimum
         results = qdrant_client.search(
             collection_name,
             query_vector,
@@ -107,7 +109,7 @@ def search_mf_catalog(
                     item_tokens = set(w for w in searchable_text.split() if len(w) > 2 and w not in INDONESIAN_STOP_WORDS)
                     token_matches = len(query_tokens.intersection(item_tokens))
 
-                    # Multi-word phrase matches get +100.0 to override raw neural logit scale
+                    # Multi-word phrase matches ("nilai transaksi") get +100.0 to override raw neural logit scale
                     desc_score = (phrase_matches * 100.0) + (token_matches * 2.0)
 
                     candidate_items.append(item)
