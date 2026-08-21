@@ -1133,7 +1133,7 @@ semantic_models:
   - name: blocked_balance
     type: categorical
     expr: blocked_balance
-    description: Nilai saldo yang diblokir atau tidak dapat digunakan.
+    description: Nilai saldo diblokir atau tidak dapat digunakan.
   - name: channel_owner_mirror
     type: categorical
     expr: channel_owner_mirror
@@ -1833,21 +1833,19 @@ semantic_models:
   - name: loan_principal_idr
     type: categorical
     expr: loan_principal_idr
-    description: Nilai pokok pinjaman dalam Rupiah.
+    description: Nilai pokok pinjaman Rupiah.
   - name: baki_debet
     type: categorical
     expr: baki_debet
-    description: Saldo pokok kredit yang masih terutang/outstanding.
+    description: Saldo pokok kredit masih terutang/outstanding.
   - name: psak_adj_dma
     type: categorical
     expr: psak_adj_dma
-    description: Nilai penyesuaian PSAK dengan kategori/komponen DMA sesuai definisi
-      internal.
+    description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
   - name: psak_adj_acc
     type: categorical
     expr: psak_adj_acc
-    description: Nilai penyesuaian PSAK dengan kategori/komponen ACC sesuai definisi
-      internal.
+    description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
   - name: avg_loan_principal_psak_mtd
     type: categorical
     expr: avg_loan_principal_psak_mtd
@@ -3210,129 +3208,121 @@ metrics:
     measure: funding_saldo_dspa_max
 - name: funding_blocked_balance_sum_metric
   label: Funding Blocked_Balance Sum
-  description: Nilai saldo yang diblokir atau tidak dapat digunakan.
+  description: Nilai saldo diblokir atau tidak dapat digunakan.
   type: simple
   type_params:
     measure: funding_blocked_balance_sum
 - name: funding_blocked_balance_average_metric
   label: Funding Blocked_Balance Average
-  description: Nilai saldo yang diblokir atau tidak dapat digunakan.
+  description: Nilai saldo diblokir atau tidak dapat digunakan.
   type: simple
   type_params:
     measure: funding_blocked_balance_average
 - name: funding_blocked_balance_min_metric
   label: Funding Blocked_Balance Min
-  description: Nilai saldo yang diblokir atau tidak dapat digunakan.
+  description: Nilai saldo diblokir atau tidak dapat digunakan.
   type: simple
   type_params:
     measure: funding_blocked_balance_min
 - name: funding_blocked_balance_max_metric
   label: Funding Blocked_Balance Max
-  description: Nilai saldo yang diblokir atau tidak dapat digunakan.
+  description: Nilai saldo diblokir atau tidak dapat digunakan.
   type: simple
   type_params:
     measure: funding_blocked_balance_max
 - name: lending_loan_principal_idr_sum_metric
   label: Lending Loan_Principal_Idr Sum
-  description: Nilai pokok pinjaman dalam Rupiah.
+  description: Nilai pokok pinjaman Rupiah.
   type: simple
   type_params:
     measure: lending_loan_principal_idr_sum
 - name: lending_loan_principal_idr_average_metric
   label: Lending Loan_Principal_Idr Average
-  description: Nilai pokok pinjaman dalam Rupiah.
+  description: Nilai pokok pinjaman Rupiah.
   type: simple
   type_params:
     measure: lending_loan_principal_idr_average
 - name: lending_loan_principal_idr_min_metric
   label: Lending Loan_Principal_Idr Min
-  description: Nilai pokok pinjaman dalam Rupiah.
+  description: Nilai pokok pinjaman Rupiah.
   type: simple
   type_params:
     measure: lending_loan_principal_idr_min
 - name: lending_loan_principal_idr_max_metric
   label: Lending Loan_Principal_Idr Max
-  description: Nilai pokok pinjaman dalam Rupiah.
+  description: Nilai pokok pinjaman Rupiah.
   type: simple
   type_params:
     measure: lending_loan_principal_idr_max
 - name: lending_baki_debet_sum_metric
   label: Lending Baki_Debet Sum
-  description: Saldo pokok kredit yang masih terutang/outstanding.
+  description: Saldo pokok kredit masih terutang/outstanding.
   type: simple
   type_params:
     measure: lending_baki_debet_sum
 - name: lending_baki_debet_average_metric
   label: Lending Baki_Debet Average
-  description: Saldo pokok kredit yang masih terutang/outstanding.
+  description: Saldo pokok kredit masih terutang/outstanding.
   type: simple
   type_params:
     measure: lending_baki_debet_average
 - name: lending_baki_debet_min_metric
   label: Lending Baki_Debet Min
-  description: Saldo pokok kredit yang masih terutang/outstanding.
+  description: Saldo pokok kredit masih terutang/outstanding.
   type: simple
   type_params:
     measure: lending_baki_debet_min
 - name: lending_baki_debet_max_metric
   label: Lending Baki_Debet Max
-  description: Saldo pokok kredit yang masih terutang/outstanding.
+  description: Saldo pokok kredit masih terutang/outstanding.
   type: simple
   type_params:
     measure: lending_baki_debet_max
 - name: lending_psak_adj_dma_sum_metric
   label: Lending Psak_Adj_Dma Sum
-  description: Nilai penyesuaian PSAK dengan kategori/komponen DMA sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_dma_sum
 - name: lending_psak_adj_dma_average_metric
   label: Lending Psak_Adj_Dma Average
-  description: Nilai penyesuaian PSAK dengan kategori/komponen DMA sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_dma_average
 - name: lending_psak_adj_dma_min_metric
   label: Lending Psak_Adj_Dma Min
-  description: Nilai penyesuaian PSAK dengan kategori/komponen DMA sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_dma_min
 - name: lending_psak_adj_dma_max_metric
   label: Lending Psak_Adj_Dma Max
-  description: Nilai penyesuaian PSAK dengan kategori/komponen DMA sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_dma_max
 - name: lending_psak_adj_acc_sum_metric
   label: Lending Psak_Adj_Acc Sum
-  description: Nilai penyesuaian PSAK dengan kategori/komponen ACC sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_acc_sum
 - name: lending_psak_adj_acc_average_metric
   label: Lending Psak_Adj_Acc Average
-  description: Nilai penyesuaian PSAK dengan kategori/komponen ACC sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_acc_average
 - name: lending_psak_adj_acc_min_metric
   label: Lending Psak_Adj_Acc Min
-  description: Nilai penyesuaian PSAK dengan kategori/komponen ACC sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_acc_min
 - name: lending_psak_adj_acc_max_metric
   label: Lending Psak_Adj_Acc Max
-  description: Nilai penyesuaian PSAK dengan kategori/komponen ACC sesuai definisi
-    internal.
+  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
   type: simple
   type_params:
     measure: lending_psak_adj_acc_max

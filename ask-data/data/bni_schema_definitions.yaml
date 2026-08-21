@@ -435,7 +435,7 @@ tables:
         description: "Consent Date"
 
   - name: dm_funding.funding
-    description: "Table datamart informasi funding nasabah, berisi informasi terkait account funding nasabah (tabungan, giro, deposito)"
+    description: "Table datamart informasi funding nasabah, berisi informasi terkait account funding nasabah (tabungan, giro, deposito). Table funding juga disebut dengan table DPK."
     columns:
       - name: as_of_date
         type: "date"
@@ -738,7 +738,7 @@ tables:
         description: "Tanggal transaksi terakhir (last transaction date)."
       - name: blocked_balance
         type: "decimal(35,5)"
-        description: "Nilai saldo yang diblokir atau tidak dapat digunakan."
+        description: "Nilai saldo diblokir atau tidak dapat digunakan."
       - name: channel_owner_mirror
         type: "varchar(20)"
         description: "Hasil mapping/mirror dari pemilik channel."
@@ -921,16 +921,16 @@ tables:
         description: "Kode Relationship Manager."
       - name: loan_principal_idr
         type: "decimal(22,3)"
-        description: "Nilai pokok pinjaman dalam Rupiah."
+        description: "Nilai pokok pinjaman Rupiah."
       - name: baki_debet
         type: "decimal(38,5)"
-        description: "Saldo pokok kredit yang masih terutang/outstanding."
+        description: "Saldo pokok kredit masih terutang/outstanding."
       - name: psak_adj_dma
         type: "decimal(38,5)"
-        description: "Nilai penyesuaian PSAK dengan kategori/komponen DMA sesuai definisi internal."
+        description: "Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal."
       - name: psak_adj_acc
         type: "decimal(38,5)"
-        description: "Nilai penyesuaian PSAK dengan kategori/komponen ACC sesuai definisi internal."
+        description: "Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal."
       - name: avg_loan_principal_psak_mtd
         type: "decimal(38,5)"
         description: "Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date."
