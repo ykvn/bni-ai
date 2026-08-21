@@ -1,18 +1,18 @@
 """
-MetricFlow (mf) metadata ingestion from Local YAML Schema.
+MetricFlow (mf) metadata ingestion from Local YAML Schema + Excel Definitions.
 
-Reads bni_dbt_schema.yaml directly, parses metrics, dimensions, entities, 
+Reads bni_dbt_schema.yaml + bni_dbt_definitions.xlsx, parses metrics, dimensions, entities, 
 resolves default time dimensions and availability dates, and indexes them into Qdrant.
 """
 import os
 import json
 import yaml
+import pandas as pd
 from pathlib import Path
 from datetime import datetime, timedelta
 
 from app.core.ingest_common import bootstrap_env, reset_and_index
 
-# Standardized project-root bootstrap (loads .env)
 bootstrap_env()
 
 def _resolve_relative_date(date_str: str) -> str:
@@ -29,24 +29,38 @@ def _resolve_relative_date(date_str: str) -> str:
             pass
     return str(date_str).strip()
 
-def get_yaml_path() -> Path:
-    """Resolves the path to the generated dbt schema YAML."""
+def get_paths():
     ask_data_root = Path("/home/cdsw/ask-data")
-    return ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
+    yaml_path = ask_data_root / "dbt_service" / "dbt_project" / "models" / "bni_dbt_schema.yaml"
+    excel_path = ask_data_root / "data" / "bni_dbt_definitions.xlsx"
+    return yaml_path, excel_path
 
 def ingest_mf_schema(
-    api_url: str = None, # Left for backward compatibility, but unused
+    api_url: str = None,
     vectordb_server_url: str = None,
     embed_rerank_url: str = None,
     collection_name: str = None,
     cml_token: str = None,
 ):
-    """Parses local bni_dbt_schema.yaml and indexes enriched payloads into Vector DB."""
-    yaml_path = get_yaml_path()
+    """Parses local dbt schema + Excel definitions and indexes availability-enriched payloads into Qdrant."""
+    yaml_path, excel_path = get_paths()
     
     if not yaml_path.exists():
         print(f"❌ Error: Schema YAML not found at {yaml_path}. Aborting ingestion.", flush=True)
         return
+
+    # 1. Map Table Name -> Resolved Availability Date from Excel
+    table_avail_map = {}
+    if excel_path.exists():
+        try:
+            tables_df = pd.read_excel(excel_path, sheet_name="Tables")
+            for _, r in tables_df.iterrows():
+                t_name = str(r.get("Table Name", "")).strip().lower()
+                a_date = r.get("Availability Date")
+                if t_name and pd.notna(a_date) and str(a_date).strip().lower() != 'nan':
+                    table_avail_map[t_name] = _resolve_relative_date(str(a_date).strip())
+        except Exception as e:
+            print(f"⚠️ Warning: Could not read Excel Availability Dates ({e})", flush=True)
 
     print(f"🌐 Loading local MetricFlow schema from: {yaml_path}...", flush=True)
     
@@ -59,26 +73,21 @@ def ingest_mf_schema(
     catalog_texts = []
     metadatas = []
 
-    # 1. Build lookup maps from Semantic Models
+    # 2. Build lookup maps from Semantic Models
     sm_primary_entity = {}
     measure_to_time_dim = {}
     measure_to_sm_name = {}
-    sm_avail_date = {}
 
     for sm in semantic_models:
         sm_name = sm.get("name")
-        primary_entity = sm_name # Fallback
-        raw_avail_date = sm.get("availability_date", "")
-        resolved_avail_date = _resolve_relative_date(raw_avail_date) if raw_avail_date else ""
-        sm_avail_date[sm_name] = resolved_avail_date
+        primary_entity = sm_name
+        resolved_avail_date = table_avail_map.get(sm_name, "")
         
-        # Find Primary Entity
         for ent in sm.get("entities", []):
             if ent.get("type") == "primary":
                 primary_entity = ent.get("name")
         sm_primary_entity[sm_name] = primary_entity
 
-        # Map Measures -> Time Dimension & Semantic Model
         for m in sm.get("measures", []):
             m_name = m.get("name")
             agg_time_col = m.get("agg_time_dimension")
@@ -87,7 +96,7 @@ def ingest_mf_schema(
                 if agg_time_col:
                     measure_to_time_dim[m_name] = f"{primary_entity}__{agg_time_col}"
 
-        # 2. Process Dimensions inside the Semantic Model
+        # Process Dimensions
         for d in sm.get("dimensions", []):
             d_name = d.get("name")
             d_type = d.get("type", "categorical")
@@ -106,7 +115,6 @@ def ingest_mf_schema(
             structured_payload = {
                 "item_type": "dimension",
                 "name": group_by_path,
-                "raw_name": f"{sm_name}__{d_name}",
                 "data_type": d_type,
                 "description": d_desc
             }
@@ -120,7 +128,7 @@ def ingest_mf_schema(
                 "raw_json": json.dumps(structured_payload, indent=2),
             })
 
-        # 3. Process Entities inside the Semantic Model
+        # Process Entities
         for e in sm.get("entities", []):
             e_name = e.get("name")
             e_type = e.get("type", "unknown")
@@ -148,7 +156,7 @@ def ingest_mf_schema(
                 "raw_json": json.dumps(structured_payload, indent=2),
             })
 
-    # 4. Process Top-Level Metrics
+    # 3. Process Top-Level Metrics
     for m in metrics:
         m_name = m.get("name", "unknown")
         m_label = m.get("label", m_name)
@@ -158,7 +166,7 @@ def ingest_mf_schema(
         default_time_dim = measure_to_time_dim.get(measure_ref, "None")
         
         m_sm_name = measure_to_sm_name.get(measure_ref)
-        m_avail_date = sm_avail_date.get(m_sm_name, "")
+        m_avail_date = table_avail_map.get(m_sm_name, "")
 
         searchable_text = (
             f"Metric Name: {m_name}\n"
@@ -186,9 +194,8 @@ def ingest_mf_schema(
             "raw_json": json.dumps(structured_payload, indent=2),
         })
 
-    print(f"📊 Extracted Total Chunks directly from YAML: {len(metrics)} Metrics, {len(catalog_texts) - len(metrics)} Dims/Entities", flush=True)
+    print(f"📊 Indexed {len(catalog_texts)} chunks into Qdrant with availability dates intact!", flush=True)
 
-    # 5. Index chunks into Qdrant
     reset_and_index(
         collection_name=collection_name,
         documents=catalog_texts,
@@ -196,5 +203,5 @@ def ingest_mf_schema(
         vectordb_server_url=vectordb_server_url,
         embed_rerank_url=embed_rerank_url,
         cml_token=cml_token,
-        dataset_name="MetricFlow Catalog (YAML-Based)",
+        dataset_name="MetricFlow Catalog (YAML + Excel Ingestion)",
     )
