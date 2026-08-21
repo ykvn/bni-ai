@@ -707,11 +707,12 @@ semantic_models:
     expr: NVL(cust_other_income, 0)
     agg: max
     agg_time_dimension: cif_open_date
+  availability_date: D-1
 - name: funding
   model: ref('funding')
   entities:
-  - name: as_of_date
-    type: foreign
+  - name: funding_as_of_date
+    type: unique
     expr: as_of_date
   - name: funding_account_number
     type: primary
@@ -1562,11 +1563,12 @@ semantic_models:
     expr: NVL(blocked_balance, 0)
     agg: max
     agg_time_dimension: cif_open_date
+  availability_date: D-1
 - name: lending
   model: ref('lending')
   entities:
-  - name: as_of_date
-    type: foreign
+  - name: lending_as_of_date
+    type: unique
     expr: as_of_date
   - name: lending_account_number
     type: primary
@@ -2378,6 +2380,7 @@ semantic_models:
     expr: NVL(ii_monthly, 0)
     agg: max
     agg_time_dimension: cif_open_date
+  availability_date: D-1
 - name: mapping_group_whs
   model: ref('mapping_group_whs')
   entities:
@@ -2457,1335 +2460,1491 @@ metrics:
     measure: trxchannel_amount_ori_max
 - name: customer_icons_mdm_id_count_metric
   label: Customer_Icons Mdm_Id Count
-  description: MDM ID
+  description: 'MDM ID [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_mdm_id_count
 - name: customer_icons_cust_age_sum_metric
   label: Customer_Icons Cust_Age Sum
-  description: Umur
+  description: 'Umur [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_age_sum
 - name: customer_icons_cust_age_average_metric
   label: Customer_Icons Cust_Age Average
-  description: Umur
+  description: 'Umur [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_age_average
 - name: customer_icons_cust_age_min_metric
   label: Customer_Icons Cust_Age Min
-  description: Umur
+  description: 'Umur [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_age_min
 - name: customer_icons_cust_age_max_metric
   label: Customer_Icons Cust_Age Max
-  description: Umur
+  description: 'Umur [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_age_max
 - name: customer_icons_cust_income_sum_metric
   label: Customer_Icons Cust_Income Sum
-  description: Pendapatan
+  description: 'Pendapatan [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_income_sum
 - name: customer_icons_cust_income_average_metric
   label: Customer_Icons Cust_Income Average
-  description: Pendapatan
+  description: 'Pendapatan [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_income_average
 - name: customer_icons_cust_income_min_metric
   label: Customer_Icons Cust_Income Min
-  description: Pendapatan
+  description: 'Pendapatan [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_income_min
 - name: customer_icons_cust_income_max_metric
   label: Customer_Icons Cust_Income Max
-  description: Pendapatan
+  description: 'Pendapatan [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_income_max
 - name: customer_icons_cust_rental_income_sum_metric
   label: Customer_Icons Cust_Rental_Income Sum
-  description: Pendapatan Sewa
+  description: 'Pendapatan Sewa [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_sum
 - name: customer_icons_cust_rental_income_average_metric
   label: Customer_Icons Cust_Rental_Income Average
-  description: Pendapatan Sewa
+  description: 'Pendapatan Sewa [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_average
 - name: customer_icons_cust_rental_income_min_metric
   label: Customer_Icons Cust_Rental_Income Min
-  description: Pendapatan Sewa
+  description: 'Pendapatan Sewa [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_min
 - name: customer_icons_cust_rental_income_max_metric
   label: Customer_Icons Cust_Rental_Income Max
-  description: Pendapatan Sewa
+  description: 'Pendapatan Sewa [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_max
 - name: customer_icons_cust_other_income_sum_metric
   label: Customer_Icons Cust_Other_Income Sum
-  description: Pendapatan Lain
+  description: 'Pendapatan Lain [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_sum
 - name: customer_icons_cust_other_income_average_metric
   label: Customer_Icons Cust_Other_Income Average
-  description: Pendapatan Lain
+  description: 'Pendapatan Lain [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_average
 - name: customer_icons_cust_other_income_min_metric
   label: Customer_Icons Cust_Other_Income Min
-  description: Pendapatan Lain
+  description: 'Pendapatan Lain [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_min
 - name: customer_icons_cust_other_income_max_metric
   label: Customer_Icons Cust_Other_Income Max
-  description: Pendapatan Lain
+  description: 'Pendapatan Lain [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_max
 - name: funding_rate_sum_metric
   label: Funding Rate Sum
-  description: Rate
+  description: 'Rate [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_rate_sum
 - name: funding_rate_average_metric
   label: Funding Rate Average
-  description: Rate
+  description: 'Rate [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_rate_average
 - name: funding_rate_min_metric
   label: Funding Rate Min
-  description: Rate
+  description: 'Rate [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_rate_min
 - name: funding_rate_max_metric
   label: Funding Rate Max
-  description: Rate
+  description: 'Rate [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_rate_max
 - name: funding_cur_book_bal_sum_metric
   label: Funding Cur_Book_Bal Sum
-  description: Balance Saat Ini
+  description: 'Balance Saat Ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_sum
 - name: funding_cur_book_bal_average_metric
   label: Funding Cur_Book_Bal Average
-  description: Balance Saat Ini
+  description: 'Balance Saat Ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_average
 - name: funding_cur_book_bal_min_metric
   label: Funding Cur_Book_Bal Min
-  description: Balance Saat Ini
+  description: 'Balance Saat Ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_min
 - name: funding_cur_book_bal_max_metric
   label: Funding Cur_Book_Bal Max
-  description: Balance Saat Ini
+  description: 'Balance Saat Ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_max
 - name: funding_cur_book_bal_idr_sum_metric
   label: Funding Cur_Book_Bal_Idr Sum
-  description: Balance IDR Saat ini
+  description: 'Balance IDR Saat ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_sum
 - name: funding_cur_book_bal_idr_average_metric
   label: Funding Cur_Book_Bal_Idr Average
-  description: Balance IDR Saat ini
+  description: 'Balance IDR Saat ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_average
 - name: funding_cur_book_bal_idr_min_metric
   label: Funding Cur_Book_Bal_Idr Min
-  description: Balance IDR Saat ini
+  description: 'Balance IDR Saat ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_min
 - name: funding_cur_book_bal_idr_max_metric
   label: Funding Cur_Book_Bal_Idr Max
-  description: Balance IDR Saat ini
+  description: 'Balance IDR Saat ini [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_max
 - name: funding_amortisi_idr_sum_metric
   label: Funding Amortisi_Idr Sum
-  description: Amortisi dalam IDR
+  description: 'Amortisi dalam IDR [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_amortisi_idr_sum
 - name: funding_amortisi_idr_average_metric
   label: Funding Amortisi_Idr Average
-  description: Amortisi dalam IDR
+  description: 'Amortisi dalam IDR [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_amortisi_idr_average
 - name: funding_amortisi_idr_min_metric
   label: Funding Amortisi_Idr Min
-  description: Amortisi dalam IDR
+  description: 'Amortisi dalam IDR [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_amortisi_idr_min
 - name: funding_amortisi_idr_max_metric
   label: Funding Amortisi_Idr Max
-  description: Amortisi dalam IDR
+  description: 'Amortisi dalam IDR [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_amortisi_idr_max
 - name: funding_ending_balance_sum_metric
   label: Funding Ending_Balance Sum
-  description: Ending Balance
+  description: 'Ending Balance [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_sum
 - name: funding_ending_balance_average_metric
   label: Funding Ending_Balance Average
-  description: Ending Balance
+  description: 'Ending Balance [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_average
 - name: funding_ending_balance_min_metric
   label: Funding Ending_Balance Min
-  description: Ending Balance
+  description: 'Ending Balance [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_min
 - name: funding_ending_balance_max_metric
   label: Funding Ending_Balance Max
-  description: Ending Balance
+  description: 'Ending Balance [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_max
 - name: funding_avg_book_bal_mtd_sum_metric
   label: Funding Avg_Book_Bal_Mtd Sum
-  description: Rata-rata book balance MTD
+  description: 'Rata-rata book balance MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_sum
 - name: funding_avg_book_bal_mtd_average_metric
   label: Funding Avg_Book_Bal_Mtd Average
-  description: Rata-rata book balance MTD
+  description: 'Rata-rata book balance MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_average
 - name: funding_avg_book_bal_mtd_min_metric
   label: Funding Avg_Book_Bal_Mtd Min
-  description: Rata-rata book balance MTD
+  description: 'Rata-rata book balance MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_min
 - name: funding_avg_book_bal_mtd_max_metric
   label: Funding Avg_Book_Bal_Mtd Max
-  description: Rata-rata book balance MTD
+  description: 'Rata-rata book balance MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_max
 - name: funding_avg_book_bal_mtd_idr_sum_metric
   label: Funding Avg_Book_Bal_Mtd_Idr Sum
-  description: Rata-rata book balance MTD dalam IDR
+  description: 'Rata-rata book balance MTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_idr_sum
 - name: funding_avg_book_bal_mtd_idr_average_metric
   label: Funding Avg_Book_Bal_Mtd_Idr Average
-  description: Rata-rata book balance MTD dalam IDR
+  description: 'Rata-rata book balance MTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_idr_average
 - name: funding_avg_book_bal_mtd_idr_min_metric
   label: Funding Avg_Book_Bal_Mtd_Idr Min
-  description: Rata-rata book balance MTD dalam IDR
+  description: 'Rata-rata book balance MTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_idr_min
 - name: funding_avg_book_bal_mtd_idr_max_metric
   label: Funding Avg_Book_Bal_Mtd_Idr Max
-  description: Rata-rata book balance MTD dalam IDR
+  description: 'Rata-rata book balance MTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_mtd_idr_max
 - name: funding_avg_book_bal_ytd_sum_metric
   label: Funding Avg_Book_Bal_Ytd Sum
-  description: Rata-rata book balance YTD
+  description: 'Rata-rata book balance YTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_sum
 - name: funding_avg_book_bal_ytd_average_metric
   label: Funding Avg_Book_Bal_Ytd Average
-  description: Rata-rata book balance YTD
+  description: 'Rata-rata book balance YTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_average
 - name: funding_avg_book_bal_ytd_min_metric
   label: Funding Avg_Book_Bal_Ytd Min
-  description: Rata-rata book balance YTD
+  description: 'Rata-rata book balance YTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_min
 - name: funding_avg_book_bal_ytd_max_metric
   label: Funding Avg_Book_Bal_Ytd Max
-  description: Rata-rata book balance YTD
+  description: 'Rata-rata book balance YTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_max
 - name: funding_avg_book_bal_ytd_idr_sum_metric
   label: Funding Avg_Book_Bal_Ytd_Idr Sum
-  description: Rata-rata book balance YTD dalam IDR
+  description: 'Rata-rata book balance YTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_idr_sum
 - name: funding_avg_book_bal_ytd_idr_average_metric
   label: Funding Avg_Book_Bal_Ytd_Idr Average
-  description: Rata-rata book balance YTD dalam IDR
+  description: 'Rata-rata book balance YTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_idr_average
 - name: funding_avg_book_bal_ytd_idr_min_metric
   label: Funding Avg_Book_Bal_Ytd_Idr Min
-  description: Rata-rata book balance YTD dalam IDR
+  description: 'Rata-rata book balance YTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_idr_min
 - name: funding_avg_book_bal_ytd_idr_max_metric
   label: Funding Avg_Book_Bal_Ytd_Idr Max
-  description: Rata-rata book balance YTD dalam IDR
+  description: 'Rata-rata book balance YTD dalam IDR [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: funding_avg_book_bal_ytd_idr_max
 - name: funding_cur_book_bal_mtd_sum_metric
   label: Funding Cur_Book_Bal_Mtd Sum
-  description: CUR BOOK BAL MTD
+  description: 'CUR BOOK BAL MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_mtd_sum
 - name: funding_cur_book_bal_mtd_average_metric
   label: Funding Cur_Book_Bal_Mtd Average
-  description: CUR BOOK BAL MTD
+  description: 'CUR BOOK BAL MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_mtd_average
 - name: funding_cur_book_bal_mtd_min_metric
   label: Funding Cur_Book_Bal_Mtd Min
-  description: CUR BOOK BAL MTD
+  description: 'CUR BOOK BAL MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_mtd_min
 - name: funding_cur_book_bal_mtd_max_metric
   label: Funding Cur_Book_Bal_Mtd Max
-  description: CUR BOOK BAL MTD
+  description: 'CUR BOOK BAL MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_mtd_max
 - name: funding_cur_book_bal_idr_mtd_sum_metric
   label: Funding Cur_Book_Bal_Idr_Mtd Sum
-  description: CUR Book bal idr MTD
+  description: 'CUR Book bal idr MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_mtd_sum
 - name: funding_cur_book_bal_idr_mtd_average_metric
   label: Funding Cur_Book_Bal_Idr_Mtd Average
-  description: CUR Book bal idr MTD
+  description: 'CUR Book bal idr MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_mtd_average
 - name: funding_cur_book_bal_idr_mtd_min_metric
   label: Funding Cur_Book_Bal_Idr_Mtd Min
-  description: CUR Book bal idr MTD
+  description: 'CUR Book bal idr MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_mtd_min
 - name: funding_cur_book_bal_idr_mtd_max_metric
   label: Funding Cur_Book_Bal_Idr_Mtd Max
-  description: CUR Book bal idr MTD
+  description: 'CUR Book bal idr MTD [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_mtd_max
 - name: funding_cur_book_bal_ytd_sum_metric
   label: Funding Cur_Book_Bal_Ytd Sum
-  description: Saldo buku berjalan untuk periode Year-to-Date (YTD).
+  description: 'Saldo buku berjalan untuk periode Year-to-Date (YTD). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_ytd_sum
 - name: funding_cur_book_bal_ytd_average_metric
   label: Funding Cur_Book_Bal_Ytd Average
-  description: Saldo buku berjalan untuk periode Year-to-Date (YTD).
+  description: 'Saldo buku berjalan untuk periode Year-to-Date (YTD). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_ytd_average
 - name: funding_cur_book_bal_ytd_min_metric
   label: Funding Cur_Book_Bal_Ytd Min
-  description: Saldo buku berjalan untuk periode Year-to-Date (YTD).
+  description: 'Saldo buku berjalan untuk periode Year-to-Date (YTD). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_ytd_min
 - name: funding_cur_book_bal_ytd_max_metric
   label: Funding Cur_Book_Bal_Ytd Max
-  description: Saldo buku berjalan untuk periode Year-to-Date (YTD).
+  description: 'Saldo buku berjalan untuk periode Year-to-Date (YTD). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_ytd_max
 - name: funding_cur_book_bal_idr_ytd_sum_metric
   label: Funding Cur_Book_Bal_Idr_Ytd Sum
-  description: Saldo buku YTD yang telah dikonversi ke Rupiah (IDR).
+  description: 'Saldo buku YTD yang telah dikonversi ke Rupiah (IDR). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_ytd_sum
 - name: funding_cur_book_bal_idr_ytd_average_metric
   label: Funding Cur_Book_Bal_Idr_Ytd Average
-  description: Saldo buku YTD yang telah dikonversi ke Rupiah (IDR).
+  description: 'Saldo buku YTD yang telah dikonversi ke Rupiah (IDR). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_ytd_average
 - name: funding_cur_book_bal_idr_ytd_min_metric
   label: Funding Cur_Book_Bal_Idr_Ytd Min
-  description: Saldo buku YTD yang telah dikonversi ke Rupiah (IDR).
+  description: 'Saldo buku YTD yang telah dikonversi ke Rupiah (IDR). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_ytd_min
 - name: funding_cur_book_bal_idr_ytd_max_metric
   label: Funding Cur_Book_Bal_Idr_Ytd Max
-  description: Saldo buku YTD yang telah dikonversi ke Rupiah (IDR).
+  description: 'Saldo buku YTD yang telah dikonversi ke Rupiah (IDR). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_ytd_max
 - name: funding_cur_book_bal_yoy_sum_metric
   label: Funding Cur_Book_Bal_Yoy Sum
-  description: Saldo buku untuk periode/perbandingan Year-on-Year (YoY).
+  description: 'Saldo buku untuk periode/perbandingan Year-on-Year (YoY). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_yoy_sum
 - name: funding_cur_book_bal_yoy_average_metric
   label: Funding Cur_Book_Bal_Yoy Average
-  description: Saldo buku untuk periode/perbandingan Year-on-Year (YoY).
+  description: 'Saldo buku untuk periode/perbandingan Year-on-Year (YoY). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_yoy_average
 - name: funding_cur_book_bal_yoy_min_metric
   label: Funding Cur_Book_Bal_Yoy Min
-  description: Saldo buku untuk periode/perbandingan Year-on-Year (YoY).
+  description: 'Saldo buku untuk periode/perbandingan Year-on-Year (YoY). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_yoy_min
 - name: funding_cur_book_bal_yoy_max_metric
   label: Funding Cur_Book_Bal_Yoy Max
-  description: Saldo buku untuk periode/perbandingan Year-on-Year (YoY).
+  description: 'Saldo buku untuk periode/perbandingan Year-on-Year (YoY). [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_yoy_max
 - name: funding_cur_book_bal_idr_yoy_sum_metric
   label: Funding Cur_Book_Bal_Idr_Yoy Sum
-  description: Saldo buku YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo buku YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_yoy_sum
 - name: funding_cur_book_bal_idr_yoy_average_metric
   label: Funding Cur_Book_Bal_Idr_Yoy Average
-  description: Saldo buku YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo buku YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_yoy_average
 - name: funding_cur_book_bal_idr_yoy_min_metric
   label: Funding Cur_Book_Bal_Idr_Yoy Min
-  description: Saldo buku YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo buku YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_yoy_min
 - name: funding_cur_book_bal_idr_yoy_max_metric
   label: Funding Cur_Book_Bal_Idr_Yoy Max
-  description: Saldo buku YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo buku YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_cur_book_bal_idr_yoy_max
 - name: funding_ie_daily_sum_metric
   label: Funding Ie_Daily Sum
-  description: Interest Expense atau beban bunga harian.
+  description: 'Interest Expense atau beban bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_daily_sum
 - name: funding_ie_daily_average_metric
   label: Funding Ie_Daily Average
-  description: Interest Expense atau beban bunga harian.
+  description: 'Interest Expense atau beban bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_daily_average
 - name: funding_ie_daily_min_metric
   label: Funding Ie_Daily Min
-  description: Interest Expense atau beban bunga harian.
+  description: 'Interest Expense atau beban bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_daily_min
 - name: funding_ie_daily_max_metric
   label: Funding Ie_Daily Max
-  description: Interest Expense atau beban bunga harian.
+  description: 'Interest Expense atau beban bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_daily_max
 - name: funding_ie_mtd_sum_metric
   label: Funding Ie_Mtd Sum
-  description: Interest Expense kumulatif Month-to-Date (MTD).
+  description: 'Interest Expense kumulatif Month-to-Date (MTD). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_mtd_sum
 - name: funding_ie_mtd_average_metric
   label: Funding Ie_Mtd Average
-  description: Interest Expense kumulatif Month-to-Date (MTD).
+  description: 'Interest Expense kumulatif Month-to-Date (MTD). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_mtd_average
 - name: funding_ie_mtd_min_metric
   label: Funding Ie_Mtd Min
-  description: Interest Expense kumulatif Month-to-Date (MTD).
+  description: 'Interest Expense kumulatif Month-to-Date (MTD). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_mtd_min
 - name: funding_ie_mtd_max_metric
   label: Funding Ie_Mtd Max
-  description: Interest Expense kumulatif Month-to-Date (MTD).
+  description: 'Interest Expense kumulatif Month-to-Date (MTD). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_mtd_max
 - name: funding_ie_pms_eom_sum_metric
   label: Funding Ie_Pms_Eom Sum
-  description: Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
-    (EOM).
+  description: 'Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
+    (EOM). [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_pms_eom_sum
 - name: funding_ie_pms_eom_average_metric
   label: Funding Ie_Pms_Eom Average
-  description: Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
-    (EOM).
+  description: 'Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
+    (EOM). [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_pms_eom_average
 - name: funding_ie_pms_eom_min_metric
   label: Funding Ie_Pms_Eom Min
-  description: Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
-    (EOM).
+  description: 'Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
+    (EOM). [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_pms_eom_min
 - name: funding_ie_pms_eom_max_metric
   label: Funding Ie_Pms_Eom Max
-  description: Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
-    (EOM).
+  description: 'Interest Expense berdasarkan proses/sistem PMS pada posisi End-of-Month
+    (EOM). [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ie_pms_eom_max
 - name: funding_ending_balance_mtd_sum_metric
   label: Funding Ending_Balance_Mtd Sum
-  description: Saldo akhir untuk periode Month-to-Date.
+  description: 'Saldo akhir untuk periode Month-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_mtd_sum
 - name: funding_ending_balance_mtd_average_metric
   label: Funding Ending_Balance_Mtd Average
-  description: Saldo akhir untuk periode Month-to-Date.
+  description: 'Saldo akhir untuk periode Month-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_mtd_average
 - name: funding_ending_balance_mtd_min_metric
   label: Funding Ending_Balance_Mtd Min
-  description: Saldo akhir untuk periode Month-to-Date.
+  description: 'Saldo akhir untuk periode Month-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_mtd_min
 - name: funding_ending_balance_mtd_max_metric
   label: Funding Ending_Balance_Mtd Max
-  description: Saldo akhir untuk periode Month-to-Date.
+  description: 'Saldo akhir untuk periode Month-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_mtd_max
 - name: funding_ending_balance_idr_mtd_sum_metric
   label: Funding Ending_Balance_Idr_Mtd Sum
-  description: Saldo akhir MTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir MTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_mtd_sum
 - name: funding_ending_balance_idr_mtd_average_metric
   label: Funding Ending_Balance_Idr_Mtd Average
-  description: Saldo akhir MTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir MTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_mtd_average
 - name: funding_ending_balance_idr_mtd_min_metric
   label: Funding Ending_Balance_Idr_Mtd Min
-  description: Saldo akhir MTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir MTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_mtd_min
 - name: funding_ending_balance_idr_mtd_max_metric
   label: Funding Ending_Balance_Idr_Mtd Max
-  description: Saldo akhir MTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir MTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_mtd_max
 - name: funding_ending_balance_ytd_sum_metric
   label: Funding Ending_Balance_Ytd Sum
-  description: Saldo akhir untuk periode Year-to-Date.
+  description: 'Saldo akhir untuk periode Year-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_ytd_sum
 - name: funding_ending_balance_ytd_average_metric
   label: Funding Ending_Balance_Ytd Average
-  description: Saldo akhir untuk periode Year-to-Date.
+  description: 'Saldo akhir untuk periode Year-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_ytd_average
 - name: funding_ending_balance_ytd_min_metric
   label: Funding Ending_Balance_Ytd Min
-  description: Saldo akhir untuk periode Year-to-Date.
+  description: 'Saldo akhir untuk periode Year-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_ytd_min
 - name: funding_ending_balance_ytd_max_metric
   label: Funding Ending_Balance_Ytd Max
-  description: Saldo akhir untuk periode Year-to-Date.
+  description: 'Saldo akhir untuk periode Year-to-Date. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_ytd_max
 - name: funding_ending_balance_idr_ytd_sum_metric
   label: Funding Ending_Balance_Idr_Ytd Sum
-  description: Saldo akhir YTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_ytd_sum
 - name: funding_ending_balance_idr_ytd_average_metric
   label: Funding Ending_Balance_Idr_Ytd Average
-  description: Saldo akhir YTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_ytd_average
 - name: funding_ending_balance_idr_ytd_min_metric
   label: Funding Ending_Balance_Idr_Ytd Min
-  description: Saldo akhir YTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_ytd_min
 - name: funding_ending_balance_idr_ytd_max_metric
   label: Funding Ending_Balance_Idr_Ytd Max
-  description: Saldo akhir YTD yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YTD yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_ytd_max
 - name: funding_ending_balance_yoy_sum_metric
   label: Funding Ending_Balance_Yoy Sum
-  description: Saldo akhir untuk periode/perbandingan Year-on-Year.
+  description: 'Saldo akhir untuk periode/perbandingan Year-on-Year. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_yoy_sum
 - name: funding_ending_balance_yoy_average_metric
   label: Funding Ending_Balance_Yoy Average
-  description: Saldo akhir untuk periode/perbandingan Year-on-Year.
+  description: 'Saldo akhir untuk periode/perbandingan Year-on-Year. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_yoy_average
 - name: funding_ending_balance_yoy_min_metric
   label: Funding Ending_Balance_Yoy Min
-  description: Saldo akhir untuk periode/perbandingan Year-on-Year.
+  description: 'Saldo akhir untuk periode/perbandingan Year-on-Year. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_yoy_min
 - name: funding_ending_balance_yoy_max_metric
   label: Funding Ending_Balance_Yoy Max
-  description: Saldo akhir untuk periode/perbandingan Year-on-Year.
+  description: 'Saldo akhir untuk periode/perbandingan Year-on-Year. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_yoy_max
 - name: funding_ending_balance_idr_yoy_sum_metric
   label: Funding Ending_Balance_Idr_Yoy Sum
-  description: Saldo akhir YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_yoy_sum
 - name: funding_ending_balance_idr_yoy_average_metric
   label: Funding Ending_Balance_Idr_Yoy Average
-  description: Saldo akhir YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_yoy_average
 - name: funding_ending_balance_idr_yoy_min_metric
   label: Funding Ending_Balance_Idr_Yoy Min
-  description: Saldo akhir YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_yoy_min
 - name: funding_ending_balance_idr_yoy_max_metric
   label: Funding Ending_Balance_Idr_Yoy Max
-  description: Saldo akhir YoY yang telah dikonversi ke Rupiah.
+  description: 'Saldo akhir YoY yang telah dikonversi ke Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_ending_balance_idr_yoy_max
 - name: funding_saldo_dsra_sum_metric
   label: Funding Saldo_Dsra Sum
-  description: Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
-    kewajiban utang.
+  description: 'Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
+    kewajiban utang. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dsra_sum
 - name: funding_saldo_dsra_average_metric
   label: Funding Saldo_Dsra Average
-  description: Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
-    kewajiban utang.
+  description: 'Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
+    kewajiban utang. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dsra_average
 - name: funding_saldo_dsra_min_metric
   label: Funding Saldo_Dsra Min
-  description: Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
-    kewajiban utang.
+  description: 'Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
+    kewajiban utang. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dsra_min
 - name: funding_saldo_dsra_max_metric
   label: Funding Saldo_Dsra Max
-  description: Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
-    kewajiban utang.
+  description: 'Saldo Debt Service Reserve Account (DSRA) atau rekening cadangan pembayaran
+    kewajiban utang. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dsra_max
 - name: funding_saldo_dspa_sum_metric
   label: Funding Saldo_Dspa Sum
-  description: Saldo DSPA sesuai definisi rekening/internal sistem bank.
+  description: 'Saldo DSPA sesuai definisi rekening/internal sistem bank. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dspa_sum
 - name: funding_saldo_dspa_average_metric
   label: Funding Saldo_Dspa Average
-  description: Saldo DSPA sesuai definisi rekening/internal sistem bank.
+  description: 'Saldo DSPA sesuai definisi rekening/internal sistem bank. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dspa_average
 - name: funding_saldo_dspa_min_metric
   label: Funding Saldo_Dspa Min
-  description: Saldo DSPA sesuai definisi rekening/internal sistem bank.
+  description: 'Saldo DSPA sesuai definisi rekening/internal sistem bank. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dspa_min
 - name: funding_saldo_dspa_max_metric
   label: Funding Saldo_Dspa Max
-  description: Saldo DSPA sesuai definisi rekening/internal sistem bank.
+  description: 'Saldo DSPA sesuai definisi rekening/internal sistem bank. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: funding_saldo_dspa_max
 - name: funding_blocked_balance_sum_metric
   label: Funding Blocked_Balance Sum
-  description: Nilai saldo diblokir atau tidak dapat digunakan.
+  description: 'Nilai saldo diblokir atau tidak dapat digunakan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_blocked_balance_sum
 - name: funding_blocked_balance_average_metric
   label: Funding Blocked_Balance Average
-  description: Nilai saldo diblokir atau tidak dapat digunakan.
+  description: 'Nilai saldo diblokir atau tidak dapat digunakan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_blocked_balance_average
 - name: funding_blocked_balance_min_metric
   label: Funding Blocked_Balance Min
-  description: Nilai saldo diblokir atau tidak dapat digunakan.
+  description: 'Nilai saldo diblokir atau tidak dapat digunakan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_blocked_balance_min
 - name: funding_blocked_balance_max_metric
   label: Funding Blocked_Balance Max
-  description: Nilai saldo diblokir atau tidak dapat digunakan.
+  description: 'Nilai saldo diblokir atau tidak dapat digunakan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: funding_blocked_balance_max
 - name: lending_loan_principal_idr_sum_metric
   label: Lending Loan_Principal_Idr Sum
-  description: Nilai pokok pinjaman Rupiah.
+  description: 'Nilai pokok pinjaman Rupiah. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_loan_principal_idr_sum
 - name: lending_loan_principal_idr_average_metric
   label: Lending Loan_Principal_Idr Average
-  description: Nilai pokok pinjaman Rupiah.
+  description: 'Nilai pokok pinjaman Rupiah. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_loan_principal_idr_average
 - name: lending_loan_principal_idr_min_metric
   label: Lending Loan_Principal_Idr Min
-  description: Nilai pokok pinjaman Rupiah.
+  description: 'Nilai pokok pinjaman Rupiah. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_loan_principal_idr_min
 - name: lending_loan_principal_idr_max_metric
   label: Lending Loan_Principal_Idr Max
-  description: Nilai pokok pinjaman Rupiah.
+  description: 'Nilai pokok pinjaman Rupiah. [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_loan_principal_idr_max
 - name: lending_baki_debet_sum_metric
   label: Lending Baki_Debet Sum
-  description: Saldo pokok kredit masih terutang/outstanding.
+  description: 'Saldo pokok kredit masih terutang/outstanding. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_baki_debet_sum
 - name: lending_baki_debet_average_metric
   label: Lending Baki_Debet Average
-  description: Saldo pokok kredit masih terutang/outstanding.
+  description: 'Saldo pokok kredit masih terutang/outstanding. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_baki_debet_average
 - name: lending_baki_debet_min_metric
   label: Lending Baki_Debet Min
-  description: Saldo pokok kredit masih terutang/outstanding.
+  description: 'Saldo pokok kredit masih terutang/outstanding. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_baki_debet_min
 - name: lending_baki_debet_max_metric
   label: Lending Baki_Debet Max
-  description: Saldo pokok kredit masih terutang/outstanding.
+  description: 'Saldo pokok kredit masih terutang/outstanding. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_baki_debet_max
 - name: lending_psak_adj_dma_sum_metric
   label: Lending Psak_Adj_Dma Sum
-  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_dma_sum
 - name: lending_psak_adj_dma_average_metric
   label: Lending Psak_Adj_Dma Average
-  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_dma_average
 - name: lending_psak_adj_dma_min_metric
   label: Lending Psak_Adj_Dma Min
-  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_dma_min
 - name: lending_psak_adj_dma_max_metric
   label: Lending Psak_Adj_Dma Max
-  description: Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen DMA sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_dma_max
 - name: lending_psak_adj_acc_sum_metric
   label: Lending Psak_Adj_Acc Sum
-  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_acc_sum
 - name: lending_psak_adj_acc_average_metric
   label: Lending Psak_Adj_Acc Average
-  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_acc_average
 - name: lending_psak_adj_acc_min_metric
   label: Lending Psak_Adj_Acc Min
-  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_acc_min
 - name: lending_psak_adj_acc_max_metric
   label: Lending Psak_Adj_Acc Max
-  description: Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+  description: 'Nilai penyesuaian PSAK kategori/komponen ACC sesuai definisi internal.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_psak_adj_acc_max
 - name: lending_avg_loan_principal_psak_mtd_sum_metric
   label: Lending Avg_Loan_Principal_Psak_Mtd Sum
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_mtd_sum
 - name: lending_avg_loan_principal_psak_mtd_average_metric
   label: Lending Avg_Loan_Principal_Psak_Mtd Average
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_mtd_average
 - name: lending_avg_loan_principal_psak_mtd_min_metric
   label: Lending Avg_Loan_Principal_Psak_Mtd Min
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_mtd_min
 - name: lending_avg_loan_principal_psak_mtd_max_metric
   label: Lending Avg_Loan_Principal_Psak_Mtd Max
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Month-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_mtd_max
 - name: lending_avg_loan_principal_psak_ytd_sum_metric
   label: Lending Avg_Loan_Principal_Psak_Ytd Sum
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_ytd_sum
 - name: lending_avg_loan_principal_psak_ytd_average_metric
   label: Lending Avg_Loan_Principal_Psak_Ytd Average
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_ytd_average
 - name: lending_avg_loan_principal_psak_ytd_min_metric
   label: Lending Avg_Loan_Principal_Psak_Ytd Min
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_ytd_min
 - name: lending_avg_loan_principal_psak_ytd_max_metric
   label: Lending Avg_Loan_Principal_Psak_Ytd Max
-  description: Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+  description: 'Rata-rata pokok pinjaman berdasarkan PSAK untuk periode Year-to-Date.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_psak_ytd_max
 - name: lending_max_credit_sum_metric
   label: Lending Max_Credit Sum
-  description: Batas/nilai maksimum kredit yang diberikan.
+  description: 'Batas/nilai maksimum kredit yang diberikan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_max_credit_sum
 - name: lending_max_credit_average_metric
   label: Lending Max_Credit Average
-  description: Batas/nilai maksimum kredit yang diberikan.
+  description: 'Batas/nilai maksimum kredit yang diberikan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_max_credit_average
 - name: lending_max_credit_min_metric
   label: Lending Max_Credit Min
-  description: Batas/nilai maksimum kredit yang diberikan.
+  description: 'Batas/nilai maksimum kredit yang diberikan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_max_credit_min
 - name: lending_max_credit_max_metric
   label: Lending Max_Credit Max
-  description: Batas/nilai maksimum kredit yang diberikan.
+  description: 'Batas/nilai maksimum kredit yang diberikan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_max_credit_max
 - name: lending_commitment_bal_sum_metric
   label: Lending Commitment_Bal Sum
-  description: Saldo komitmen fasilitas kredit dalam mata uang asli.
+  description: 'Saldo komitmen fasilitas kredit dalam mata uang asli. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_sum
 - name: lending_commitment_bal_average_metric
   label: Lending Commitment_Bal Average
-  description: Saldo komitmen fasilitas kredit dalam mata uang asli.
+  description: 'Saldo komitmen fasilitas kredit dalam mata uang asli. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_average
 - name: lending_commitment_bal_min_metric
   label: Lending Commitment_Bal Min
-  description: Saldo komitmen fasilitas kredit dalam mata uang asli.
+  description: 'Saldo komitmen fasilitas kredit dalam mata uang asli. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_min
 - name: lending_commitment_bal_max_metric
   label: Lending Commitment_Bal Max
-  description: Saldo komitmen fasilitas kredit dalam mata uang asli.
+  description: 'Saldo komitmen fasilitas kredit dalam mata uang asli. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_max
 - name: lending_commitment_bal_idr_sum_metric
   label: Lending Commitment_Bal_Idr Sum
-  description: Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah.
+  description: 'Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_idr_sum
 - name: lending_commitment_bal_idr_average_metric
   label: Lending Commitment_Bal_Idr Average
-  description: Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah.
+  description: 'Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_idr_average
 - name: lending_commitment_bal_idr_min_metric
   label: Lending Commitment_Bal_Idr Min
-  description: Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah.
+  description: 'Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_idr_min
 - name: lending_commitment_bal_idr_max_metric
   label: Lending Commitment_Bal_Idr Max
-  description: Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah.
+  description: 'Saldo komitmen fasilitas kredit yang dikonversi ke Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_commitment_bal_idr_max
 - name: lending_org_credit_limit_sum_metric
   label: Lending Org_Credit_Limit Sum
-  description: Limit kredit awal/original credit limit.
+  description: 'Limit kredit awal/original credit limit. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_org_credit_limit_sum
 - name: lending_org_credit_limit_average_metric
   label: Lending Org_Credit_Limit Average
-  description: Limit kredit awal/original credit limit.
+  description: 'Limit kredit awal/original credit limit. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_org_credit_limit_average
 - name: lending_org_credit_limit_min_metric
   label: Lending Org_Credit_Limit Min
-  description: Limit kredit awal/original credit limit.
+  description: 'Limit kredit awal/original credit limit. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_org_credit_limit_min
 - name: lending_org_credit_limit_max_metric
   label: Lending Org_Credit_Limit Max
-  description: Limit kredit awal/original credit limit.
+  description: 'Limit kredit awal/original credit limit. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_org_credit_limit_max
 - name: lending_add_credit_limit_sum_metric
   label: Lending Add_Credit_Limit Sum
-  description: Tambahan limit kredit yang diberikan.
+  description: 'Tambahan limit kredit yang diberikan. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_add_credit_limit_sum
 - name: lending_add_credit_limit_average_metric
   label: Lending Add_Credit_Limit Average
-  description: Tambahan limit kredit yang diberikan.
+  description: 'Tambahan limit kredit yang diberikan. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_add_credit_limit_average
 - name: lending_add_credit_limit_min_metric
   label: Lending Add_Credit_Limit Min
-  description: Tambahan limit kredit yang diberikan.
+  description: 'Tambahan limit kredit yang diberikan. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_add_credit_limit_min
 - name: lending_add_credit_limit_max_metric
   label: Lending Add_Credit_Limit Max
-  description: Tambahan limit kredit yang diberikan.
+  description: 'Tambahan limit kredit yang diberikan. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_add_credit_limit_max
 - name: lending_avg_loan_principal_ytd_sum_metric
   label: Lending Avg_Loan_Principal_Ytd Sum
-  description: Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_sum
 - name: lending_avg_loan_principal_ytd_average_metric
   label: Lending Avg_Loan_Principal_Ytd Average
-  description: Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_average
 - name: lending_avg_loan_principal_ytd_min_metric
   label: Lending Avg_Loan_Principal_Ytd Min
-  description: Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_min
 - name: lending_avg_loan_principal_ytd_max_metric
   label: Lending Avg_Loan_Principal_Ytd Max
-  description: Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Year-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_max
 - name: lending_avg_loan_principal_ytd_idr_sum_metric
   label: Lending Avg_Loan_Principal_Ytd_Idr Sum
-  description: Rata-rata saldo pokok pinjaman YTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman YTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_idr_sum
 - name: lending_avg_loan_principal_ytd_idr_average_metric
   label: Lending Avg_Loan_Principal_Ytd_Idr Average
-  description: Rata-rata saldo pokok pinjaman YTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman YTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_idr_average
 - name: lending_avg_loan_principal_ytd_idr_min_metric
   label: Lending Avg_Loan_Principal_Ytd_Idr Min
-  description: Rata-rata saldo pokok pinjaman YTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman YTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_idr_min
 - name: lending_avg_loan_principal_ytd_idr_max_metric
   label: Lending Avg_Loan_Principal_Ytd_Idr Max
-  description: Rata-rata saldo pokok pinjaman YTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman YTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_ytd_idr_max
 - name: lending_avg_loan_principal_mtd_sum_metric
   label: Lending Avg_Loan_Principal_Mtd Sum
-  description: Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_sum
 - name: lending_avg_loan_principal_mtd_average_metric
   label: Lending Avg_Loan_Principal_Mtd Average
-  description: Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_average
 - name: lending_avg_loan_principal_mtd_min_metric
   label: Lending Avg_Loan_Principal_Mtd Min
-  description: Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_min
 - name: lending_avg_loan_principal_mtd_max_metric
   label: Lending Avg_Loan_Principal_Mtd Max
-  description: Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+  description: 'Rata-rata saldo pokok pinjaman Month-to-Date dalam mata uang asli.
+    [LLM Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_max
 - name: lending_avg_loan_principal_mtd_idr_sum_metric
   label: Lending Avg_Loan_Principal_Mtd_Idr Sum
-  description: Rata-rata saldo pokok pinjaman MTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman MTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_idr_sum
 - name: lending_avg_loan_principal_mtd_idr_average_metric
   label: Lending Avg_Loan_Principal_Mtd_Idr Average
-  description: Rata-rata saldo pokok pinjaman MTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman MTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_idr_average
 - name: lending_avg_loan_principal_mtd_idr_min_metric
   label: Lending Avg_Loan_Principal_Mtd_Idr Min
-  description: Rata-rata saldo pokok pinjaman MTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman MTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_idr_min
 - name: lending_avg_loan_principal_mtd_idr_max_metric
   label: Lending Avg_Loan_Principal_Mtd_Idr Max
-  description: Rata-rata saldo pokok pinjaman MTD dalam Rupiah.
+  description: 'Rata-rata saldo pokok pinjaman MTD dalam Rupiah. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_avg_loan_principal_mtd_idr_max
 - name: lending_angsuran_bunga_sum_metric
   label: Lending Angsuran_Bunga Sum
-  description: Nilai angsuran atau pembayaran bunga.
+  description: 'Nilai angsuran atau pembayaran bunga. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_bunga_sum
 - name: lending_angsuran_bunga_average_metric
   label: Lending Angsuran_Bunga Average
-  description: Nilai angsuran atau pembayaran bunga.
+  description: 'Nilai angsuran atau pembayaran bunga. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_bunga_average
 - name: lending_angsuran_bunga_min_metric
   label: Lending Angsuran_Bunga Min
-  description: Nilai angsuran atau pembayaran bunga.
+  description: 'Nilai angsuran atau pembayaran bunga. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_bunga_min
 - name: lending_angsuran_bunga_max_metric
   label: Lending Angsuran_Bunga Max
-  description: Nilai angsuran atau pembayaran bunga.
+  description: 'Nilai angsuran atau pembayaran bunga. [LLM Context: Availability Date:
+    D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_bunga_max
 - name: lending_angsuran_pokok_sum_metric
   label: Lending Angsuran_Pokok Sum
-  description: Nilai angsuran atau pembayaran pokok pinjaman.
+  description: 'Nilai angsuran atau pembayaran pokok pinjaman. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_pokok_sum
 - name: lending_angsuran_pokok_average_metric
   label: Lending Angsuran_Pokok Average
-  description: Nilai angsuran atau pembayaran pokok pinjaman.
+  description: 'Nilai angsuran atau pembayaran pokok pinjaman. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_pokok_average
 - name: lending_angsuran_pokok_min_metric
   label: Lending Angsuran_Pokok Min
-  description: Nilai angsuran atau pembayaran pokok pinjaman.
+  description: 'Nilai angsuran atau pembayaran pokok pinjaman. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_pokok_min
 - name: lending_angsuran_pokok_max_metric
   label: Lending Angsuran_Pokok Max
-  description: Nilai angsuran atau pembayaran pokok pinjaman.
+  description: 'Nilai angsuran atau pembayaran pokok pinjaman. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_angsuran_pokok_max
 - name: lending_cur_book_bal_idr_sum_metric
   label: Lending Cur_Book_Bal_Idr Sum
-  description: Saldo buku berjalan/current book balance dalam Rupiah.
+  description: 'Saldo buku berjalan/current book balance dalam Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_idr_sum
 - name: lending_cur_book_bal_idr_average_metric
   label: Lending Cur_Book_Bal_Idr Average
-  description: Saldo buku berjalan/current book balance dalam Rupiah.
+  description: 'Saldo buku berjalan/current book balance dalam Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_idr_average
 - name: lending_cur_book_bal_idr_min_metric
   label: Lending Cur_Book_Bal_Idr Min
-  description: Saldo buku berjalan/current book balance dalam Rupiah.
+  description: 'Saldo buku berjalan/current book balance dalam Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_idr_min
 - name: lending_cur_book_bal_idr_max_metric
   label: Lending Cur_Book_Bal_Idr Max
-  description: Saldo buku berjalan/current book balance dalam Rupiah.
+  description: 'Saldo buku berjalan/current book balance dalam Rupiah. [LLM Context:
+    Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_idr_max
 - name: lending_cur_book_bal_sum_metric
   label: Lending Cur_Book_Bal Sum
-  description: Saldo buku berjalan/current book balance dalam mata uang asli.
+  description: 'Saldo buku berjalan/current book balance dalam mata uang asli. [LLM
+    Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_sum
 - name: lending_cur_book_bal_average_metric
   label: Lending Cur_Book_Bal Average
-  description: Saldo buku berjalan/current book balance dalam mata uang asli.
+  description: 'Saldo buku berjalan/current book balance dalam mata uang asli. [LLM
+    Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_average
 - name: lending_cur_book_bal_min_metric
   label: Lending Cur_Book_Bal Min
-  description: Saldo buku berjalan/current book balance dalam mata uang asli.
+  description: 'Saldo buku berjalan/current book balance dalam mata uang asli. [LLM
+    Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_min
 - name: lending_cur_book_bal_max_metric
   label: Lending Cur_Book_Bal Max
-  description: Saldo buku berjalan/current book balance dalam mata uang asli.
+  description: 'Saldo buku berjalan/current book balance dalam mata uang asli. [LLM
+    Context: Availability Date: D-1]'
   type: simple
   type_params:
     measure: lending_cur_book_bal_max
 - name: lending_outstanding_sum_metric
   label: Lending Outstanding Sum
-  description: Nilai outstanding/exposure yang masih berjalan.
+  description: 'Nilai outstanding/exposure yang masih berjalan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_outstanding_sum
 - name: lending_outstanding_average_metric
   label: Lending Outstanding Average
-  description: Nilai outstanding/exposure yang masih berjalan.
+  description: 'Nilai outstanding/exposure yang masih berjalan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_outstanding_average
 - name: lending_outstanding_min_metric
   label: Lending Outstanding Min
-  description: Nilai outstanding/exposure yang masih berjalan.
+  description: 'Nilai outstanding/exposure yang masih berjalan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_outstanding_min
 - name: lending_outstanding_max_metric
   label: Lending Outstanding Max
-  description: Nilai outstanding/exposure yang masih berjalan.
+  description: 'Nilai outstanding/exposure yang masih berjalan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_outstanding_max
 - name: lending_dspa_balance_sum_metric
   label: Lending Dspa_Balance Sum
-  description: Saldo DSPA sesuai definisi internal bank.
+  description: 'Saldo DSPA sesuai definisi internal bank. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dspa_balance_sum
 - name: lending_dspa_balance_average_metric
   label: Lending Dspa_Balance Average
-  description: Saldo DSPA sesuai definisi internal bank.
+  description: 'Saldo DSPA sesuai definisi internal bank. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dspa_balance_average
 - name: lending_dspa_balance_min_metric
   label: Lending Dspa_Balance Min
-  description: Saldo DSPA sesuai definisi internal bank.
+  description: 'Saldo DSPA sesuai definisi internal bank. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dspa_balance_min
 - name: lending_dspa_balance_max_metric
   label: Lending Dspa_Balance Max
-  description: Saldo DSPA sesuai definisi internal bank.
+  description: 'Saldo DSPA sesuai definisi internal bank. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dspa_balance_max
 - name: lending_dsra_balance_sum_metric
   label: Lending Dsra_Balance Sum
-  description: Saldo Debt Service Reserve Account (DSRA).
+  description: 'Saldo Debt Service Reserve Account (DSRA). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dsra_balance_sum
 - name: lending_dsra_balance_average_metric
   label: Lending Dsra_Balance Average
-  description: Saldo Debt Service Reserve Account (DSRA).
+  description: 'Saldo Debt Service Reserve Account (DSRA). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dsra_balance_average
 - name: lending_dsra_balance_min_metric
   label: Lending Dsra_Balance Min
-  description: Saldo Debt Service Reserve Account (DSRA).
+  description: 'Saldo Debt Service Reserve Account (DSRA). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dsra_balance_min
 - name: lending_dsra_balance_max_metric
   label: Lending Dsra_Balance Max
-  description: Saldo Debt Service Reserve Account (DSRA).
+  description: 'Saldo Debt Service Reserve Account (DSRA). [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_dsra_balance_max
 - name: lending_ii_daily_sum_metric
   label: Lending Ii_Daily Sum
-  description: Interest Income atau pendapatan bunga harian.
+  description: 'Interest Income atau pendapatan bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_daily_sum
 - name: lending_ii_daily_average_metric
   label: Lending Ii_Daily Average
-  description: Interest Income atau pendapatan bunga harian.
+  description: 'Interest Income atau pendapatan bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_daily_average
 - name: lending_ii_daily_min_metric
   label: Lending Ii_Daily Min
-  description: Interest Income atau pendapatan bunga harian.
+  description: 'Interest Income atau pendapatan bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_daily_min
 - name: lending_ii_daily_max_metric
   label: Lending Ii_Daily Max
-  description: Interest Income atau pendapatan bunga harian.
+  description: 'Interest Income atau pendapatan bunga harian. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_daily_max
 - name: lending_ii_monthly_sum_metric
   label: Lending Ii_Monthly Sum
-  description: Interest Income atau pendapatan bunga bulanan.
+  description: 'Interest Income atau pendapatan bunga bulanan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_monthly_sum
 - name: lending_ii_monthly_average_metric
   label: Lending Ii_Monthly Average
-  description: Interest Income atau pendapatan bunga bulanan.
+  description: 'Interest Income atau pendapatan bunga bulanan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_monthly_average
 - name: lending_ii_monthly_min_metric
   label: Lending Ii_Monthly Min
-  description: Interest Income atau pendapatan bunga bulanan.
+  description: 'Interest Income atau pendapatan bunga bulanan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_monthly_min
 - name: lending_ii_monthly_max_metric
   label: Lending Ii_Monthly Max
-  description: Interest Income atau pendapatan bunga bulanan.
+  description: 'Interest Income atau pendapatan bunga bulanan. [LLM Context: Availability
+    Date: D-1]'
   type: simple
   type_params:
     measure: lending_ii_monthly_max
