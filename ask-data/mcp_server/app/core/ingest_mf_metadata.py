@@ -2,17 +2,32 @@
 MetricFlow (mf) metadata ingestion from Local YAML Schema.
 
 Reads bni_dbt_schema.yaml directly, parses metrics, dimensions, entities, 
-resolves default time dimensions, and indexes them into Qdrant.
+resolves default time dimensions and availability dates, and indexes them into Qdrant.
 """
 import os
 import json
 import yaml
 from pathlib import Path
+from datetime import datetime, timedelta
 
 from app.core.ingest_common import bootstrap_env, reset_and_index
 
 # Standardized project-root bootstrap (loads .env)
 bootstrap_env()
+
+def _resolve_relative_date(date_str: str) -> str:
+    """Parses 'd-1', 'D-2' etc. into a real YYYY-MM-DD string based on current date."""
+    if not date_str:
+        return ""
+    clean_str = str(date_str).strip().lower()
+    if clean_str.startswith('d-') or clean_str.startswith('d+'):
+        try:
+            offset = int(clean_str.replace('d', ''))
+            target_date = datetime.now() + timedelta(days=offset)
+            return target_date.strftime('%Y-%m-%d')
+        except ValueError:
+            pass
+    return str(date_str).strip()
 
 def get_yaml_path() -> Path:
     """Resolves the path to the generated dbt schema YAML."""
@@ -47,10 +62,15 @@ def ingest_mf_schema(
     # 1. Build lookup maps from Semantic Models
     sm_primary_entity = {}
     measure_to_time_dim = {}
+    measure_to_sm_name = {}
+    sm_avail_date = {}
 
     for sm in semantic_models:
         sm_name = sm.get("name")
         primary_entity = sm_name # Fallback
+        raw_avail_date = sm.get("availability_date", "")
+        resolved_avail_date = _resolve_relative_date(raw_avail_date) if raw_avail_date else ""
+        sm_avail_date[sm_name] = resolved_avail_date
         
         # Find Primary Entity
         for ent in sm.get("entities", []):
@@ -58,17 +78,19 @@ def ingest_mf_schema(
                 primary_entity = ent.get("name")
         sm_primary_entity[sm_name] = primary_entity
 
-        # Map Measures -> Time Dimension
+        # Map Measures -> Time Dimension & Semantic Model
         for m in sm.get("measures", []):
             m_name = m.get("name")
             agg_time_col = m.get("agg_time_dimension")
-            if m_name and agg_time_col:
-                measure_to_time_dim[m_name] = f"{primary_entity}__{agg_time_col}"
+            if m_name:
+                measure_to_sm_name[m_name] = sm_name
+                if agg_time_col:
+                    measure_to_time_dim[m_name] = f"{primary_entity}__{agg_time_col}"
 
         # 2. Process Dimensions inside the Semantic Model
         for d in sm.get("dimensions", []):
             d_name = d.get("name")
-            d_type = d.get("type", "categorical") # Identifies 'time' vs 'categorical'
+            d_type = d.get("type", "categorical")
             d_desc = d.get("description", "No description provided.")
             
             group_by_path = f"{primary_entity}__{d_name}"
@@ -78,14 +100,18 @@ def ingest_mf_schema(
                 f"Data Type: {d_type}\n"
                 f"Description: {d_desc}"
             )
+            if resolved_avail_date:
+                searchable_text += f"\nAvailability Date: {resolved_avail_date}"
 
             structured_payload = {
                 "item_type": "dimension",
                 "name": group_by_path,
                 "raw_name": f"{sm_name}__{d_name}",
-                "data_type": d_type, # Exposed explicitly to LLM!
+                "data_type": d_type,
                 "description": d_desc
             }
+            if resolved_avail_date:
+                structured_payload["availability_date"] = resolved_avail_date
 
             catalog_texts.append(searchable_text)
             metadatas.append({
@@ -128,9 +154,11 @@ def ingest_mf_schema(
         m_label = m.get("label", m_name)
         m_desc = m.get("description", "No description provided.")
         
-        # Look up default time dimension using the underlying measure!
         measure_ref = m.get("type_params", {}).get("measure")
         default_time_dim = measure_to_time_dim.get(measure_ref, "None")
+        
+        m_sm_name = measure_to_sm_name.get(measure_ref)
+        m_avail_date = sm_avail_date.get(m_sm_name, "")
 
         searchable_text = (
             f"Metric Name: {m_name}\n"
@@ -138,14 +166,18 @@ def ingest_mf_schema(
             f"Description: {m_desc}\n"
             f"Default Time Dimension: {default_time_dim}"
         )
+        if m_avail_date:
+            searchable_text += f"\nAvailability Date: {m_avail_date}"
 
         structured_payload = {
             "item_type": "metric",
             "name": m_name,
             "label": m_label,
             "description": m_desc,
-            "default_time_dimension": default_time_dim # Exposed explicitly to LLM!
+            "default_time_dimension": default_time_dim
         }
+        if m_avail_date:
+            structured_payload["availability_date"] = m_avail_date
 
         catalog_texts.append(searchable_text)
         metadatas.append({

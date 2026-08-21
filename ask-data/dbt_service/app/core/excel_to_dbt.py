@@ -109,15 +109,17 @@ CROSS JOIN numbers c
 CROSS JOIN numbers d
         """.strip())
 
-    # NOTE: metricflow_time_spine is no longer appended as a semantic_model here.
-    # It will be defined purely in the top-level 'models:' YAML block.
-
     # 2. Process Business Tables
     for _, table in tables_df.iterrows():
         table_name = str(table["Table Name"]).strip().lower()
         if table_name == 'nan' or not table_name: continue
         
         custom_schema = str(table.get("Schema / Database", "")).strip()
+
+        # 🌟 NEW: Extract Availability Date for MetricFlow context
+        avail_date_raw = table.get("Availability Date")
+        avail_date = str(avail_date_raw).strip() if pd.notna(avail_date_raw) and str(avail_date_raw).strip().lower() != 'nan' else ""
+
         table_cols = cols_df[cols_df["Table Name"].astype(str).str.strip().str.lower() == table_name]
 
         # Generate dbt stub SQL file with dynamic schema support
@@ -159,10 +161,10 @@ CROSS JOIN numbers d
             if base_desc.lower() == 'nan': base_desc = ""
 
             # 1. Entity Resolution (Supports Auto Role-Playing)
-            if is_pk and local_ref_key in target_entities:
+            if local_ref_key in target_entities:
                 assigned_entities = target_entities[local_ref_key]
                 for i, ent in enumerate(assigned_entities):
-                    e_type = "primary" if i == 0 else "unique"
+                    e_type = "primary" if (is_pk and i == 0) else "unique"
                     entities.append({"name": ent, "type": e_type, "expr": raw_col_name})
                     
             elif local_ref_key in fk_entity_map:
@@ -177,7 +179,7 @@ CROSS JOIN numbers d
             else:
                 col_type_str = str(col.get("Data Type", "")).upper()
                 
-                # Robust time dimension detection to prevent categorical vs time conflicts
+                # Robust time dimension detection
                 is_time_col = (
                     "DATE" in col_type_str or 
                     "TIME" in col_type_str or 
@@ -195,6 +197,9 @@ CROSS JOIN numbers d
                     is_agg_time = bool(is_agg_time and not pd.isna(is_agg_time))
 
                 meta_parts = []
+                if is_agg_time and avail_date:
+                    meta_parts.append(f"Availability Date: {avail_date}")
+
                 if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
                     meta_parts.append(f"Mode: {str(val_mode).strip()}")
                 
@@ -270,8 +275,7 @@ CROSS JOIN numbers d
             })
             chosen_time_dim = "dbt_dummy_time"
 
-        # Fallback for Impala/Flat tables: If no PRIMARY entity exists,
-        # inject a synthetic primary entity to satisfy MetricFlow's semantic parser.
+        # Fallback for Impala/Flat tables
         has_primary_entity = any(e.get("type") == "primary" for e in entities)
         if not has_primary_entity and (dimensions or measures):
             entities.append({
@@ -292,24 +296,32 @@ CROSS JOIN numbers d
                 
             formatted_measures.append(m)
             
+            metric_desc = base_desc
+            if avail_date and "Availability Date:" not in metric_desc:
+                metric_desc += f" [LLM Context: Availability Date: {avail_date}]"
+
             metric_name = sanitize_dbt_name(f"{table_name}_{col_name}_{agg}_metric")
             metrics.append({
                 "name": metric_name,
                 "label": f"{table_name} {col_name} {agg}".title()[:100],
-                "description": base_desc,
+                "description": metric_desc,
                 "type": "simple",
                 "type_params": {"measure": m["name"]}
             })
 
-        semantic_models.append({
+        sm_dict = {
             "name": table_name,
             "model": f"ref('{table_name}')",
             "entities": entities,
             "dimensions": dimensions,
             "measures": formatted_measures
-        })
+        }
+        if avail_date:
+            sm_dict["availability_date"] = avail_date
 
-    # Assemble the final schema with explicit models block for time_spine
+        semantic_models.append(sm_dict)
+
+    # Assemble the final schema
     dbt_schema = {
         "version": 2,
         "models": [
