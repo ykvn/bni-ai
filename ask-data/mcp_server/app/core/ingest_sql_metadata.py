@@ -13,7 +13,6 @@ from app.core.ingest_common import bootstrap_env, reset_and_index, resolve_data_
 # Standardized project-root bootstrap (idempotent, shared across all pipelines)
 bootstrap_env()
 
-
 def ingest_golden_queries(
     json_path: str,
     vectordb_server_url: str,
@@ -33,7 +32,7 @@ def ingest_golden_queries(
     if not queries:
         return
 
-    # We embed the natural language intent so it matches the user's question semantically
+    # 🌟 NEW: Embed both intent and description so vector search captures semantic keywords from both
     intents = [
         f"{q.get('user_intent', '')} - {q.get('description', '')}".strip(" -")
         for q in queries
@@ -88,6 +87,8 @@ def ingest_schema(
     for table in tables:
         table_name = table.get("name", "unknown")
         desc = table.get("description", "")
+        
+        # 🌟 NEW: Read the new YAML field
         avail_date = table.get("availability_date", "")
 
         # Build search-optimized string containing column names and descriptions
@@ -98,6 +99,7 @@ def ingest_schema(
             c_desc = c.get("description", "")
             col_details.append(f"{c_name} ({c_desc})" if c_desc else c_name)
 
+            # Enforce clean column key ordering
             clean_col = {"name": c_name}
             if "type" in c:
                 clean_col["type"] = c.get("type")
@@ -111,17 +113,21 @@ def ingest_schema(
 
         cols_formatted = ", ".join(col_details)
         
-        # Inject availability date into the searchable text chunk for the vector model
+        # 🌟 NEW: Inject availability date into the searchable text chunk for the vector model
         searchable_text = f"Table: {table_name}\nDescription: {desc}\n"
         if avail_date:
             searchable_text += f"Availability Date: {avail_date}\n"
         searchable_text += f"Columns: {cols_formatted}"
 
+        # ✅ FIX: Explicitly append the searchable document text so Qdrant actually indexes the table
+        table_texts.append(searchable_text)
+
         clean_table = {
             "name": table_name,
             "description": desc,
         }
-        # Ensure availability date stays in the clean payload for LLM Context
+        
+        # 🌟 NEW: Ensure availability date stays in the clean payload for LLM Context
         if avail_date:
             clean_table["availability_date"] = avail_date
             
@@ -129,6 +135,7 @@ def ingest_schema(
 
         metadatas.append({
             "table_name": table_name,
+            # Guaranteed clean key hierarchy in Qdrant metadata payload
             "raw_yaml": yaml.dump(clean_table, sort_keys=False, default_flow_style=False),
             "data_type": "schema_table",
         })
