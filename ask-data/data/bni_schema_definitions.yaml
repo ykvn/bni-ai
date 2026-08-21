@@ -525,7 +525,7 @@ tables:
         description: "Acoount Opening Subbranch"
       - name: acct_open_date
         type: "date"
-        description: "Account Open Date [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Account Open Date"
       - name: acct_renewal_date
         type: "date"
         description: "Account Renewal Date"

@@ -8,5 +8,10 @@
     "user_intent": "Aktivitas cashout / cash out",
     "sql_template": "SELECT * FROM dm_transaction.trxchannel WHERE destination_bankname <> 'BANK NEGARA INDONESIA';",
     "complexity": "simple"
+  },
+  {
+    "user_intent": "Informasi DPK / total DPK",
+    "sql_template": "SELECT cur_book_bal FROM dm_funding.funding;",
+    "complexity": "simple"
   }
 ]
