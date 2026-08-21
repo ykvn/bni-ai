@@ -5,14 +5,9 @@ from shared.embed_client import get_embedding_vector, rerank_documents
 from shared.qdrant_client import QdrantClient
 from shared.cml_auth import get_cml_token
 
-# Internal marker emitted when the MetricFlow search returns no matching
-# metrics, dimensions, or entities. The tool maps this to the plain
-# user-facing refusal text (NO_MF_RESPONSE) so the front end displays the
-# polite message instead of an empty `matched_*: []` YAML block.
 NO_MF_MATCH = "NO_MF_MATCH"
 NO_MF_RESPONSE = "I am sorry, I don't have this information on my database."
 
-# Common stop words to exclude from keyword scoring
 INDONESIAN_STOP_WORDS = {
     "tampilkan", "dengan", "yang", "untuk", "pada", "adalah", 
     "seperti", "atau", "dalam", "saja", "secara", "karena", "di", "ke"
@@ -24,11 +19,11 @@ def search_mf_catalog(
     max_metrics: int = 10,
     max_dimensions: int = 20,
     max_entities: int = 10,
-    absolute_min_score: float = 0.001,
-    relative_threshold_ratio: float = 0.15
+    absolute_min_score: float = 0.000,
+    relative_threshold_ratio: float = 0.00
 ) -> str:
 
-    # ✅ FIX: Explicitly enforce candidate net to at least 300 to beat Qdrant candidate starvation
+    # Enforce candidate net to at least 300 to beat Qdrant candidate starvation
     env_top = int(os.getenv("MF_TOP_CANDIDATES", "300"))
     top_candidates = max(env_top, 300)
     
@@ -41,7 +36,7 @@ def search_mf_catalog(
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
 
-    # 1. Extract words and 2-word exact phrases (e.g. "nilai transaksi")
+    # 1. Extract words and 2-word exact phrases
     clean_query = user_query.lower()
     for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', 'null']:
         clean_query = clean_query.replace(char, ' ')
@@ -57,7 +52,6 @@ def search_mf_catalog(
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
         qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
         
-        # Executes search with top_k=300 minimum
         results = qdrant_client.search(
             collection_name,
             query_vector,
@@ -72,7 +66,7 @@ def search_mf_catalog(
         rerank_docs = []
         description_boost_scores = []
 
-        # 2. Inspect descriptions, availability dates, and assign tier multipliers
+        # 2. Inspect descriptions and assign tier multipliers
         for point in results:
             payload = point.get("payload", {})
             raw_json = payload.get("raw_json")
@@ -101,7 +95,7 @@ def search_mf_catalog(
                     else:
                         doc_str = f"Catalog Item: {item_name} | Description: {item_desc}"
 
-                    searchable_text = f"{item_name} {item_label} {item_desc} {item_avail_date}".lower()
+                    searchable_text = f"{item_name} {item_label} {item_desc}".lower()
                     for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', '|']:
                         searchable_text = searchable_text.replace(char, ' ')
 
@@ -109,7 +103,7 @@ def search_mf_catalog(
                     item_tokens = set(w for w in searchable_text.split() if len(w) > 2 and w not in INDONESIAN_STOP_WORDS)
                     token_matches = len(query_tokens.intersection(item_tokens))
 
-                    # Multi-word phrase matches ("nilai transaksi") get +100.0 to override raw neural logit scale
+                    # 🌟 FIX: Multi-word phrase matches get +100.0 to override neural logit scale
                     desc_score = (phrase_matches * 100.0) + (token_matches * 2.0)
 
                     candidate_items.append(item)
@@ -148,6 +142,7 @@ def search_mf_catalog(
                             "score": final_score
                         })
 
+                # Sort by the artificially boosted score
                 boosted_hits.sort(key=lambda x: x["score"], reverse=True)
 
                 for hit_data in boosted_hits:
