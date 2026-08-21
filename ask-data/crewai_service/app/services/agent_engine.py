@@ -217,11 +217,13 @@ def create_dynamic_tool(name: str, desc: str, expected_args: list):
     schema_fields = {arg_name: (str, ...) for arg_name in expected_args}
     DynamicSchema = create_model(f"{name}Schema", **schema_fields)
 
+    # Force tools that return final execution output to pass through immediately
+    # without calling LiteLLM / Qwen to summarize or re-tokenize the result.
+    should_return_direct = name in ["execute_sql_query", "compile_mf_sql"]
+
     class DynamicMCPTool(BaseTool):
-        # name/description/args_schema are inherited pydantic fields from
-        # BaseTool; the per-tool values are supplied via the constructor (which
-        # IS evaluated in this function's scope). The class body never references
-        # this function's locals, since a class body cannot see them.
+        result_as_answer: bool = should_return_direct
+
         def _run(self, **kwargs) -> str:
             # Sync path (CrewAI calls this outside a running event loop).
             log_ts(f"🛠️ Tool Invoked: '{self.name}'")
@@ -236,7 +238,12 @@ def create_dynamic_tool(name: str, desc: str, expected_args: list):
             log_ts(f"🛠️ Tool Invoked: '{self.name}'")
             return await call_mcp(self.name, arguments=kwargs)
 
-    return DynamicMCPTool(name=name, description=desc, args_schema=DynamicSchema)
+    return DynamicMCPTool(
+        name=name, 
+        description=desc, 
+        args_schema=DynamicSchema,
+        result_as_answer=should_return_direct
+    )
 
 TOOL_REGISTRY = {}
 tools_cfg = load_yaml("tools.yaml")
