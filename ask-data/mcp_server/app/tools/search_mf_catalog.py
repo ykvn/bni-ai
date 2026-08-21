@@ -29,7 +29,7 @@ def search_mf_catalog(
 ) -> str:
 
     # Enforce candidate net to at least 300 regardless of .env override
-    env_top = int(os.getenv("MF_TOP_CANDIDATES", "150"))
+    env_top = int(os.getenv("MF_TOP_CANDIDATES", "300"))
     
     max_metrics = int(os.getenv("MF_MAX_METRICS", max_metrics))
     max_dimensions = int(os.getenv("MF_MAX_DIMENSIONS", max_dimensions))
