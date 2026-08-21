@@ -67,26 +67,25 @@ mf_draft_payload_task:
     {error_context}
 
     CRITICAL INSTRUCTIONS:
-    1. EXACT ENTITY-PREFIXED NAMES: Use the 'name' attribute from matched_dimensions (e.g. 'trxchannel_id__trx_region'). NEVER use 'raw_name' (e.g. 'trxchannel__trx_region').
-    NO-MATCH HANDLING: If the AVAILABLE CATALOG section is empty or contains the refusal 'I am sorry, I don't have this information on my database.', do NOT invent metric or dimension names and do NOT build a JSON payload. Output EXACTLY the refusal line: "I am sorry, I don't have this information on my database."
-    2. MANDATORY GROUP_BY FOR FILTERED DIMENSIONS: ANY dimension (categorical or time) used in 'where' MUST ALSO be included in 'group_by' so MetricFlow projects it into the SELECT statement (e.g., if `where` contains `trxchannel_id__channel = 'ATM'`, you MUST add `'trxchannel_id__channel'` into `group_by`).
-    3. TIME DIMENSION GRANULARITY: Any time dimension used in 'group_by' or 'where' MUST include an explicit granularity suffix
+    1. EXACT ENTITY-PREFIXED NAMES: Use the 'name' attribute from matched_dimensions (e.g. 'trxchannel_id__trx_region').
+    2. NO-MATCH HANDLING: If the AVAILABLE CATALOG section is empty or contains the refusal 'I am sorry, I don't have this information on my database.', do NOT invent metric or dimension names and do NOT build a JSON payload. Output EXACTLY the refusal line: "I am sorry, I don't have this information on my database."
+    3. MANDATORY GROUP_BY FOR FILTERED DIMENSIONS: ANY dimension (categorical or time) used in 'where' MUST ALSO be included in 'group_by' so MetricFlow projects it into the SELECT statement (e.g., if `where` contains `trxchannel_id__channel = 'ATM'`, you MUST add `'trxchannel_id__channel'` into `group_by`).
+    4. TIME DIMENSION GRANULARITY: Any time dimension used in 'group_by' or 'where' MUST include an explicit granularity suffix
        (e.g., '<default_time_dimension>__day', '<default_time_dimension>__month', or '<default_time_dimension>__year').
-    4. EXACT DATE FILTERS: For a single specific date (e.g., '1 Agustus 2026'), use the `__day` suffix with exact equality and single quotes:
+    5. EXACT DATE FILTERS: For a single specific date (e.g., '1 Agustus 2026'), use the `__day` suffix with exact equality and single quotes:
        "<default_time_dimension>__day = 'YYYY-MM-DD'"
-    5. DATE RANGE FILTERS: For explicit date intervals, use the `__day` suffix with comparison operators and single quotes:
+    6. DATE RANGE FILTERS: For explicit date intervals, use the `__day` suffix with comparison operators and single quotes:
        "<default_time_dimension>__day >= 'YYYY-MM-DD' AND <default_time_dimension>__day < 'YYYY-MM-DD'"
-    6. MONTHLY FILTERS: For monthly questions (e.g., 'Agustus 2026'), use the `__month` suffix set to the 1st of that month:
+    7. MONTHLY FILTERS: For monthly questions (e.g., 'Agustus 2026'), use the `__month` suffix set to the 1st of that month:
        "<default_time_dimension>__month = 'YYYY-MM-01'"
-    7. YEARLY FILTERS: For full year questions (e.g., '2026'), use the `__year` suffix set to Jan 1st of that year:
+    8. YEARLY FILTERS: For full year questions (e.g., '2026'), use the `__year` suffix set to Jan 1st of that year:
        "<default_time_dimension>__year = 'YYYY-01-01'"
-    8. NO VIRTUAL VARIABLES: DO NOT use 'metric_time__year' or 'metric_time__month'.
     9. TOP N & RANKING QUERIES: Differentiate between GLOBAL ranking and GROUPED/PARTITIONED ranking based on the phrasing:
        - GLOBAL RANKING ("Top 10", "10 terbesar", "overall"):
          Group by the target entity, set 'order_by' with a '-' prefix (e.g., ["-trxchannel_amount_sum_metric"]), and set 'limit' (e.g., 10).
        - GROUPED RANKING ("per branch", "setiap cabang", "masing-masing region"):
          Group by the target entity AND the category. Set 'order_by' for the sort metric. Set 'partition_by' to the category dimension (e.g., ["trxchannel_id__trx_branch"]). Set 'window_type' to DENSE_RANK (default), RANK, or ROW_NUMBER depending on the user's tie-breaking preference. Set 'max_rank' to the requested top count (e.g., 3). DO NOT use 'limit' for grouped rankings.
-    10. AVAILABILITY DATE FILTERS: If any matched metric or dimension contains an `availability_date` attribute (e.g., `availability_date: '2026-08-20'`), you MUST include a `where` clause filter specifying exact equality on that entity's default time dimension using the exact date value (e.g., `"<default_time_dimension>__day = '2026-08-20'"`), unless the user query explicitly specifies a date filter for that dataset.
+    10. AVAILABILITY DATE FILTERS: If any matched metric or dimension contains an `availability_date` attribute (e.g., `availability_date: '2026-08-20'`), you MUST include a `where` clause filter specifying exact equality on that entity's default time dimension using the exact date value (e.g., `"<default_time_dimension>__day = '2026-08-20'"`)
   expected_output: "A structured JSON MetricFlow query payload object, OR the refusal line 'I am sorry, I don't have this information on my database.' when the AVAILABLE CATALOG section has no matching metrics/dimensions."
 
 mf_execute_task:
