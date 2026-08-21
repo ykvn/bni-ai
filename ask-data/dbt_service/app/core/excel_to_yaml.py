@@ -14,7 +14,6 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
         vals_df = pd.DataFrame()
         
     # --- AUTO-SCHEMA RESOLUTION MAP ---
-    # Build a lookup map of Table Name -> Schema from the Tables sheet
     table_schema_map = {}
     for _, table in tables_df.iterrows():
         t_name = str(table.get("Table Name", "")).strip()
@@ -46,22 +45,19 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
         else:
             full_table_name = table_name
 
+        # Pure table description from Excel (Cleaned of Availability Date tags)
         table_desc_raw = table.get("Description")
         table_desc = str(table_desc_raw) if pd.notna(table_desc_raw) else ""
-        
-        avail_date_raw = table.get("Availability Date")
-        if pd.notna(avail_date_raw) and str(avail_date_raw).strip().lower() != 'nan':
-            table_desc += f" [Availability Date: {str(avail_date_raw).strip()}]"
-
         table_desc = table_desc.replace('"', '\\"').replace('\n', '\\n')
 
         yaml_lines.append(f'  - name: {full_table_name}')
         yaml_lines.append(f'    description: "{table_desc}"')
         
+        # Distinct top-level YAML attribute for Availability Date
         avail_date_raw = table.get("Availability Date")
         if pd.notna(avail_date_raw) and str(avail_date_raw).strip().lower() != 'nan':
             yaml_lines.append(f'    availability_date: "{str(avail_date_raw).strip()}"')
-            
+
         yaml_lines.append('    columns:')
 
         table_cols = cols_df[cols_df["Table Name"].astype(str).str.strip() == table_name]
@@ -73,7 +69,6 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
                 
             data_type = str(col.get("Data Type", "")).strip()
             
-            # Robust boolean parsing for PKs (matches excel_to_dbt.py)
             is_pk = col.get("Is PK?", False)
             if isinstance(is_pk, str):
                 is_pk = is_pk.strip().upper() in ['TRUE', 'YES', '1']
@@ -84,7 +79,6 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
             val_mode = col.get("Distinct Value Mode")
             static_vals = col.get("Static Allowed Values")
 
-            # 1. 🌟 NEW: Extract the Agg Time Dimension flag
             is_agg_time = col.get("Agg Time Dimension", False)
             if isinstance(is_agg_time, str):
                 is_agg_time = is_agg_time.strip().upper() in ['TRUE', 'YES', '1']
@@ -96,7 +90,6 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
 
             meta_parts = []
             
-            # 2. 🌟 NEW: Inject into LLM Context if True
             if is_agg_time:
                 meta_parts.append("DEFAULT_TIME_AXIS: True")
             
@@ -138,14 +131,12 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
             if is_pk:
                 yaml_lines.append('        primary_key: true')
             
-            # --- AUTO-SCHEMA INJECTION FOR REFERENCES ---
             if pd.notna(ref_fk) and str(ref_fk).strip() and str(ref_fk).strip().lower() != 'nan':
                 raw_refs = [r.strip() for r in str(ref_fk).split(";") if r.strip()]
                 resolved_refs = []
                 
                 for r in raw_refs:
                     parts = r.split('.')
-                    # If user provided table.column, auto-inject the schema from the Tables sheet
                     if len(parts) == 2:
                         target_table, target_col = parts
                         target_schema = table_schema_map.get(target_table, "")
@@ -154,7 +145,6 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
                         else:
                             resolved_refs.append(r)
                     else:
-                        # If user explicitly provided schema.table.column, leave it as is
                         resolved_refs.append(r)
                         
                 clean_refs = "; ".join(resolved_refs)
@@ -187,7 +177,7 @@ def convert_excel_to_golden_queries(excel_path: str, output_json_path: str) -> N
     queries_list = []
     for _, row in queries_df.iterrows():
         intent = str(row.get("User Intent", row.get("user_intent", ""))).strip()
-        description = str(row.get("Description", row.get("description", ""))).strip() 
+        description = str(row.get("Description", row.get("description", ""))).strip()
         sql = str(row.get("SQL Template", row.get("sql_template", ""))).strip()
         complexity = str(row.get("Complexity", row.get("complexity", ""))).strip()
         
