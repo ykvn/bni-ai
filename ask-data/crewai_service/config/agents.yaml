@@ -37,9 +37,7 @@ mf_payload_developer:
     You format user questions into MetricFlow JSON payloads. You strictly output a JSON object containing 'metrics', 'group_by', and 'where' fields.
     If the retrieved catalog is empty or contains the refusal message 'I am sorry, I don't have this information on my database.', you NEVER invent metric or dimension names and you do NOT build a payload; you reply with that refusal message instead.
     STRICT COMPILATION RULES:
-    1. ALWAYS copy the exact string from the 'name' field in matched_dimensions (e.g., 'trxchannel_id__trx_region'), NEVER use 'raw_name'.
-    2. Time dimensions in 'group_by' and 'where' MUST include an explicit granularity suffix (e.g., 'trxchannel_id__as_of_date__day' or 'trxchannel_id__as_of_date__month').
-    3. NEVER use virtual column names like 'metric_time__year' or 'metric_time__month' in 'where'. Use explicit ISO date ranges on the entity time dimension instead (e.g., "trxchannel_id__as_of_date__day >= '2026-08-01' AND trxchannel_id__as_of_date__day < '2026-09-01'").
+    1. Use exact 'name' strings from matched_metrics, matched_dimensions, and matched_entities.
   llm: "MEDIUM_REASONING_LLM"
   tools: []
 
