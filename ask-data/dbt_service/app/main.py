@@ -85,13 +85,38 @@ _MF_LOCK = threading.Lock()
 
 
 class MetricQueryRequest(BaseModel):
-    metrics: List[str] = Field(..., description="List of metric names to query")
-    group_by: Optional[List[str]] = Field(default=[], description="List of dimension names")
-    where: Optional[str] = Field(default=None, description="Optional filter expression")
-    order_by: Optional[List[str]] = Field(default=[], description="List of sort expressions, e.g. ['-trxchannel_amount_sum_metric']")
-    limit: Optional[int] = Field(default=None, description="Optional limit count, e.g. 10")
-    partition_by: Optional[List[str]] = Field(default=[], description="Dimensions to PARTITION BY")
-    max_rank: Optional[int] = Field(default=None, description="Filter for Top N per partition")
+    metrics: List[str] = Field(
+        ..., 
+        description="List of metric names to query"
+    )
+    group_by: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of dimension names"
+    )
+    where: Optional[str] = Field(
+        default=None,
+        description="Optional filter expression"
+    )
+    order_by: Optional[List[str]] = Field(
+        default_factory=list,
+        description="List of sort expressions, e.g. ['-trxchannel_amount_sum_metric']"
+    )
+    limit: Optional[int] = Field(
+        default=None,
+        description="Optional limit count, e.g. 10"
+    )
+    partition_by: Optional[List[str]] = Field(
+        default_factory=list,
+        description="Dimensions to PARTITION BY"
+    )
+    max_rank: Optional[int] = Field(
+        default=None,
+        description="Filter for Top N per partition"
+    )
+    window_type: Optional[str] = Field(
+        default="DENSE_RANK",
+        description="Type of window function: DENSE_RANK, RANK, or ROW_NUMBER",
+    )
 
 
 class MetricQueryResponse(BaseModel):
@@ -418,10 +443,13 @@ def execute_metric_query(payload: MetricQueryRequest):
                 order_cols = f"{payload.metrics[0]} DESC"
 
             clean_sql = compiled_sql.strip().rstrip(";")
-            rank_threshold = payload.max_rank or 10
-            
-            # Safe default fallback just in case the LLM hallucinates a weird function
-            win_func = payload.window_type.upper() if payload.window_type.upper() in ["DENSE_RANK", "RANK", "ROW_NUMBER"] else "DENSE_RANK"
+            rank_threshold = payload.max_rank if payload.max_rank is not None else 10
+
+            # Safe default fallback in case the LLM hallucinates a weird function
+            # or sends an explicit null / non-string window_type.
+            raw_window = payload.window_type
+            raw_window = str(raw_window).upper() if raw_window else "DENSE_RANK"
+            win_func = raw_window if raw_window in ["DENSE_RANK", "RANK", "ROW_NUMBER"] else "DENSE_RANK"
 
             compiled_sql = f"""SELECT * FROM (
     SELECT 
