@@ -250,7 +250,7 @@ CROSS JOIN numbers d
                     
                     measures.append({
                         "name": m_name, 
-                        "expr": raw_col_name, 
+                        "expr": f"NVL({raw_col_name}, 0)",
                         "agg": dbt_agg_type,
                         "_base_desc": base_desc,
                         "_col_name": safe_col_name,
