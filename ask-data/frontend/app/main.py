@@ -53,7 +53,7 @@ def parse_payload_to_ui(payload: dict):
     
     data = payload.get("final_data") if "final_data" in payload else payload.get("data")
 
-    # 💡 DETECT SEMANTIC PAYLOAD: If predicted_sql actually holds the JSON payload string
+    # DETECT SEMANTIC PAYLOAD: If predicted_sql actually holds the JSON payload string
     if not json_payload_str and predicted_sql_str and ("metrics" in predicted_sql_str or "group_by" in predicted_sql_str):
         json_payload_str = predicted_sql_str
         predicted_sql_str = ""
@@ -112,22 +112,26 @@ def parse_payload_to_ui(payload: dict):
             formatted_sql = format_sql(predicted_sql_str)
             text_parts.append(f"### 🤖 Generated SQL:\n```sql\n{formatted_sql}\n```")
 
-        if data is not None:
-            if isinstance(data, str):
-                try:
-                    data = json.loads(data)
-                except Exception:
-                    pass
+        # Normalize data string if formatted as JSON string
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except Exception:
+                pass
 
-            if isinstance(data, list) and len(data) > 0:
-                try:
-                    df = pd.DataFrame(data)
-                    df_update = gr.update(visible=True, value=df)
-                    text_parts.append("### 📊 Query Results:")
-                except Exception as e:
-                    text_parts.append(f"*(Could not render table: {e})*")
-            elif isinstance(data, list) and len(data) == 0:
-                text_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
+        if isinstance(data, list) and len(data) > 0:
+            try:
+                df = pd.DataFrame(data)
+                df_update = gr.update(visible=True, value=df)
+                text_parts.append("### 📊 Query Results:")
+            except Exception as e:
+                text_parts.append(f"*(Could not render table: {e})*")
+        elif (isinstance(data, list) and len(data) == 0) or data == "[]" or not data:
+            text_parts.append("### 📊 Query Results:\n*Query executed successfully, but returned 0 rows.*")
+        elif isinstance(data, str) and ("Error" in data or "Exception" in data or "FAILED" in data):
+            text_parts.append(f"### 📊 Execution Error:\n```\n{data}\n```")
+        elif isinstance(data, str) and data.strip():
+            text_parts.append(f"### 📊 Query Results:\n{data}")
 
     # Fallback if entirely unrecognized
     if not text_parts and df_update["visible"] is False:
