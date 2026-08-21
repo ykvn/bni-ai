@@ -9,7 +9,7 @@ tables:
     columns:
       - name: as_of_date
         type: "date"
-        description: "Tanggal Transaksi Data, digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Tanggal posisi atau tanggal transaksi data, digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: trx_datetime
         type: "timestamp"
         description: "Waktu Transaksi"
@@ -131,14 +131,14 @@ tables:
     columns:
       - name: as_of_date
         type: "date"
-        description: "Tanggal snapshot customer, digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Tanggal posisi atau snapshot data pada table customer / nasabah. Digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: mdm_id
         type: "varchar(100)"
         description: "MDM ID"
       - name: cif_key
         type: "bigint"
         primary_key: true
-        description: "CIF ID Nasabah"
+        description: "CIF Nasabah"
       - name: source_data
         type: "varchar(100)"
         description: "Source Data"
@@ -171,13 +171,13 @@ tables:
         description: "Source Status"
       - name: cust_status
         type: "string"
-        description: "Status Customer [LLM Context: Mode: STATIC_ENUM | Allowed: [Aktif] | Value Mappings: [AKTIF (Synonyms: Aktif)]]"
+        description: "Status Customer/nasabah [LLM Context: Mode: STATIC_ENUM | Allowed: [Aktif] | Value Mappings: [AKTIF (Synonyms: Aktif)]]"
       - name: cust_type_code
         type: "varchar(100)"
-        description: "Kode Type"
+        description: "Kode tipe customer/nasabah"
       - name: cust_type
         type: "varchar(100)"
-        description: "Tipe Customer"
+        description: "Tipe Customer/nasabah"
       - name: pemerintah_flag
         type: "varchar(100)"
         description: "Flag Pemerintah"
@@ -330,10 +330,10 @@ tables:
         description: "Pendapatan"
       - name: cust_rental_income
         type: "decimal(22,3)"
-        description: ""
+        description: "Pendapatan Sewa"
       - name: cust_other_income
         type: "decimal(22,3)"
-        description: ""
+        description: "Pendapatan Lain"
       - name: channel_open_cif
         type: "varchar(100)"
         description: "Channel Pembuka CIF"
@@ -426,10 +426,10 @@ tables:
         description: "Data Sharing Consent (Sebelum)"
       - name: channel_consent_name
         type: "varchar(100)"
-        description: "Channel Nasabah ( Consentisi Pemegang Nasabah)"
+        description: "Consent Channel"
       - name: channel_consent_name_before
         type: "varchar(100)"
-        description: "Channel Nasabah ( Consent_Nameisi Pemegang Nasabah)"
+        description: "Consent Channel Sebelum (Previous)"
       - name: consent_date
         type: "date"
         description: "Consent Date"
@@ -437,6 +437,9 @@ tables:
   - name: dm_funding.funding
     description: "Table datamart informasi funding nasabah, berisi informasi terkait account funding nasabah (tabungan, giro, deposito)"
     columns:
+      - name: as_of_date
+        type: "date"
+        description: "Tanggal posisi atau snapshot data pada table funding. Digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: account_number
         type: "bigint"
         primary_key: true
@@ -444,13 +447,13 @@ tables:
       - name: cif_key
         type: "bigint"
         references: "dm_customer.customer_icons.cif_key"
-        description: "Cif Key Nasabah"
+        description: "Cif Key"
       - name: cust_type_code
         type: "varchar(10)"
-        description: "Kode tipe nasabah"
+        description: "Kode tipe customer/nasabah"
       - name: cust_type
         type: "varchar(100)"
-        description: "Tipe nasabah"
+        description: "Tipe Customer/nasabah"
       - name: cif_open_region_code
         type: "int"
         description: "Kode Region pembukaan CIF"
@@ -468,7 +471,7 @@ tables:
         description: "Tanggal pembukaan CIF"
       - name: nama_nasabah
         type: "varchar(250)"
-        description: "Nama Nasabah"
+        description: "Nama"
       - name: company_name
         type: "varchar(250)"
         description: "Nama Perusahaan"
@@ -705,7 +708,7 @@ tables:
         description: "Channel yang digunakan untuk membuka rekening."
       - name: jenis_badan_hukum
         type: "string"
-        description: "Jenis atau bentuk badan hukum nasabah/perusahaan."
+        description: "Jenis atau bentuk badan hukum"
       - name: ending_balance_mtd
         type: "decimal(38,5)"
         description: "Saldo akhir untuk periode Month-to-Date."
@@ -745,10 +748,10 @@ tables:
     columns:
       - name: as_of_date
         type: "date"
-        description: "Tanggal posisi atau snapshot data. [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Tanggal posisi atau snapshot data pada table lending. Digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: mdm_id
         type: "string"
-        description: "ID nasabah/entity pada sistem Master Data Management."
+        description: "ID MDM / Global pada sistem Master Data Management."
       - name: account_number
         type: "bigint"
         primary_key: true
@@ -762,10 +765,10 @@ tables:
         description: "Nomor rekening yang memiliki hubungan atau afiliasi dengan rekening utama."
       - name: cust_type_code
         type: "varchar(100)"
-        description: "Kode jenis nasabah."
+        description: "Kode tipe customer/nasabah"
       - name: cust_type
         type: "varchar(100)"
-        description: "Deskripsi jenis nasabah, misalnya individu atau badan usaha."
+        description: "Tipe Customer/nasabah"
       - name: cif_open_region_code
         type: "int"
         description: "Kode region tempat CIF dibuka."
@@ -783,7 +786,7 @@ tables:
         description: "Tanggal CIF dibuat atau dibuka."
       - name: nama_nasabah
         type: "varchar(100)"
-        description: "Nama nasabah."
+        description: "Nama"
       - name: company_name
         type: "varchar(100)"
         description: "Nama perusahaan/badan usaha."
@@ -801,7 +804,7 @@ tables:
         description: "Divisi yang menjadi pemilik segmen."
       - name: sub_segment
         type: "varchar(100)"
-        description: "Sub segmen nasabah."
+        description: "Sub segment"
       - name: account_type
         type: "varchar(5)"
         description: "Jenis atau tipe rekening."
@@ -1052,13 +1055,13 @@ tables:
       - name: cif_principal
         type: "bigint"
         references: "dm_customer.customer_icons.cif_key"
-        description: "CIF utama/principal apabila nasabah memiliki beberapa CIF terkait."
+        description: "CIF utama/principal apabila memiliki beberapa CIF terkait."
       - name: group_principal
         type: "string"
-        description: "Nasabah/perusahaan utama dalam satu kelompok usaha atau grup."
+        description: "Entity utama dalam satu kelompok usaha atau grup."
       - name: segment_div_owner
         type: "varchar(10)"
         description: "Divisi pemilik segmen."
       - name: as_of_date
         type: "date"
-        description: "Tanggal posisi/snapshot data. [LLM Context: DEFAULT_TIME_AXIS: True]"
+        description: "Tanggal posisi atau snapshot data pada table mapping_group_whs. Digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"

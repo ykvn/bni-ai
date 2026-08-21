@@ -36,7 +36,8 @@ semantic_models:
   - name: as_of_date
     type: time
     expr: as_of_date
-    description: Tanggal Transaksi Data, digunakan untuk filter tanggal, bulan, tahun
+    description: Tanggal posisi atau tanggal transaksi data, digunakan untuk filter
+      tanggal, bulan, tahun
     type_params:
       time_granularity: day
   - name: trx_datetime
@@ -233,8 +234,8 @@ semantic_models:
   - name: as_of_date
     type: time
     expr: as_of_date
-    description: Tanggal snapshot customer, digunakan untuk filter tanggal, bulan,
-      tahun
+    description: Tanggal posisi atau snapshot data pada table customer / nasabah.
+      Digunakan untuk filter tanggal, bulan, tahun
     type_params:
       time_granularity: day
   - name: mdm_id
@@ -286,16 +287,16 @@ semantic_models:
   - name: cust_status
     type: categorical
     expr: cust_status
-    description: 'Status Customer [LLM Context: Mode: STATIC_ENUM | Allowed: [Aktif]
-      | Value Mappings: [AKTIF (Synonyms: Aktif)]]'
+    description: 'Status Customer/nasabah [LLM Context: Mode: STATIC_ENUM | Allowed:
+      [Aktif] | Value Mappings: [AKTIF (Synonyms: Aktif)]]'
   - name: cust_type_code
     type: categorical
     expr: cust_type_code
-    description: Kode Type
+    description: Kode tipe customer/nasabah
   - name: cust_type
     type: categorical
     expr: cust_type
-    description: Tipe Customer
+    description: Tipe Customer/nasabah
   - name: pemerintah_flag
     type: categorical
     expr: pemerintah_flag
@@ -503,11 +504,11 @@ semantic_models:
   - name: cust_rental_income
     type: categorical
     expr: cust_rental_income
-    description: ''
+    description: Pendapatan Sewa
   - name: cust_other_income
     type: categorical
     expr: cust_other_income
-    description: ''
+    description: Pendapatan Lain
   - name: channel_open_cif
     type: categorical
     expr: channel_open_cif
@@ -631,11 +632,11 @@ semantic_models:
   - name: channel_consent_name
     type: categorical
     expr: channel_consent_name
-    description: Channel Nasabah ( Consentisi Pemegang Nasabah)
+    description: Consent Channel
   - name: channel_consent_name_before
     type: categorical
     expr: channel_consent_name_before
-    description: Channel Nasabah ( Consent_Nameisi Pemegang Nasabah)
+    description: Consent Channel Sebelum (Previous)
   - name: consent_date
     type: time
     expr: consent_date
@@ -724,14 +725,21 @@ semantic_models:
     type: foreign
     expr: cif_key
   dimensions:
+  - name: as_of_date
+    type: time
+    expr: as_of_date
+    description: Tanggal posisi atau snapshot data pada table funding. Digunakan untuk
+      filter tanggal, bulan, tahun
+    type_params:
+      time_granularity: day
   - name: cust_type_code
     type: categorical
     expr: cust_type_code
-    description: Kode tipe nasabah
+    description: Kode tipe customer/nasabah
   - name: cust_type
     type: categorical
     expr: cust_type
-    description: Tipe nasabah
+    description: Tipe Customer/nasabah
   - name: cif_open_region_code
     type: categorical
     expr: cif_open_region_code
@@ -757,7 +765,7 @@ semantic_models:
   - name: nama_nasabah
     type: categorical
     expr: nama_nasabah
-    description: Nama Nasabah
+    description: Nama
   - name: company_name
     type: categorical
     expr: company_name
@@ -1082,7 +1090,7 @@ semantic_models:
   - name: jenis_badan_hukum
     type: categorical
     expr: jenis_badan_hukum
-    description: Jenis atau bentuk badan hukum nasabah/perusahaan.
+    description: Jenis atau bentuk badan hukum
   - name: ending_balance_mtd
     type: categorical
     expr: ending_balance_mtd
@@ -1579,13 +1587,14 @@ semantic_models:
   - name: as_of_date
     type: time
     expr: as_of_date
-    description: Tanggal posisi atau snapshot data.
+    description: Tanggal posisi atau snapshot data pada table lending. Digunakan untuk
+      filter tanggal, bulan, tahun
     type_params:
       time_granularity: day
   - name: mdm_id
     type: categorical
     expr: mdm_id
-    description: ID nasabah/entity pada sistem Master Data Management.
+    description: ID MDM / Global pada sistem Master Data Management.
   - name: account_number_affiliated
     type: categorical
     expr: account_number_affiliated
@@ -1594,11 +1603,11 @@ semantic_models:
   - name: cust_type_code
     type: categorical
     expr: cust_type_code
-    description: Kode jenis nasabah.
+    description: Kode tipe customer/nasabah
   - name: cust_type
     type: categorical
     expr: cust_type
-    description: Deskripsi jenis nasabah, misalnya individu atau badan usaha.
+    description: Tipe Customer/nasabah
   - name: cif_open_region_code
     type: categorical
     expr: cif_open_region_code
@@ -1624,7 +1633,7 @@ semantic_models:
   - name: nama_nasabah
     type: categorical
     expr: nama_nasabah
-    description: Nama nasabah.
+    description: Nama
   - name: company_name
     type: categorical
     expr: company_name
@@ -1649,7 +1658,7 @@ semantic_models:
   - name: sub_segment
     type: categorical
     expr: sub_segment
-    description: Sub segmen nasabah.
+    description: Sub segment
   - name: account_type
     type: categorical
     expr: account_type
@@ -2397,7 +2406,7 @@ semantic_models:
   - name: group_principal
     type: categorical
     expr: group_principal
-    description: Nasabah/perusahaan utama dalam satu kelompok usaha atau grup.
+    description: Entity utama dalam satu kelompok usaha atau grup.
   - name: segment_div_owner
     type: categorical
     expr: segment_div_owner
@@ -2405,7 +2414,8 @@ semantic_models:
   - name: as_of_date
     type: time
     expr: as_of_date
-    description: Tanggal posisi/snapshot data.
+    description: Tanggal posisi atau snapshot data pada table mapping_group_whs. Digunakan
+      untuk filter tanggal, bulan, tahun
     type_params:
       time_granularity: day
   measures: []
@@ -2520,49 +2530,49 @@ metrics:
     measure: customer_icons_cust_income_max
 - name: customer_icons_cust_rental_income_sum_metric
   label: Customer_Icons Cust_Rental_Income Sum
-  description: ''
+  description: Pendapatan Sewa
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_sum
 - name: customer_icons_cust_rental_income_average_metric
   label: Customer_Icons Cust_Rental_Income Average
-  description: ''
+  description: Pendapatan Sewa
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_average
 - name: customer_icons_cust_rental_income_min_metric
   label: Customer_Icons Cust_Rental_Income Min
-  description: ''
+  description: Pendapatan Sewa
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_min
 - name: customer_icons_cust_rental_income_max_metric
   label: Customer_Icons Cust_Rental_Income Max
-  description: ''
+  description: Pendapatan Sewa
   type: simple
   type_params:
     measure: customer_icons_cust_rental_income_max
 - name: customer_icons_cust_other_income_sum_metric
   label: Customer_Icons Cust_Other_Income Sum
-  description: ''
+  description: Pendapatan Lain
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_sum
 - name: customer_icons_cust_other_income_average_metric
   label: Customer_Icons Cust_Other_Income Average
-  description: ''
+  description: Pendapatan Lain
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_average
 - name: customer_icons_cust_other_income_min_metric
   label: Customer_Icons Cust_Other_Income Min
-  description: ''
+  description: Pendapatan Lain
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_min
 - name: customer_icons_cust_other_income_max_metric
   label: Customer_Icons Cust_Other_Income Max
-  description: ''
+  description: Pendapatan Lain
   type: simple
   type_params:
     measure: customer_icons_cust_other_income_max
