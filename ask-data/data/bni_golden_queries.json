@@ -1,17 +1,80 @@
 [
   {
     "user_intent": "Nasabah aktif",
+    "description": "",
     "sql_template": "SELECT * FROM dm_customer.customer_icons WHERE cust_status = 'AKTIF';",
     "complexity": "simple"
   },
   {
     "user_intent": "Aktivitas cashout / cash out",
+    "description": "",
     "sql_template": "SELECT * FROM dm_transaction.trxchannel WHERE destination_bankname <> 'BANK NEGARA INDONESIA';",
     "complexity": "simple"
   },
   {
     "user_intent": "Informasi DPK / total DPK",
+    "description": "",
     "sql_template": "SELECT cur_book_bal FROM dm_funding.funding;",
     "complexity": "simple"
+  },
+  {
+    "user_intent": "Balance",
+    "description": "Mengambil posisi saldo rekening/customer pada tanggal tertentu. cur_book_bal merupakan end-of-day balance, sehingga tidak boleh dijumlahkan antar tanggal. Setiap row merupakan snapshot saldo pada tanggal tertentu.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Total DPK",
+    "description": "Menghitung total Dana Pihak Ketiga (tabungan, giro, dan deposito) berdasarkan posisi saldo terbaru yang tersedia, bukan menjumlahkan saldo antar tanggal.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Balance Change",
+    "description": "Menghitung persentase perubahan cur_book_bal_idr antara dua tanggal untuk account/customer yang sama. Nilai positif menunjukkan peningkatan saldo dan negatif menunjukkan penurunan saldo.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "MTD Average Balance",
+    "description": "Menghitung rata-rata cur_book_bal_idr dari tanggal 1 bulan berjalan sampai tanggal yang diminta. Untuk customer dengan banyak rekening, perhitungan dilakukan per account kemudian diagregasi berdasarkan CIF.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Product Ownership",
+    "description": "Mengidentifikasi customer yang memiliki produk tertentu. Karena product_name berupa free text, gunakan case-insensitive pattern matching LOWER(product_name) LIKE '%keyword%'. Keyword harus mengikuti persis produk yang disebut user.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Written Off Customer",
+    "description": "Menghitung distinct customer yang sudah written off, yaitu customer dengan written_off_date IS NOT NULL dan written_off_date <> '1990-01-01'.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Cash In",
+    "description": "Mengidentifikasi dana yang masuk/diterima oleh customer. Customer dianggap sebagai penerima apabila CIF/customer muncul pada kolom target_cif. Cash In merupakan transaction flow, bukan saldo, sehingga tidak boleh diperlakukan sebagai balance antar tanggal.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Cash Out",
+    "description": "Mengidentifikasi dana yang keluar/dikirim oleh customer. Customer dianggap sebagai pengirim apabila CIF/customer muncul pada kolom cif_key. Cash Out merupakan transaction flow, bukan saldo.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Cash In by Entity",
+    "description": "Menganalisis Cash In berdasarkan customer, group, subholding, atau principal. Untuk Cash In, identifikasi customer/pihak penerima melalui target_cif.",
+    "sql_template": "nan",
+    "complexity": "nan"
+  },
+  {
+    "user_intent": "Cash Out by Entity",
+    "description": "Menganalisis Cash Out berdasarkan customer, group, subholding, atau principal. Untuk Cash Out, identifikasi customer/pihak pengirim melalui cif_key.",
+    "sql_template": "nan",
+    "complexity": "nan"
   }
 ]

@@ -11,6 +11,12 @@ semantic_models:
 - name: trxchannel
   model: ref('trxchannel')
   entities:
+  - name: funding_as_of_date
+    type: foreign
+    expr: as_of_date
+  - name: lending_as_of_date
+    type: foreign
+    expr: as_of_date
   - name: customer_icons_cif_key
     type: foreign
     expr: cif_key
@@ -33,13 +39,6 @@ semantic_models:
     type: primary
     expr: '1'
   dimensions:
-  - name: as_of_date
-    type: time
-    expr: as_of_date
-    description: Tanggal posisi atau tanggal transaksi data, digunakan untuk filter
-      tanggal, bulan, tahun
-    type_params:
-      time_granularity: day
   - name: trx_datetime
     type: time
     expr: trx_datetime
@@ -185,42 +184,45 @@ semantic_models:
   - name: trxchannel_journal_no_count
     expr: NVL(journal_no, 0)
     agg: count
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_sum
     expr: NVL(amount, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_average
     expr: NVL(amount, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_min
     expr: NVL(amount, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_max
     expr: NVL(amount, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_ori_sum
     expr: NVL(amount_ori, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_ori_average
     expr: NVL(amount_ori, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_ori_min
     expr: NVL(amount_ori, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
   - name: trxchannel_amount_ori_max
     expr: NVL(amount_ori, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: trx_datetime
 - name: customer_icons
   model: ref('customer_icons')
   entities:
+  - name: as_of_date
+    type: foreign
+    expr: as_of_date
   - name: customer_icons_cif_key
     type: primary
     expr: cif_key
@@ -231,13 +233,6 @@ semantic_models:
     type: unique
     expr: cif_key
   dimensions:
-  - name: as_of_date
-    type: time
-    expr: as_of_date
-    description: Tanggal posisi atau snapshot data pada table customer / nasabah.
-      Digunakan untuk filter tanggal, bulan, tahun
-    type_params:
-      time_granularity: day
   - name: mdm_id
     type: categorical
     expr: mdm_id
@@ -647,74 +642,77 @@ semantic_models:
   - name: customer_icons_mdm_id_count
     expr: NVL(mdm_id, 0)
     agg: count
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_age_sum
     expr: NVL(cust_age, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_age_average
     expr: NVL(cust_age, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_age_min
     expr: NVL(cust_age, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_age_max
     expr: NVL(cust_age, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_income_sum
     expr: NVL(cust_income, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_income_average
     expr: NVL(cust_income, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_income_min
     expr: NVL(cust_income, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_income_max
     expr: NVL(cust_income, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_rental_income_sum
     expr: NVL(cust_rental_income, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_rental_income_average
     expr: NVL(cust_rental_income, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_rental_income_min
     expr: NVL(cust_rental_income, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_rental_income_max
     expr: NVL(cust_rental_income, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_other_income_sum
     expr: NVL(cust_other_income, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_other_income_average
     expr: NVL(cust_other_income, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_other_income_min
     expr: NVL(cust_other_income, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: customer_icons_cust_other_income_max
     expr: NVL(cust_other_income, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
 - name: funding
   model: ref('funding')
   entities:
+  - name: as_of_date
+    type: foreign
+    expr: as_of_date
   - name: funding_account_number
     type: primary
     expr: account_number
@@ -725,13 +723,6 @@ semantic_models:
     type: foreign
     expr: cif_key
   dimensions:
-  - name: as_of_date
-    type: time
-    expr: as_of_date
-    description: Tanggal posisi atau snapshot data pada table funding. Digunakan untuk
-      filter tanggal, bulan, tahun
-    type_params:
-      time_granularity: day
   - name: cust_type_code
     type: categorical
     expr: cust_type_code
@@ -1142,438 +1133,441 @@ semantic_models:
   - name: funding_rate_sum
     expr: NVL(rate, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_rate_average
     expr: NVL(rate, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_rate_min
     expr: NVL(rate, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_rate_max
     expr: NVL(rate, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_sum
     expr: NVL(cur_book_bal, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_average
     expr: NVL(cur_book_bal, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_min
     expr: NVL(cur_book_bal, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_max
     expr: NVL(cur_book_bal, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_sum
     expr: NVL(cur_book_bal_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_average
     expr: NVL(cur_book_bal_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_min
     expr: NVL(cur_book_bal_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_max
     expr: NVL(cur_book_bal_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_amortisi_idr_sum
     expr: NVL(amortisi_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_amortisi_idr_average
     expr: NVL(amortisi_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_amortisi_idr_min
     expr: NVL(amortisi_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_amortisi_idr_max
     expr: NVL(amortisi_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_sum
     expr: NVL(ending_balance, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_average
     expr: NVL(ending_balance, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_min
     expr: NVL(ending_balance, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_max
     expr: NVL(ending_balance, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_sum
     expr: NVL(avg_book_bal_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_average
     expr: NVL(avg_book_bal_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_min
     expr: NVL(avg_book_bal_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_max
     expr: NVL(avg_book_bal_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_idr_sum
     expr: NVL(avg_book_bal_mtd_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_idr_average
     expr: NVL(avg_book_bal_mtd_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_idr_min
     expr: NVL(avg_book_bal_mtd_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_mtd_idr_max
     expr: NVL(avg_book_bal_mtd_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_sum
     expr: NVL(avg_book_bal_ytd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_average
     expr: NVL(avg_book_bal_ytd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_min
     expr: NVL(avg_book_bal_ytd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_max
     expr: NVL(avg_book_bal_ytd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_idr_sum
     expr: NVL(avg_book_bal_ytd_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_idr_average
     expr: NVL(avg_book_bal_ytd_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_idr_min
     expr: NVL(avg_book_bal_ytd_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_avg_book_bal_ytd_idr_max
     expr: NVL(avg_book_bal_ytd_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_mtd_sum
     expr: NVL(cur_book_bal_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_mtd_average
     expr: NVL(cur_book_bal_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_mtd_min
     expr: NVL(cur_book_bal_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_mtd_max
     expr: NVL(cur_book_bal_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_mtd_sum
     expr: NVL(cur_book_bal_idr_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_mtd_average
     expr: NVL(cur_book_bal_idr_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_mtd_min
     expr: NVL(cur_book_bal_idr_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_mtd_max
     expr: NVL(cur_book_bal_idr_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_ytd_sum
     expr: NVL(cur_book_bal_ytd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_ytd_average
     expr: NVL(cur_book_bal_ytd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_ytd_min
     expr: NVL(cur_book_bal_ytd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_ytd_max
     expr: NVL(cur_book_bal_ytd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_ytd_sum
     expr: NVL(cur_book_bal_idr_ytd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_ytd_average
     expr: NVL(cur_book_bal_idr_ytd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_ytd_min
     expr: NVL(cur_book_bal_idr_ytd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_ytd_max
     expr: NVL(cur_book_bal_idr_ytd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_yoy_sum
     expr: NVL(cur_book_bal_yoy, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_yoy_average
     expr: NVL(cur_book_bal_yoy, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_yoy_min
     expr: NVL(cur_book_bal_yoy, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_yoy_max
     expr: NVL(cur_book_bal_yoy, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_yoy_sum
     expr: NVL(cur_book_bal_idr_yoy, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_yoy_average
     expr: NVL(cur_book_bal_idr_yoy, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_yoy_min
     expr: NVL(cur_book_bal_idr_yoy, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_cur_book_bal_idr_yoy_max
     expr: NVL(cur_book_bal_idr_yoy, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_daily_sum
     expr: NVL(ie_daily, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_daily_average
     expr: NVL(ie_daily, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_daily_min
     expr: NVL(ie_daily, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_daily_max
     expr: NVL(ie_daily, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_mtd_sum
     expr: NVL(ie_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_mtd_average
     expr: NVL(ie_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_mtd_min
     expr: NVL(ie_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_mtd_max
     expr: NVL(ie_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_pms_eom_sum
     expr: NVL(ie_pms_eom, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_pms_eom_average
     expr: NVL(ie_pms_eom, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_pms_eom_min
     expr: NVL(ie_pms_eom, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ie_pms_eom_max
     expr: NVL(ie_pms_eom, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_mtd_sum
     expr: NVL(ending_balance_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_mtd_average
     expr: NVL(ending_balance_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_mtd_min
     expr: NVL(ending_balance_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_mtd_max
     expr: NVL(ending_balance_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_mtd_sum
     expr: NVL(ending_balance_idr_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_mtd_average
     expr: NVL(ending_balance_idr_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_mtd_min
     expr: NVL(ending_balance_idr_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_mtd_max
     expr: NVL(ending_balance_idr_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_ytd_sum
     expr: NVL(ending_balance_ytd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_ytd_average
     expr: NVL(ending_balance_ytd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_ytd_min
     expr: NVL(ending_balance_ytd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_ytd_max
     expr: NVL(ending_balance_ytd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_ytd_sum
     expr: NVL(ending_balance_idr_ytd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_ytd_average
     expr: NVL(ending_balance_idr_ytd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_ytd_min
     expr: NVL(ending_balance_idr_ytd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_ytd_max
     expr: NVL(ending_balance_idr_ytd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_yoy_sum
     expr: NVL(ending_balance_yoy, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_yoy_average
     expr: NVL(ending_balance_yoy, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_yoy_min
     expr: NVL(ending_balance_yoy, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_yoy_max
     expr: NVL(ending_balance_yoy, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_yoy_sum
     expr: NVL(ending_balance_idr_yoy, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_yoy_average
     expr: NVL(ending_balance_idr_yoy, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_yoy_min
     expr: NVL(ending_balance_idr_yoy, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_ending_balance_idr_yoy_max
     expr: NVL(ending_balance_idr_yoy, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dsra_sum
     expr: NVL(saldo_dsra, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dsra_average
     expr: NVL(saldo_dsra, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dsra_min
     expr: NVL(saldo_dsra, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dsra_max
     expr: NVL(saldo_dsra, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dspa_sum
     expr: NVL(saldo_dspa, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dspa_average
     expr: NVL(saldo_dspa, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dspa_min
     expr: NVL(saldo_dspa, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_saldo_dspa_max
     expr: NVL(saldo_dspa, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_blocked_balance_sum
     expr: NVL(blocked_balance, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_blocked_balance_average
     expr: NVL(blocked_balance, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_blocked_balance_min
     expr: NVL(blocked_balance, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: funding_blocked_balance_max
     expr: NVL(blocked_balance, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
 - name: lending
   model: ref('lending')
   entities:
+  - name: as_of_date
+    type: foreign
+    expr: as_of_date
   - name: lending_account_number
     type: primary
     expr: account_number
@@ -1584,13 +1578,6 @@ semantic_models:
     type: foreign
     expr: cif_key
   dimensions:
-  - name: as_of_date
-    type: time
-    expr: as_of_date
-    description: Tanggal posisi atau snapshot data pada table lending. Digunakan untuk
-      filter tanggal, bulan, tahun
-    type_params:
-      time_granularity: day
   - name: mdm_id
     type: categorical
     expr: mdm_id
@@ -2010,393 +1997,396 @@ semantic_models:
   - name: lending_loan_principal_idr_sum
     expr: NVL(loan_principal_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_loan_principal_idr_average
     expr: NVL(loan_principal_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_loan_principal_idr_min
     expr: NVL(loan_principal_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_loan_principal_idr_max
     expr: NVL(loan_principal_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_baki_debet_sum
     expr: NVL(baki_debet, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_baki_debet_average
     expr: NVL(baki_debet, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_baki_debet_min
     expr: NVL(baki_debet, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_baki_debet_max
     expr: NVL(baki_debet, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_dma_sum
     expr: NVL(psak_adj_dma, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_dma_average
     expr: NVL(psak_adj_dma, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_dma_min
     expr: NVL(psak_adj_dma, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_dma_max
     expr: NVL(psak_adj_dma, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_acc_sum
     expr: NVL(psak_adj_acc, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_acc_average
     expr: NVL(psak_adj_acc, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_acc_min
     expr: NVL(psak_adj_acc, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_psak_adj_acc_max
     expr: NVL(psak_adj_acc, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_mtd_sum
     expr: NVL(avg_loan_principal_psak_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_mtd_average
     expr: NVL(avg_loan_principal_psak_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_mtd_min
     expr: NVL(avg_loan_principal_psak_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_mtd_max
     expr: NVL(avg_loan_principal_psak_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_ytd_sum
     expr: NVL(avg_loan_principal_psak_ytd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_ytd_average
     expr: NVL(avg_loan_principal_psak_ytd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_ytd_min
     expr: NVL(avg_loan_principal_psak_ytd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_psak_ytd_max
     expr: NVL(avg_loan_principal_psak_ytd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_max_credit_sum
     expr: NVL(max_credit, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_max_credit_average
     expr: NVL(max_credit, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_max_credit_min
     expr: NVL(max_credit, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_max_credit_max
     expr: NVL(max_credit, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_sum
     expr: NVL(commitment_bal, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_average
     expr: NVL(commitment_bal, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_min
     expr: NVL(commitment_bal, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_max
     expr: NVL(commitment_bal, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_idr_sum
     expr: NVL(commitment_bal_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_idr_average
     expr: NVL(commitment_bal_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_idr_min
     expr: NVL(commitment_bal_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_commitment_bal_idr_max
     expr: NVL(commitment_bal_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_org_credit_limit_sum
     expr: NVL(org_credit_limit, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_org_credit_limit_average
     expr: NVL(org_credit_limit, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_org_credit_limit_min
     expr: NVL(org_credit_limit, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_org_credit_limit_max
     expr: NVL(org_credit_limit, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_add_credit_limit_sum
     expr: NVL(add_credit_limit, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_add_credit_limit_average
     expr: NVL(add_credit_limit, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_add_credit_limit_min
     expr: NVL(add_credit_limit, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_add_credit_limit_max
     expr: NVL(add_credit_limit, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_sum
     expr: NVL(avg_loan_principal_ytd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_average
     expr: NVL(avg_loan_principal_ytd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_min
     expr: NVL(avg_loan_principal_ytd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_max
     expr: NVL(avg_loan_principal_ytd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_idr_sum
     expr: NVL(avg_loan_principal_ytd_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_idr_average
     expr: NVL(avg_loan_principal_ytd_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_idr_min
     expr: NVL(avg_loan_principal_ytd_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_ytd_idr_max
     expr: NVL(avg_loan_principal_ytd_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_sum
     expr: NVL(avg_loan_principal_mtd, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_average
     expr: NVL(avg_loan_principal_mtd, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_min
     expr: NVL(avg_loan_principal_mtd, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_max
     expr: NVL(avg_loan_principal_mtd, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_idr_sum
     expr: NVL(avg_loan_principal_mtd_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_idr_average
     expr: NVL(avg_loan_principal_mtd_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_idr_min
     expr: NVL(avg_loan_principal_mtd_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_avg_loan_principal_mtd_idr_max
     expr: NVL(avg_loan_principal_mtd_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_bunga_sum
     expr: NVL(angsuran_bunga, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_bunga_average
     expr: NVL(angsuran_bunga, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_bunga_min
     expr: NVL(angsuran_bunga, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_bunga_max
     expr: NVL(angsuran_bunga, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_pokok_sum
     expr: NVL(angsuran_pokok, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_pokok_average
     expr: NVL(angsuran_pokok, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_pokok_min
     expr: NVL(angsuran_pokok, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_angsuran_pokok_max
     expr: NVL(angsuran_pokok, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_idr_sum
     expr: NVL(cur_book_bal_idr, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_idr_average
     expr: NVL(cur_book_bal_idr, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_idr_min
     expr: NVL(cur_book_bal_idr, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_idr_max
     expr: NVL(cur_book_bal_idr, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_sum
     expr: NVL(cur_book_bal, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_average
     expr: NVL(cur_book_bal, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_min
     expr: NVL(cur_book_bal, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_cur_book_bal_max
     expr: NVL(cur_book_bal, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_outstanding_sum
     expr: NVL(outstanding, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_outstanding_average
     expr: NVL(outstanding, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_outstanding_min
     expr: NVL(outstanding, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_outstanding_max
     expr: NVL(outstanding, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dspa_balance_sum
     expr: NVL(dspa_balance, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dspa_balance_average
     expr: NVL(dspa_balance, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dspa_balance_min
     expr: NVL(dspa_balance, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dspa_balance_max
     expr: NVL(dspa_balance, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dsra_balance_sum
     expr: NVL(dsra_balance, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dsra_balance_average
     expr: NVL(dsra_balance, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dsra_balance_min
     expr: NVL(dsra_balance, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_dsra_balance_max
     expr: NVL(dsra_balance, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_daily_sum
     expr: NVL(ii_daily, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_daily_average
     expr: NVL(ii_daily, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_daily_min
     expr: NVL(ii_daily, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_daily_max
     expr: NVL(ii_daily, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_monthly_sum
     expr: NVL(ii_monthly, 0)
     agg: sum
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_monthly_average
     expr: NVL(ii_monthly, 0)
     agg: average
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_monthly_min
     expr: NVL(ii_monthly, 0)
     agg: min
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
   - name: lending_ii_monthly_max
     expr: NVL(ii_monthly, 0)
     agg: max
-    agg_time_dimension: as_of_date
+    agg_time_dimension: cif_open_date
 - name: mapping_group_whs
   model: ref('mapping_group_whs')
   entities:
   - name: cif_principal_customer_icons
     type: foreign
     expr: cif_principal
+  - name: as_of_date
+    type: foreign
+    expr: as_of_date
   - name: mapping_group_whs_id
     type: primary
     expr: '1'
@@ -2409,13 +2399,6 @@ semantic_models:
     type: categorical
     expr: segment_div_owner
     description: Divisi pemilik segmen.
-  - name: as_of_date
-    type: time
-    expr: as_of_date
-    description: Tanggal posisi atau snapshot data pada table mapping_group_whs. Digunakan
-      untuk filter tanggal, bulan, tahun
-    type_params:
-      time_granularity: day
   measures: []
 metrics:
 - name: trxchannel_journal_no_count_metric
