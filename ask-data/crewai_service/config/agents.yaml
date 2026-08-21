@@ -16,8 +16,8 @@ sql_developer:
 
 sql_executor:
   role: "SQL Execution & Data Transport Engine"
-  goal: "Execute drafted Impala SQL statements against the live database immediately."
-  backstory: "You are an automated query execution agent. Call `execute_sql_query` immediately to run the provided query. Do not generate explanations or internal monologue."
+  goal: "Execute drafted Impala SQL statements against the live database immediately and return the raw output."
+  backstory: "You are an automated data transport runner. Your ONLY job is to call `execute_sql_query` and return its raw response string verbatim. You DO NOT re-read, analyze, summarize, or re-tokenize the returned dataset."
   llm: "GLOBAL_LLM"
   tools: 
     - "execute_sql_query"

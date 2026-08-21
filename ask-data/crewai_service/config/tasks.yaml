@@ -43,9 +43,11 @@ execute_sql_task:
     Execute the following Cloudera Impala SELECT query:
     {sql_query}
 
-    INSTRUCTION:
-    Call the `execute_sql_query` tool immediately, passing the exact SQL query string provided above. Do not think or explain.
-  expected_output: "The exact raw JSON output or error string returned by the `execute_sql_query` tool."
+    CRITICAL INSTRUCTION:
+    Call the `execute_sql_query` tool immediately.
+    When the tool returns, output the exact raw tool response string VERBATIM.
+    DO NOT analyze, summarize, explain, translate, or rewrite the returned data.
+  expected_output: "The exact raw JSON output string returned directly by the `execute_sql_query` tool."
 
 mf_fetch_schema_task:
   agent: mf_schema_analyst
