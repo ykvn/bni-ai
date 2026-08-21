@@ -28,7 +28,6 @@ NO_RELEVANT_SCHEMA = "NO_RELEVANT_SCHEMA"
 # detection uses the `_has_no_tables` helper / NO_RELEVANT_SCHEMA YAML marker.
 NO_SCHEMA_RESPONSE = "I am sorry, I don't have this information on my database."
 
-
 def _resolve_relative_date(date_str: str) -> str:
     """Parses 'd-1', 'D-2' etc. into a real YYYY-MM-DD string based on today's date."""
     if not date_str:
@@ -50,7 +49,6 @@ def _resolve_relative_date(date_str: str) -> str:
             pass # Fall back to original string if integer parsing fails
             
     return str(date_str).strip()
-
 
 def clean_schema_yaml(raw_yaml_str: str) -> str:
     """Strips internal reranking score fields from the pure YAML string."""
@@ -90,8 +88,8 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
         clean_table["score"] = table["score"]
 
     clean_table["description"] = table.get("description")
-
-    # 🌟 NEW: Resolve dynamic availability dates (e.g., "d-1" -> "2026-08-20")
+    
+    # 🌟 NEW: Check for availability date and compute the offset
     if "availability_date" in table:
         raw_date = table["availability_date"]
         clean_table["availability_date"] = _resolve_relative_date(raw_date)
