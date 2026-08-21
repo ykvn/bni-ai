@@ -9,7 +9,6 @@ tables:
     columns:
       - name: as_of_date
         type: "date"
-        references: "dm_funding.funding.as_of_date; dm_lending.lending.as_of_date"
         description: "Tanggal posisi atau tanggal transaksi data, digunakan untuk filter tanggal, bulan, tahun [LLM Context: DEFAULT_TIME_AXIS: True]"
       - name: trx_datetime
         type: "timestamp"
