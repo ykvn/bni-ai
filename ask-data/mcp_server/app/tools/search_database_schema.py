@@ -134,6 +134,12 @@ def get_smart_schema_context_with_golden(
     global_table_threshold_ratio: float = 0.30
 ) -> tuple[str, str]:
     """Retrieves schema context and golden queries with per-column and global per-table pruning."""
+    top_tables = int(os.getenv("SCHEMA_TOP_TABLES", top_tables))
+    top_columns_per_table = int(os.getenv("SCHEMA_TOP_COLUMNS_PER_TABLE", top_columns_per_table))
+    relative_threshold_ratio = float(os.getenv("SCHEMA_RELATIVE_THRESHOLD_RATIO", relative_threshold_ratio))
+    absolute_min_score = float(os.getenv("SCHEMA_ABSOLUTE_MIN_SCORE", absolute_min_score))
+    global_table_threshold_ratio = float(os.getenv("SCHEMA_GLOBAL_TABLE_THRESHOLD_RATIO", global_table_threshold_ratio))
+
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")

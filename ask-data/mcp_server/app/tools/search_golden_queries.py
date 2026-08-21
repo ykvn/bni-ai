@@ -59,6 +59,10 @@ def search_golden_queries(
     Forces Cross-Encoder reranking to evaluate ONLY the 'user_intent' field and enforces
     a minimum relevance threshold.
     """
+    top_k = int(os.getenv("GOLDEN_TOP_K", top_k))
+    top_n = int(os.getenv("GOLDEN_TOP_N", top_n))
+    min_relevance_score = float(os.getenv("GOLDEN_MIN_RELEVANCE_SCORE", min_relevance_score))
+
     collection_name = os.getenv("GOLDEN_COLLECTION", "bni_golden_queries")
     
     # 1. Fetch broad candidate queries using dense vector similarity

@@ -25,6 +25,13 @@ def search_mf_catalog(
     Searches Qdrant for MetricFlow items, applies Lexical-Boosted Cross-Encoder reranking,
     and enforces score thresholds to filter out off-topic queries before applying Category Quotas.
     """
+    top_candidates = int(os.getenv("MF_TOP_CANDIDATES", top_candidates))
+    max_metrics = int(os.getenv("MF_MAX_METRICS", max_metrics))
+    max_dimensions = int(os.getenv("MF_MAX_DIMENSIONS", max_dimensions))
+    max_entities = int(os.getenv("MF_MAX_ENTITIES", max_entities))
+    absolute_min_score = float(os.getenv("MF_ABSOLUTE_MIN_SCORE", absolute_min_score))
+    relative_threshold_ratio = float(os.getenv("MF_RELATIVE_THRESHOLD_RATIO", relative_threshold_ratio))
+
     cml_token = get_cml_token()
     embed_url = os.getenv("EMBED_RERANK_URL", "").rstrip("/")
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
