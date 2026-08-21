@@ -63,8 +63,6 @@ def search_mf_catalog(
             return NO_MF_RESPONSE
 
         candidate_items = []
-        rerank_docs = []
-        description_boost_scores = []
 
         # 2. Inspect descriptions and assign tier multipliers
         for point in results:
@@ -95,7 +93,7 @@ def search_mf_catalog(
                     else:
                         doc_str = f"Catalog Item: {item_name} | Description: {item_desc}"
 
-                    searchable_text = f"{item_name} {item_label} {item_desc}".lower()
+                    searchable_text = f"{item_name} {item_label} {item_desc} {item_avail_date}".lower()
                     for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', '|']:
                         searchable_text = searchable_text.replace(char, ' ')
 
@@ -103,17 +101,29 @@ def search_mf_catalog(
                     item_tokens = set(w for w in searchable_text.split() if len(w) > 2 and w not in INDONESIAN_STOP_WORDS)
                     token_matches = len(query_tokens.intersection(item_tokens))
 
-                    # 🌟 FIX: Multi-word phrase matches get +100.0 to override neural logit scale
+                    # Multi-word phrase matches get +100.0 to override neural logit scale
                     desc_score = (phrase_matches * 100.0) + (token_matches * 2.0)
+                    
+                    # Compute pre-score for sorting BEFORE hitting the neural reranker
+                    qdrant_score = point.score if hasattr(point, 'score') else point.get("score", 0.0)
+                    pre_score = qdrant_score + desc_score
 
-                    candidate_items.append(item)
-                    rerank_docs.append(doc_str)
-                    description_boost_scores.append(desc_score)
+                    candidate_items.append({
+                        "item": item,
+                        "doc_str": doc_str,
+                        "pre_score": pre_score,
+                        "desc_score": desc_score
+                    })
                 except Exception:
                     continue
 
         if not candidate_items:
             return NO_MF_RESPONSE
+
+        # 🌟 FIX: Pre-sort candidates by boosted score and isolate the top 100 to prevent API crashes
+        candidate_items.sort(key=lambda x: x["pre_score"], reverse=True)
+        top_candidates_to_rerank = candidate_items[:100]
+        rerank_docs = [x["doc_str"] for x in top_candidates_to_rerank]
 
         # 3. Neural Cross-Encoder Reranking
         filtered_candidates = []
@@ -133,23 +143,28 @@ def search_mf_catalog(
                     raw_score = hit.get("score", hit.get("relevance_score", 0.0))
                     idx = hit.get("index")
 
-                    if idx is not None and idx < len(candidate_items):
-                        desc_boost = description_boost_scores[idx]
+                    if idx is not None and idx < len(top_candidates_to_rerank):
+                        # Add our keyword phrase boost to the final neural logit score
+                        desc_boost = top_candidates_to_rerank[idx]["desc_score"]
                         final_score = raw_score + desc_boost
 
                         boosted_hits.append({
-                            "item": candidate_items[idx],
+                            "item": top_candidates_to_rerank[idx]["item"],
                             "score": final_score
                         })
 
-                # Sort by the artificially boosted score
+                # Sort by the final combined score
                 boosted_hits.sort(key=lambda x: x["score"], reverse=True)
 
                 for hit_data in boosted_hits:
                     filtered_candidates.append(hit_data["item"])
+            else:
+                raise ValueError("Empty rerank results")
 
-        except Exception:
-            filtered_candidates = candidate_items
+        except Exception as e:
+            # 🌟 FIX: If the reranker fails/times out, fallback gracefully to our already sorted list
+            for c in top_candidates_to_rerank:
+                filtered_candidates.append(c["item"])
 
         if not filtered_candidates:
             return NO_MF_RESPONSE
