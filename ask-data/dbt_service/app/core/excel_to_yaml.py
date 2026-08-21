@@ -48,10 +48,20 @@ def convert_excel_to_custom_yaml(excel_path: str, output_yaml_path: str) -> None
 
         table_desc_raw = table.get("Description")
         table_desc = str(table_desc_raw) if pd.notna(table_desc_raw) else ""
+        
+        avail_date_raw = table.get("Availability Date")
+        if pd.notna(avail_date_raw) and str(avail_date_raw).strip().lower() != 'nan':
+            table_desc += f" [Availability Date: {str(avail_date_raw).strip()}]"
+
         table_desc = table_desc.replace('"', '\\"').replace('\n', '\\n')
 
         yaml_lines.append(f'  - name: {full_table_name}')
         yaml_lines.append(f'    description: "{table_desc}"')
+        
+        avail_date_raw = table.get("Availability Date")
+        if pd.notna(avail_date_raw) and str(avail_date_raw).strip().lower() != 'nan':
+            yaml_lines.append(f'    availability_date: "{str(avail_date_raw).strip()}"')
+            
         yaml_lines.append('    columns:')
 
         table_cols = cols_df[cols_df["Table Name"].astype(str).str.strip() == table_name]

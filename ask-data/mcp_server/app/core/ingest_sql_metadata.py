@@ -88,6 +88,7 @@ def ingest_schema(
     for table in tables:
         table_name = table.get("name", "unknown")
         desc = table.get("description", "")
+        avail_date = table.get("availability_date", "")
 
         # Build search-optimized string containing column names and descriptions
         col_details = []
@@ -97,7 +98,6 @@ def ingest_schema(
             c_desc = c.get("description", "")
             col_details.append(f"{c_name} ({c_desc})" if c_desc else c_name)
 
-            # Enforce clean column key ordering: name -> type -> primary_key -> references -> description
             clean_col = {"name": c_name}
             if "type" in c:
                 clean_col["type"] = c.get("type")
@@ -110,19 +110,25 @@ def ingest_schema(
             clean_columns.append(clean_col)
 
         cols_formatted = ", ".join(col_details)
-        searchable_text = f"Table: {table_name}\nDescription: {desc}\nColumns: {cols_formatted}"
-        table_texts.append(searchable_text)
+        
+        # Inject availability date into the searchable text chunk for the vector model
+        searchable_text = f"Table: {table_name}\nDescription: {desc}\n"
+        if avail_date:
+            searchable_text += f"Availability Date: {avail_date}\n"
+        searchable_text += f"Columns: {cols_formatted}"
 
-        # Enforce clean table key ordering: name -> description -> columns
         clean_table = {
             "name": table_name,
             "description": desc,
-            "columns": clean_columns,
         }
+        # Ensure availability date stays in the clean payload for LLM Context
+        if avail_date:
+            clean_table["availability_date"] = avail_date
+            
+        clean_table["columns"] = clean_columns
 
         metadatas.append({
             "table_name": table_name,
-            # Guaranteed clean key hierarchy in Qdrant metadata payload
             "raw_yaml": yaml.dump(clean_table, sort_keys=False, default_flow_style=False),
             "data_type": "schema_table",
         })

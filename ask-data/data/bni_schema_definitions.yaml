@@ -128,7 +128,8 @@ tables:
         description: "Jumlah Asli (Sebelum Convert Ke IDR)"
 
   - name: dm_customer.customer_icons
-    description: "Table datamart informasi nasabah, table master nasabah berisi informasi yang dibutuhkan terkait nasabah"
+    description: "Table datamart informasi nasabah, table master nasabah berisi informasi yang dibutuhkan terkait nasabah [Availability Date: D-1]"
+    availability_date: "D-1"
     columns:
       - name: as_of_date
         type: "date"
@@ -436,7 +437,8 @@ tables:
         description: "Consent Date"
 
   - name: dm_funding.funding
-    description: "Table datamart informasi funding nasabah, berisi informasi terkait account funding nasabah (tabungan, giro, deposito). Table funding juga disebut dengan table DPK."
+    description: "Table datamart informasi funding nasabah, berisi informasi terkait account funding nasabah (tabungan, giro, deposito). Table funding juga disebut dengan table DPK. [Availability Date: D-1]"
+    availability_date: "D-1"
     columns:
       - name: as_of_date
         type: "date"
@@ -745,7 +747,8 @@ tables:
         description: "Hasil mapping/mirror dari pemilik channel."
 
   - name: dm_lending.lending
-    description: "Table datamart informasi lending nasabah, berisi informasi terkait account lending nasabah (loan, pinjaman, kredit)"
+    description: "Table datamart informasi lending nasabah, berisi informasi terkait account lending nasabah (loan, pinjaman, kredit) [Availability Date: D-1]"
+    availability_date: "D-1"
     columns:
       - name: as_of_date
         type: "date"
