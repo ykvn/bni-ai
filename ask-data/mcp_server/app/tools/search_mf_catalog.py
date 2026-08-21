@@ -12,18 +12,24 @@ from shared.cml_auth import get_cml_token
 NO_MF_MATCH = "NO_MF_MATCH"
 NO_MF_RESPONSE = "I am sorry, I don't have this information on my database."
 
+# Common stop words to exclude from keyword scoring
+INDONESIAN_STOP_WORDS = {
+    "tampilkan", "dengan", "yang", "untuk", "pada", "adalah", 
+    "seperti", "atau", "dalam", "saja", "secara", "karena", "di", "ke"
+}
+
 def search_mf_catalog(
     user_query: str, 
-    top_candidates: int = 50,
-    max_metrics: int = 3,
+    top_candidates: int = 300,  # 👈 Set to 300 to fetch the FULL catalog (prevents early vector pruning)
+    max_metrics: int = 10,
     max_dimensions: int = 20,
     max_entities: int = 10,
-    absolute_min_score: float = 0.001,
-    relative_threshold_ratio: float = 0.15
+    absolute_min_score: float = 0.000,
+    relative_threshold_ratio: float = 0.00
 ) -> str:
     """
-    Searches Qdrant for MetricFlow items, applies Lexical-Boosted Cross-Encoder reranking,
-    and enforces score thresholds to filter out off-topic queries before applying Category Quotas.
+    Searches Qdrant for MetricFlow items, prioritizing exact description phrase and keyword matches
+    over raw vector similarity before applying Cross-Encoder reranking.
     """
     top_candidates = int(os.getenv("MF_TOP_CANDIDATES", top_candidates))
     max_metrics = int(os.getenv("MF_MAX_METRICS", max_metrics))
@@ -37,24 +43,20 @@ def search_mf_catalog(
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     collection_name = os.getenv("MF_CATALOG_COLLECTION", "mf_catalog")
 
-    # Clean query tokens (replace underscores, slashes, dashes, ignore words <= 2 chars like "di", "ke")
+    # 1. Clean query and extract words + 2-word exact phrases (e.g. "nilai transaksi")
     clean_query = user_query.lower()
     for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
         clean_query = clean_query.replace(char, ' ')
+    
+    query_words = [w for w in clean_query.split() if len(w) > 2 and w not in INDONESIAN_STOP_WORDS]
+    query_tokens = set(query_words)
 
-    INDONESIAN_STOP_WORDS = {
-    "tampilkan", "dengan", "yang", "untuk", "pada", "adalah", 
-    "seperti", "atau", "dalam", "saja", "secara", "karena"
-    }
-
-    # Clean query tokens
-    query_tokens = set(
-    word for word in clean_query.split() 
-    if len(word) > 2 and word not in INDONESIAN_STOP_WORDS
-    )
+    query_phrases = []
+    for i in range(len(query_words) - 1):
+        query_phrases.append(f"{query_words[i]} {query_words[i+1]}")
 
     try:
-        # 1. Fetch broad candidate net
+        # 2. Fetch full catalog candidate net (top_k=300 ensures zero metrics are dropped blindly)
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
         qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
         
@@ -66,13 +68,12 @@ def search_mf_catalog(
         )
         
         if not results or (isinstance(results, list) and len(results) > 0 and "error" in results[0]):
-            print("🚫 [NO_MF_MATCH] No MetricFlow results or query returned an error.")
             return NO_MF_RESPONSE
 
-        # 2. Parse Candidates with Enriched Context & Lexical Counts
+        # 3. Parse Candidates & Inspect Description & Label Text FIRST
         candidate_items = []
         rerank_docs = []
-        token_match_counts = []
+        description_boost_scores = []
 
         for point in results:
             payload = point.get("payload", {})
@@ -83,35 +84,45 @@ def search_mf_catalog(
                     item = json.loads(raw_json)
                     item_type = item.get("item_type", "metric")
                     
-                    # Enriched metadata strings for neural cross-encoder
+                    item_name = item.get('name', '')
+                    item_label = item.get('label', '')
+                    item_desc = item.get('description', '')
+
                     if item_type == "metric":
                         time_dim = item.get('default_time_dimension', '')
-                        doc_str = f"Metric: {item.get('name', '')} | Label: {item.get('label', '')} | Description: {item.get('description', '')} | Time Dimension: {time_dim}"
+                        doc_str = f"Metric: {item_name} | Label: {item_label} | Description: {item_desc} | Time Dimension: {time_dim}"
                     elif item_type == "dimension":
-                        doc_str = f"Dimension Path: {item.get('name', '')} | Description: {item.get('description', '')} | Type: {item.get('data_type', '')}"
+                        doc_str = f"Dimension Path: {item_name} | Description: {item_desc} | Type: {item.get('data_type', '')}"
                     elif item_type == "entity":
-                        doc_str = f"Entity Key: {item.get('name', '')} | Key Type: {item.get('type', '')} | Table: {item.get('semantic_model', '')}"
+                        doc_str = f"Entity Key: {item_name} | Key Type: {item.get('type', '')} | Table: {item.get('semantic_model', '')}"
                     else:
-                        doc_str = f"Catalog Item: {item.get('name', '')} | Description: {item.get('description', '')}"
+                        doc_str = f"Catalog Item: {item_name} | Description: {item_desc}"
 
-                    # Lexical intersection count (split by underscore, ignore short words)
-                    item_search_text = doc_str.lower()
-                    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
-                        item_search_text = item_search_text.replace(char, ' ')
-                    item_tokens = set(word for word in item_search_text.split() if len(word) > 2)
+                    # Clean description/label string for phrase matching
+                    searchable_text = f"{item_name} {item_label} {item_desc}".lower()
+                    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', '|']:
+                        searchable_text = searchable_text.replace(char, ' ')
+
+                    # A. EXACT MULTI-WORD PHRASE MATCH (e.g. "nilai transaksi") -> Massive +3.0 Boost
+                    phrase_matches = sum(1 for phrase in query_phrases if phrase in searchable_text)
+
+                    # B. SINGLE TOKEN INTERSECTION (excluding stop words) -> +0.5 per token
+                    item_tokens = set(w for w in searchable_text.split() if len(w) > 2 and w not in INDONESIAN_STOP_WORDS)
                     token_matches = len(query_tokens.intersection(item_tokens))
+
+                    # Combine into a description priority score
+                    desc_score = (phrase_matches * 3.0) + (token_matches * 0.5)
 
                     candidate_items.append(item)
                     rerank_docs.append(doc_str)
-                    token_match_counts.append(token_matches)
+                    description_boost_scores.append(desc_score)
                 except Exception:
                     continue
 
         if not candidate_items:
-            print("🚫 [NO_MF_MATCH] No candidate MetricFlow items parsed from results.")
             return NO_MF_RESPONSE
 
-        # 3. Apply Cross-Encoder Reranking, Additive Lexical Boosting, and Score Thresholding
+        # 4. Cross-Encoder Reranking with Description Priority Boost
         filtered_candidates = []
         try:
             rerank_results = rerank_documents(
@@ -130,23 +141,21 @@ def search_mf_catalog(
                     idx = hit.get("index")
 
                     if idx is not None and idx < len(candidate_items):
-                        matches = token_match_counts[idx]
+                        desc_boost = description_boost_scores[idx]
                         
-                        # ADDITIVE BOOST: +0.5 absolute points per exact keyword match
-                        # Mathematically forces exact matches to beat out neural noise
-                        boosted_score = raw_score + (0.5 * matches)
+                        # Apply description priority directly to final score
+                        final_score = raw_score + desc_boost
 
                         boosted_hits.append({
                             "item": candidate_items[idx],
-                            "score": boosted_score
+                            "score": final_score
                         })
 
-                # Sort DESC by boosted score
+                # Sort DESC: Exact description matches win unconditionally
                 boosted_hits.sort(key=lambda x: x["score"], reverse=True)
 
                 if boosted_hits:
                     top_score = boosted_hits[0]["score"]
-                    # Calculate threshold (at least absolute_min_score and relative_threshold_ratio of top score)
                     score_threshold = max(top_score * relative_threshold_ratio, absolute_min_score)
 
                     for hit_data in boosted_hits:
@@ -154,21 +163,19 @@ def search_mf_catalog(
                             filtered_candidates.append(hit_data["item"])
 
         except Exception as e:
-            print(f"⚠️ Reranker failed, falling back to raw vector results: {e}", flush=True)
             filtered_candidates = candidate_items
 
         if not filtered_candidates:
-            print("🚫 [NO_MF_MATCH] No MetricFlow items survived score thresholding.")
             return NO_MF_RESPONSE
 
-        # 4. Enforce Category Quotas on Filtered Candidates
+        # 5. Enforce Category Quotas
         metrics = []
         dimensions = []
         entities = []
 
         for item in filtered_candidates:
             item_type = item.pop("item_type", None)
-            item.pop("raw_name", None)  # Strip raw_name to trim LLM prompt context
+            item.pop("raw_name", None)
             
             if item_type == "metric" and len(metrics) < max_metrics:
                 metrics.append(item)
@@ -182,20 +189,14 @@ def search_mf_catalog(
                 len(entities) >= max_entities):
                 break
 
-        # No-relevant-catalog guard: even when candidates survived thresholding,
-        # if category quotas left zero metrics/dimensions/entities, reply with
-        # the same polite refusal as search_database_schema.
         if not metrics and not dimensions and not entities:
-            print("🚫 [NO_MF_MATCH] No relevant metrics/dimensions/entities survived category quotas.")
             return NO_MF_RESPONSE
 
-        catalog_output = {
+        return yaml.dump({
             "matched_metrics": metrics,
             "matched_dimensions": dimensions,
             "matched_entities": entities
-        }
-
-        return yaml.dump(catalog_output, sort_keys=False, default_flow_style=False)
+        }, sort_keys=False, default_flow_style=False)
         
     except Exception as e:
         return yaml.dump({"error": str(e)})
