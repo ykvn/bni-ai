@@ -177,6 +177,7 @@ def convert_excel_to_golden_queries(excel_path: str, output_json_path: str) -> N
     queries_list = []
     for _, row in queries_df.iterrows():
         intent = str(row.get("User Intent", row.get("user_intent", ""))).strip()
+        description = str(row.get("Description", row.get("description", ""))).strip() 
         sql = str(row.get("SQL Template", row.get("sql_template", ""))).strip()
         complexity = str(row.get("Complexity", row.get("complexity", ""))).strip()
         
@@ -185,6 +186,7 @@ def convert_excel_to_golden_queries(excel_path: str, output_json_path: str) -> N
             
         queries_list.append({
             "user_intent": intent,
+            "description": description if description.lower() != 'nan' else "",
             "sql_template": sql,
             "complexity": complexity
         })

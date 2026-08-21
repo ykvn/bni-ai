@@ -98,11 +98,15 @@ def search_golden_queries(
     for idx, doc in enumerate(valid_examples):
         payload = doc.get("raw_payload", {})
         intent = payload.get("user_intent", "Unknown Intent")
+        description = payload.get("description", "")
         sql = payload.get("sql_template", "SQL NOT FOUND")
         score = doc.get("rerank_score", doc.get("score", 0))
         
         output.append(f"-- Example {idx+1} (Relevance Score: {score}) --")
         output.append(f"Intent: {intent}")
+        # Only output the Description line if it actually exists in the Excel file
+        if description:
+            output.append(f"Description: {description}")
         output.append(f"SQL:\n{sql}\n")
         
     return "\n".join(output)

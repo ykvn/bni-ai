@@ -34,11 +34,15 @@ def ingest_golden_queries(
         return
 
     # We embed the natural language intent so it matches the user's question semantically
-    intents = [q.get("user_intent", "") for q in queries]
+    intents = [
+        f"{q.get('user_intent', '')} - {q.get('description', '')}".strip(" -")
+        for q in queries
+    ]
 
     metadatas = [
         {
             "user_intent": q.get("user_intent", ""),
+            "description": q.get("description", ""),  # 🌟 NEW: Store description in Qdrant metadata
             "sql_template": q.get("sql_template", ""),
             "complexity": q.get("complexity", "unknown"),
             "data_type": "golden_query",
