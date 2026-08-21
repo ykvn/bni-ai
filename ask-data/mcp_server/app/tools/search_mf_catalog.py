@@ -41,7 +41,17 @@ def search_mf_catalog(
     clean_query = user_query.lower()
     for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
         clean_query = clean_query.replace(char, ' ')
-    query_tokens = set(word for word in clean_query.split() if len(word) > 2)
+
+    INDONESIAN_STOP_WORDS = {
+    "tampilkan", "dengan", "yang", "untuk", "pada", "adalah", 
+    "seperti", "atau", "dalam", "saja", "secara", "karena"
+    }
+
+    # Clean query tokens
+    query_tokens = set(
+    word for word in clean_query.split() 
+    if len(word) > 2 and word not in INDONESIAN_STOP_WORDS
+    )
 
     try:
         # 1. Fetch broad candidate net
