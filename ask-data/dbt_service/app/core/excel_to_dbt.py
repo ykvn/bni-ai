@@ -188,7 +188,6 @@ CROSS JOIN numbers d
             else:
                 is_agg_time = bool(is_agg_time and not pd.isna(is_agg_time))
 
-            # 🌟 Fully dynamic time dimension detection. No hardcoded column names!
             is_time_col = (
                 "DATE" in col_type_str or 
                 "TIME" in col_type_str or 
@@ -199,8 +198,6 @@ CROSS JOIN numbers d
             # Allow column to be a dimension if it's NOT an Entity, OR if it's explicitly a time column
             if not is_entity or is_time_col:
                 meta_parts = []
-                if is_agg_time and avail_date:
-                    meta_parts.append(f"Availability Date: {avail_date}")
 
                 if pd.notna(val_mode) and str(val_mode).strip() != "NONE":
                     meta_parts.append(f"Mode: {str(val_mode).strip()}")
@@ -300,8 +297,6 @@ CROSS JOIN numbers d
             formatted_measures.append(m)
             
             metric_desc = base_desc
-            if avail_date and "Availability Date:" not in metric_desc:
-                metric_desc += f" [LLM Context: Availability Date: {avail_date}]"
 
             metric_name = sanitize_dbt_name(f"{table_name}_{col_name}_{agg}_metric")
             metrics.append({
