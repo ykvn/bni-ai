@@ -116,7 +116,7 @@ CROSS JOIN numbers d
         
         custom_schema = str(table.get("Schema / Database", "")).strip()
 
-        # 🌟 NEW: Extract Availability Date for MetricFlow context
+        # Extract Availability Date for MetricFlow context
         avail_date_raw = table.get("Availability Date")
         avail_date = str(avail_date_raw).strip() if pd.notna(avail_date_raw) and str(avail_date_raw).strip().lower() != 'nan' else ""
 
@@ -160,42 +160,44 @@ CROSS JOIN numbers d
             base_desc = str(col.get("Description", "")).strip()
             if base_desc.lower() == 'nan': base_desc = ""
 
-            # 1. Entity Resolution (Supports Auto Role-Playing)
+            is_entity = False
+
+            # 1. Entity Resolution (Evaluates Independently)
             if local_ref_key in target_entities:
                 assigned_entities = target_entities[local_ref_key]
                 for i, ent in enumerate(assigned_entities):
                     e_type = "primary" if (is_pk and i == 0) else "unique"
                     entities.append({"name": ent, "type": e_type, "expr": raw_col_name})
+                is_entity = True
                     
             elif local_ref_key in fk_entity_map:
                 for ent in fk_entity_map[local_ref_key]:
                     entities.append({"name": ent, "type": "foreign", "expr": raw_col_name})
+                is_entity = True
                     
-            # Implicit Global Keys
             elif c_name_lower in global_entities:
                 entities.append({"name": safe_col_name, "type": "foreign", "expr": raw_col_name})
+                is_entity = True
             
-            # 2. Standard Dimensions
+            # 2. Dimensions & Time Parsing (Evaluates Independently)
+            col_type_str = str(col.get("Data Type", "")).upper()
+            
+            is_agg_time = col.get("Agg Time Dimension", False)
+            if isinstance(is_agg_time, str):
+                is_agg_time = is_agg_time.strip().upper() in ['TRUE', 'YES', '1']
             else:
-                col_type_str = str(col.get("Data Type", "")).upper()
-                
-                # Robust time dimension detection
-                is_time_col = (
-                    "DATE" in col_type_str or 
-                    "TIME" in col_type_str or 
-                    c_name_lower == "as_of_date" or 
-                    c_name_lower.endswith("_date") or 
-                    c_name_lower.endswith("_time")
-                )
-                dim_type = "time" if is_time_col else "categorical"
-                
-                # Explicit Agg Time Dimension Check
-                is_agg_time = col.get("Agg Time Dimension", False)
-                if isinstance(is_agg_time, str):
-                    is_agg_time = is_agg_time.strip().upper() in ['TRUE', 'YES', '1']
-                else:
-                    is_agg_time = bool(is_agg_time and not pd.isna(is_agg_time))
+                is_agg_time = bool(is_agg_time and not pd.isna(is_agg_time))
 
+            # 🌟 Fully dynamic time dimension detection. No hardcoded column names!
+            is_time_col = (
+                "DATE" in col_type_str or 
+                "TIME" in col_type_str or 
+                is_agg_time
+            )
+            dim_type = "time" if is_time_col else "categorical"
+
+            # Allow column to be a dimension if it's NOT an Entity, OR if it's explicitly a time column
+            if not is_entity or is_time_col:
                 meta_parts = []
                 if is_agg_time and avail_date:
                     meta_parts.append(f"Availability Date: {avail_date}")
@@ -247,6 +249,7 @@ CROSS JOIN numbers d
                 
                 dimensions.append(dim_obj)
 
+            # 3. Measures Extraction
             if pd.notna(custom_measures) and str(custom_measures).strip() != "nan":
                 aggs = [a.strip().lower() for a in str(custom_measures).split(",")]
                 for agg in aggs:
