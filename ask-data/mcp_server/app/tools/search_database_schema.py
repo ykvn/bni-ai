@@ -1,6 +1,7 @@
 import os
 import re
 import yaml
+from datetime import datetime, timedelta
 
 try:
     import sqlglot
@@ -26,6 +27,29 @@ NO_RELEVANT_SCHEMA = "NO_RELEVANT_SCHEMA"
 # (no marker prefix) so the front end can display it verbatim. Internal
 # detection uses the `_has_no_tables` helper / NO_RELEVANT_SCHEMA YAML marker.
 NO_SCHEMA_RESPONSE = "I am sorry, I don't have this information on my database."
+
+
+def _resolve_relative_date(date_str: str) -> str:
+    """Parses 'd-1', 'D-2' etc. into a real YYYY-MM-DD string based on today's date."""
+    if not date_str:
+        return ""
+    
+    clean_str = str(date_str).strip().lower()
+    
+    if clean_str.startswith('d-') or clean_str.startswith('d+'):
+        try:
+            # Extract the numerical offset (e.g., "-1" or "-2")
+            offset = int(clean_str.replace('d', ''))
+            
+            # Use current system datetime
+            base_date = datetime.now()
+            target_date = base_date + timedelta(days=offset)
+            
+            return target_date.strftime('%Y-%m-%d')
+        except ValueError:
+            pass # Fall back to original string if integer parsing fails
+            
+    return str(date_str).strip()
 
 
 def clean_schema_yaml(raw_yaml_str: str) -> str:
@@ -66,6 +90,12 @@ def _normalize_table_dict(table: dict, columns: list) -> dict:
         clean_table["score"] = table["score"]
 
     clean_table["description"] = table.get("description")
+
+    # 🌟 NEW: Resolve dynamic availability dates (e.g., "d-1" -> "2026-08-20")
+    if "availability_date" in table:
+        raw_date = table["availability_date"]
+        clean_table["availability_date"] = _resolve_relative_date(raw_date)
+
     clean_table["columns"] = clean_cols
 
     return clean_table
