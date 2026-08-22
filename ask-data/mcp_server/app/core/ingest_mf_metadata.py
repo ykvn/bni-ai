@@ -133,12 +133,14 @@ def ingest_mf_schema(
             e_name = e.get("name")
             e_type = e.get("type", "unknown")
             e_expr = e.get("expr", e_name)
+            e_desc = e.get("description", "No description provided.")
 
             searchable_text = (
                 f"Entity Key: {e_name}\n"
                 f"Key Type: {e_type}\n"
                 f"Semantic Model / Table: {sm_name}\n"
-                f"Expression: {e_expr}"
+                f"Expression: {e_expr}\n"
+                f"Description: {e_desc}"
             )
 
             structured_payload = {
@@ -146,7 +148,8 @@ def ingest_mf_schema(
                 "name": e_name,
                 "type": e_type,
                 "semantic_model": sm_name,
-                "expr": e_expr
+                "expr": e_expr,
+                "description": e_desc
             }
 
             catalog_texts.append(searchable_text)

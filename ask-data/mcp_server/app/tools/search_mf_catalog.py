@@ -89,7 +89,7 @@ def search_mf_catalog(
                         if item_avail_date:
                             doc_str += f" | Availability Date: {item_avail_date}"
                     elif item_type == "entity":
-                        doc_str = f"Entity Key: {item_name} | Key Type: {item.get('type', '')} | Table: {item.get('semantic_model', '')}"
+                        doc_str = f"Entity Key: {item_name} | Key Type: {item.get('type', '')} | Table: {item.get('semantic_model', '')} | Description: {item_desc}"
                     else:
                         doc_str = f"Catalog Item: {item_name} | Description: {item_desc}"
 
