@@ -1,52 +1,8 @@
-"""
-Module: search_golden_queries
-================================
-
-This module provides one small helper function, ``search_golden_queries``, used
-by the MCP server to retrieve *verified* SQL templates from a Qdrant vector
-database. In simple terms, it answers this question:
-
-    "Have humans already written a trusted SQL query that matches what the
-     user is asking for?"
-
-If yes, that verified query is returned as nicely formatted text so the LLM can
-use it as a reference for correct SQL syntax.
-
-How it works (the "big picture")
---------------------------------
-When the user asks a natural-language question (e.g. "What was the total sales
-last quarter?"), the Golden Queries database may already contain a known-good
-SQL template that someone has validated. Searching for it happens in 3 stages:
-
-    1. VECTOR SEARCH (broad net)
-       The user's question is converted into a numeric "embedding" vector and
-       compared against every stored golden query in Qdrant using cosine
-       similarity. This returns a *wider* pool of candidates (controlled by
-       ``top_k``) because vector similarity is fast but not perfectly precise.
-
-    2. RERANKING (narrowing it down)
-       Each candidate from stage 1 is re-scored by a Cross-Encoder reranking
-       model against the user's *exact* question. This is more accurate than
-       plain vector similarity, so it lets us keep only the few truly relevant
-       ones (controlled by ``top_n``).
-
-    3. FORMATTING (preparing the answer)
-       The top results are turned into a clean text block that can be dropped
-       directly into an LLM prompt as a reference for SQL syntax.
-
-The names of the two helper functions we call come from ``qdrant_client.py``:
-
-- ``search_documents(query, collection_name, top_k)`` returns a list of dicts
-  after querying the vector store. Each dict contains keys like ``document_id``,
-  ``title``, ``excerpt``, ``page_content``, ``score`` and ``raw_payload``.
-  On failure it returns a list whose first dict has an ``"error"`` key.
-- ``rerank_documents(query, raw_documents, top_n)`` returns the same dicts but
-  re-ordered by a Cross-Encoder relevance score (adding a ``rerank_score`` key).
-"""
-
 import os
 from app.tools.qdrant_client import search_documents, rerank_documents
 
+# 🌟 NEW: Import Enterprise Scoring Module
+from shared.search_utils import calculate_unified_score
 
 def search_golden_queries(
     user_question: str,
@@ -54,15 +10,9 @@ def search_golden_queries(
     top_n: int = 3,
     min_relevance_score: float = 0.01
 ) -> str:
-    """
-    Searches the Golden Queries vector database for verified SQL templates matching the user's intent.
-    Forces Cross-Encoder reranking to evaluate ONLY the 'user_intent' field and enforces
-    a minimum relevance threshold.
-    """
     top_k = int(os.getenv("GOLDEN_TOP_K", top_k))
     top_n = int(os.getenv("GOLDEN_TOP_N", top_n))
     min_relevance_score = float(os.getenv("GOLDEN_MIN_RELEVANCE_SCORE", min_relevance_score))
-
     collection_name = os.getenv("GOLDEN_COLLECTION", "bni_golden_queries")
     
     # 1. Fetch broad candidate queries using dense vector similarity
@@ -71,27 +21,45 @@ def search_golden_queries(
     if not raw_results or "error" in raw_results[0]:
         return "No verified golden queries found for this intent."
 
-    # 2. FORCE INTENT-ONLY EVALUATION: Overwrite document text with user_intent
+    # 2. 🌟 STRICT DESCRIPTION ONLY (Safety fallback to intent if desc is fully blank)
     for doc in raw_results:
         payload = doc.get("raw_payload", {})
+        desc = payload.get("description", "").strip()
         intent = payload.get("user_intent", "").strip()
-        if intent:
-            doc["page_content"] = intent
-            doc["text"] = intent
-            doc["excerpt"] = intent
+        
+        target_text = desc if desc else intent 
 
-    # 3. Re-score candidates against user_question using ONLY user_intent text
+        if target_text:
+            doc["page_content"] = target_text
+            doc["text"] = target_text
+            doc["excerpt"] = target_text
+            doc["_eval_desc"] = target_text # Cache description for fusion scoring
+
+    # 3. Re-score candidates against user_question using pure text
     reranked = rerank_documents(query=user_question, raw_documents=raw_results, top_n=top_n)
 
-    # 4. FILTER BY MINIMUM RELEVANCE SCORE THRESHOLD
+    # 4. 🌟 ENTERPRISE SCORE FUSION & FILTERING
     valid_examples = []
     for doc in reranked:
-        score = doc.get("rerank_score", doc.get("score", 0))
-        if score >= min_relevance_score:
+        raw_rerank_score = doc.get("rerank_score", doc.get("score", 0.0))
+        raw_vector_score = doc.get("score", 0.0)  # Preserved from initial vector search
+        desc = doc.get("_eval_desc", "")
+        
+        final_score = calculate_unified_score(
+            raw_vector_score=raw_vector_score,
+            raw_rerank_score=raw_rerank_score,
+            description=desc,
+            user_query=user_question
+        )
+        
+        doc["final_score"] = final_score
+        if final_score >= min_relevance_score:
             valid_examples.append(doc)
 
     if not valid_examples:
         return "No verified golden queries found for this intent."
+        
+    valid_examples.sort(key=lambda x: x["final_score"], reverse=True)
 
     # 5. Format into a clean LLM context block
     output = ["### VERIFIED GOLDEN QUERIES (Use as references for SQL syntax) ###\n"]
@@ -100,11 +68,10 @@ def search_golden_queries(
         intent = payload.get("user_intent", "Unknown Intent")
         description = payload.get("description", "")
         sql = payload.get("sql_template", "SQL NOT FOUND")
-        score = doc.get("rerank_score", doc.get("score", 0))
+        score = doc.get("final_score", 0.0)
         
         output.append(f"-- Example {idx+1} (Relevance Score: {score}) --")
         output.append(f"Intent: {intent}")
-        # Only output the Description line if it actually exists in the Excel file
         if description:
             output.append(f"Description: {description}")
         output.append(f"SQL:\n{sql}\n")

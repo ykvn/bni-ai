@@ -15,43 +15,29 @@ from shared.cml_auth import get_cml_token
 from shared.embed_client import get_embedding_vector, rerank_documents
 from shared.qdrant_client import QdrantClient
 
+# 🌟 NEW: Import Enterprise Scoring Module
+from shared.search_utils import calculate_unified_score 
+
 from app.tools.search_golden_queries import search_golden_queries
 
-
-# Marker emitted by this tool when schema search / pruning yields no matching
-# tables for the user's question. It is a plain token so the CrewAI agent layer
-# and the response parser can detect the "no data" situation and reply politely
-# instead of returning an empty `tables: []` to the front end.
 NO_RELEVANT_SCHEMA = "NO_RELEVANT_SCHEMA"
-# The user-facing refusal returned by this tool. It is intentionally plain text
-# (no marker prefix) so the front end can display it verbatim. Internal
-# detection uses the `_has_no_tables` helper / NO_RELEVANT_SCHEMA YAML marker.
 NO_SCHEMA_RESPONSE = "I am sorry, I don't have this information on my database."
 
 def _resolve_relative_date(date_str: str) -> str:
-    """Parses 'd-1', 'D-2' etc. into a real YYYY-MM-DD string based on today's date."""
     if not date_str:
         return ""
-    
     clean_str = str(date_str).strip().lower()
-    
     if clean_str.startswith('d-') or clean_str.startswith('d+'):
         try:
-            # Extract the numerical offset (e.g., "-1" or "-2")
             offset = int(clean_str.replace('d', ''))
-            
-            # Use current system datetime
             base_date = datetime.now()
             target_date = base_date + timedelta(days=offset)
-            
             return target_date.strftime('%Y-%m-%d')
         except ValueError:
-            pass # Fall back to original string if integer parsing fails
-            
+            pass
     return str(date_str).strip()
 
 def clean_schema_yaml(raw_yaml_str: str) -> str:
-    """Strips internal reranking score fields from the pure YAML string."""
     try:
         data = yaml.safe_load(raw_yaml_str)
         if isinstance(data, dict) and "tables" in data:
@@ -63,44 +49,29 @@ def clean_schema_yaml(raw_yaml_str: str) -> str:
     except Exception:
         return raw_yaml_str
 
-
 def _normalize_table_dict(table: dict, columns: list) -> dict:
-    """Helper to enforce strict key order for tables and columns."""
     clean_cols = []
     for col in columns:
         clean_col = {}
-        if "name" in col:
-            clean_col["name"] = col["name"]
-        if "score" in col:
-            clean_col["score"] = col["score"]
-        if "type" in col:
-            clean_col["type"] = col["type"]
-        if col.get("primary_key") is True:
-            clean_col["primary_key"] = True
-        if "references" in col:
-            clean_col["references"] = col["references"]
-        if "description" in col:
-            clean_col["description"] = col["description"]
+        if "name" in col: clean_col["name"] = col["name"]
+        if "score" in col: clean_col["score"] = col["score"]
+        if "type" in col: clean_col["type"] = col["type"]
+        if col.get("primary_key") is True: clean_col["primary_key"] = True
+        if "references" in col: clean_col["references"] = col["references"]
+        if "description" in col: clean_col["description"] = col["description"]
         clean_cols.append(clean_col)
 
     clean_table = {"name": table.get("name")}
-    if "score" in table:
-        clean_table["score"] = table["score"]
-
+    if "score" in table: clean_table["score"] = table["score"]
     clean_table["description"] = table.get("description")
     
-    # 🌟 NEW: Check for availability date and compute the offset
     if "availability_date" in table:
-        raw_date = table["availability_date"]
-        clean_table["availability_date"] = _resolve_relative_date(raw_date)
+        clean_table["availability_date"] = _resolve_relative_date(table["availability_date"])
 
     clean_table["columns"] = clean_cols
-
     return clean_table
 
-
 def extract_sql_metadata(text: str, valid_tables: set, valid_columns: set) -> tuple[set, set]:
-    """Extracts qualified table names and column names referenced in Golden Queries."""
     found_tables = set()
     found_columns = set()
 
@@ -114,34 +85,26 @@ def extract_sql_metadata(text: str, valid_tables: set, valid_columns: set) -> tu
             for block in sql_blocks:
                 block = re.split(r"(?is)\s*--\s*Example\b", block)[0]
                 for stmt in sqlglot.parse(block, read="impala"):
-                    if stmt is None:
-                        continue
-
-                    # Extract Table nodes (handles schema.table and aliases)
+                    if stmt is None: continue
                     for tbl in stmt.find_all(exp.Table):
                         if tbl.this:
                             db_part = str(tbl.db).lower().strip('`"') if tbl.db else ""
                             tbl_part = str(tbl.this.name).lower().strip('`"')
                             full_tbl = f"{db_part}.{tbl_part}" if db_part else tbl_part
 
-                            if full_tbl in valid_tables:
-                                found_tables.add(full_tbl)
-                            elif tbl_part in valid_tables:
-                                found_tables.add(tbl_part)
+                            if full_tbl in valid_tables: found_tables.add(full_tbl)
+                            elif tbl_part in valid_tables: found_tables.add(tbl_part)
 
-                    # Extract Column nodes
                     for col in stmt.find_all(exp.Column):
                         if col.name:
                             c_name = col.name.lower()
-                            if c_name in valid_columns:
-                                found_columns.add(c_name)
+                            if c_name in valid_columns: found_columns.add(c_name)
 
             if found_tables or found_columns:
                 return found_tables, found_columns
         except Exception:
-            pass  # Fallback if AST parsing fails
+            pass 
 
-    # Fallback: String splitting without regex
     text_lower = text.lower()
     for char in ['(', ')', ',', '=', '<', '>', '!', "'", '"', '`', ';', ':', '?', '\n', '\t']:
         text_lower = text_lower.replace(char, ' ')
@@ -149,9 +112,7 @@ def extract_sql_metadata(text: str, valid_tables: set, valid_columns: set) -> tu
     words = set(text_lower.split())
     found_tables = words.intersection(valid_tables)
     found_columns = words.intersection(valid_columns)
-
     return found_tables, found_columns
-
 
 def get_smart_schema_context_with_golden(
     user_query: str,
@@ -161,7 +122,6 @@ def get_smart_schema_context_with_golden(
     absolute_min_score: float = 0.001,
     global_table_threshold_ratio: float = 0.30
 ) -> tuple[str, str]:
-    """Retrieves schema context and golden queries with per-column and global per-table pruning."""
     top_tables = int(os.getenv("SCHEMA_TOP_TABLES", top_tables))
     top_columns_per_table = int(os.getenv("SCHEMA_TOP_COLUMNS_PER_TABLE", top_columns_per_table))
     relative_threshold_ratio = float(os.getenv("SCHEMA_RELATIVE_THRESHOLD_RATIO", relative_threshold_ratio))
@@ -173,36 +133,14 @@ def get_smart_schema_context_with_golden(
     vectordb_url = os.getenv("VECTORDB_SERVER_URL", "").rstrip("/")
     schema_collection = os.getenv("SCHEMA_COLLECTION", "bni_schema_definitions")
 
-    # Clean query tokens (replace underscores, slashes, dashes, ignore words <= 2 chars)
-    clean_query = user_query.lower()
-    for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']']:
-        clean_query = clean_query.replace(char, ' ')
-    query_tokens = set(word for word in clean_query.split() if len(word) > 2)
-
-    # ==========================================
-    # STAGE 1: VECTOR SEARCH (Find Tables & Golden Queries)
-    # ==========================================
     try:
         query_vector = get_embedding_vector(user_query, engine_url=embed_url, cml_token=cml_token, timeout=15)
-    except Exception as e:
-        error_msg = f"CRITICAL ERROR: Embedding API failed at {embed_url}: {e}"
-        print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False), ""
-
-    try:
         qdrant_client = QdrantClient(base_url=vectordb_url, token=cml_token)
-        retrieved_points = qdrant_client.search(
-            schema_collection,
-            query_vector,
-            top_k=top_tables,
-            token=cml_token,
-        )
+        retrieved_points = qdrant_client.search(schema_collection, query_vector, top_k=top_tables, token=cml_token)
         if retrieved_points and "error" in retrieved_points[0]:
             raise RuntimeError(retrieved_points[0]["error"])
     except Exception as e:
-        error_msg = f"CRITICAL ERROR: Qdrant search failed at {vectordb_url}: {e}"
-        print(f"🚨 {error_msg}")
-        return yaml.dump({"database_type": "Cloudera Impala", "error": error_msg}, sort_keys=False), ""
+        return yaml.dump({"database_type": "Cloudera Impala", "error": f"CRITICAL ERROR: {e}"}, sort_keys=False), ""
 
     retrieved_tables = []
     valid_schema_tables = set()
@@ -210,7 +148,6 @@ def get_smart_schema_context_with_golden(
     golden_query_tables = set()
     golden_query_cols = set()
 
-    # 1a. Build retrieved_tables and collect all valid table/column names first
     for point in retrieved_points:
         payload = point.get("payload", {})
         point_score = point.get("score")
@@ -221,15 +158,12 @@ def get_smart_schema_context_with_golden(
             if point_score is not None:
                 parsed_table["score"] = round(point_score, 4)
             retrieved_tables.append(parsed_table)
-            
             if "name" in parsed_table:
                 valid_schema_tables.add(str(parsed_table["name"]).lower())
-
             for col in parsed_table.get("columns", []):
                 if "name" in col:
                     valid_schema_columns.add(str(col["name"]).lower())
 
-    # 1b. Fetch Golden Queries via search_golden_queries tool BEFORE pruning
     golden_context = ""
     try:
         golden_context = search_golden_queries(user_question=user_query)
@@ -240,7 +174,6 @@ def get_smart_schema_context_with_golden(
     except Exception as e:
         print(f"⚠️ Golden Query extraction warning: {e}")
 
-    # 1c. Scan point payloads for embedded Golden Query SQLs
     for point in retrieved_points:
         payload = point.get("payload", {})
         for val in payload.values():
@@ -250,47 +183,32 @@ def get_smart_schema_context_with_golden(
                 golden_query_tables.update(g_tables)
                 golden_query_cols.update(g_cols)
 
-    print(f"🔑 [Schema Safeguard] Golden Query Protected Tables: {sorted(list(golden_query_tables))} | Columns: {sorted(list(golden_query_cols))}")
-
     if not retrieved_tables:
-        error_msg = "CRITICAL ERROR: No matching tables found in Qdrant."
-        print(f"🚨 {error_msg}")
-        return yaml.dump(
-            {"database_type": "Cloudera Impala", "tables": [], "error": f"{NO_RELEVANT_SCHEMA}: {error_msg}"},
-            sort_keys=False
-        ), golden_context
+        return yaml.dump({"database_type": "Cloudera Impala", "tables": [], "error": NO_RELEVANT_SCHEMA}, sort_keys=False), golden_context
 
     # ==========================================
-    # STAGE 2: LEXICAL-BOOSTED PER-TABLE RERANKING
+    # STAGE 2 & 3: DESCRIPTION-ONLY RERANKING & UNIFIED SCORING
     # ==========================================
     winning_columns = []
     for table in retrieved_tables:
         t_name = table.get("name")
+        table_vector_score = table.get("score", 0.0)
         table_docs = []
         table_mapping = []
 
         for col in table.get("columns", []):
             c_name = col.get("name", "")
             raw_desc = str(col.get("description", "")).strip()
-
-            # Preserve full raw description (including ENUM Value Mappings) for reranking & lexical search
+            
+            # 🌟 STRICT DESCRIPTION ONLY
             clean_desc = raw_desc if raw_desc else "No description provided."
-            c_type = col.get("type", "")
-
-            doc_string = f"Column Name: {c_name} | Description: {clean_desc} | Table: {t_name} | Type: {c_type}"
-            table_docs.append(doc_string)
-
-            # Lexical token matching over full description including ENUM mappings
-            col_search_text = doc_string.lower()
-            for char in ['?', '!', '.', ',', ':', ';', '/', '-', '_', '(', ')', '[', ']', '|']:
-                col_search_text = col_search_text.replace(char, ' ')
-            col_tokens = set(word for word in col_search_text.split() if len(word) > 2)
-            token_matches = len(query_tokens.intersection(col_tokens))
+            table_docs.append(clean_desc)
 
             table_mapping.append({
                 "table": t_name,
                 "column": c_name,
-                "matches": token_matches
+                "description": clean_desc,
+                "vector_score": table_vector_score
             })
 
         if not table_docs:
@@ -308,117 +226,85 @@ def get_smart_schema_context_with_golden(
 
             boosted_hits = []
             for hit in rerank_results:
-                raw_score = hit.get("score", hit.get("relevance_score", 0.0))
+                raw_rerank_score = hit.get("score", hit.get("relevance_score", 0.0))
                 idx = hit.get("index")
 
                 if idx is not None:
-                    matches = table_mapping[idx]["matches"]
+                    col_meta = table_mapping[idx]
                     
-                    # ADDITIVE BOOST: +0.5 absolute points per exact keyword match
-                    boosted_score = raw_score + (0.5 * matches)
+                    # 🌟 ENTERPRISE SCORE FUSION (0.0 to 1.0)
+                    final_score = calculate_unified_score(
+                        raw_vector_score=col_meta["vector_score"],
+                        raw_rerank_score=raw_rerank_score,
+                        description=col_meta["description"],
+                        user_query=user_query
+                    )
 
-                    hit_data = table_mapping[idx].copy()
-                    hit_data["score"] = boosted_score
+                    hit_data = col_meta.copy()
+                    hit_data["score"] = final_score
                     boosted_hits.append(hit_data)
 
             boosted_hits.sort(key=lambda x: x["score"], reverse=True)
             top_table_hits = boosted_hits[:top_columns_per_table]
 
             max_boosted_score = top_table_hits[0]["score"] if top_table_hits else 0.0
-            
-            # Enforce absolute score floor to prevent micro-scores
             relative_threshold = max(max_boosted_score * relative_threshold_ratio, absolute_min_score)
 
             for col_data in top_table_hits:
                 if col_data["score"] >= relative_threshold:
-                    col_data["score"] = round(col_data["score"], 4)
                     winning_columns.append(col_data)
 
         except Exception as e:
             print(f"⚠️ Per-table reranking failed for {t_name}: {e}")
 
-    # ==========================================
-    # STAGE 3: GLOBAL TABLE PRUNING & SCHEMA RECONSTRUCTION
-    # ==========================================
-    # 1. Compute global max score across all candidate column hits
+    # STAGE 4: GLOBAL PRUNING 
     global_max_score = max([item['score'] for item in winning_columns], default=0.0)
-
-    # 2. Filter tables that meet at least 10% of the global max score
-    strong_table_names = {
-        item['table'] for item in winning_columns 
-        if item['score'] >= (global_max_score * global_table_threshold_ratio)
-    }
-
-    # 3. Union strong tables with tables explicitly protected by Golden Queries
+    strong_table_names = {item['table'] for item in winning_columns if item['score'] >= (global_max_score * global_table_threshold_ratio)}
     relevant_table_names = strong_table_names.union(golden_query_tables)
+    
     pruned_tables = []
-
     for table in retrieved_tables:
         table_name = table.get("name")
         if table_name in relevant_table_names:
             col_scores = {item['column']: item['score'] for item in winning_columns if item['table'] == table_name}
-
             mandatory_columns = []
             for col in table.get("columns", []):
                 c_name = col.get("name", "")
                 c_desc = str(col.get("description", ""))
 
-                # A. Column passed per-table relative thresholding & absolute floor
                 if c_name in col_scores:
                     col["score"] = col_scores[c_name]
                     mandatory_columns.append(col)
-                # B. Structural Schema Safeguards (PK, FK, or DEFAULT_TIME_AXIS)
-                elif (col.get("primary_key") or
-                      "references" in col or
-                      "DEFAULT_TIME_AXIS: True" in c_desc):
+                elif col.get("primary_key") or "references" in col or "DEFAULT_TIME_AXIS: True" in c_desc:
                     mandatory_columns.append(col)
-                # C. Golden Query Safeguard (Protected within referenced Golden Query tables)
                 elif c_name.lower() in golden_query_cols and table_name.lower() in golden_query_tables:
                     mandatory_columns.append(col)
 
-            # ORDER BY: Sort columns by score DESC
             mandatory_columns.sort(key=lambda c: c.get("score", 0.0) or 0.0, reverse=True)
-
             pruned_tables.append(_normalize_table_dict(table, mandatory_columns))
 
-    # ORDER BY: Sort tables by vector score DESC
     pruned_tables.sort(key=lambda tbl: tbl.get("score", 0.0) or 0.0, reverse=True)
 
     if not pruned_tables:
-        print("🚫 [NO_RELEVANT_SCHEMA] No relevant tables survived schema pruning.")
-        return yaml.dump(
-            {"database_type": "Cloudera Impala", "tables": [], "error": NO_RELEVANT_SCHEMA},
-            sort_keys=False
-        ), golden_context
+        return yaml.dump({"database_type": "Cloudera Impala", "tables": [], "error": NO_RELEVANT_SCHEMA}, sort_keys=False), golden_context
 
-    final_schema = {
-        "database_type": "Cloudera Impala",
-        "tables": pruned_tables
-    }
-
+    final_schema = {"database_type": "Cloudera Impala", "tables": pruned_tables}
     return yaml.dump(final_schema, sort_keys=False, default_flow_style=False), golden_context
 
-
 def _has_no_tables(schema_context: str) -> bool:
-    """Returns True when the schema context contains no usable tables."""
-    if NO_RELEVANT_SCHEMA in schema_context:
-        return True
+    if NO_RELEVANT_SCHEMA in schema_context: return True
     try:
         data = yaml.safe_load(schema_context)
-    except Exception:
-        return False
-    if isinstance(data, dict):
         tables = data.get("tables")
         return isinstance(tables, list) and len(tables) == 0
-    return False
-
+    except Exception:
+        return False
 
 def search_database_schema(user_question: str) -> str:
     raw_schema_context, golden_context = get_smart_schema_context_with_golden(user_query=user_question)
     raw_schema_context = clean_schema_yaml(raw_schema_context)
 
     if _has_no_tables(raw_schema_context):
-        print(f"🚫 [search_database_schema] No matching schema for query: '{user_question}'. Returning refusal.")
         return NO_SCHEMA_RESPONSE
 
     if golden_context and "No verified golden queries found" not in golden_context:
