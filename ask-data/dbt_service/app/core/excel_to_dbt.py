@@ -151,6 +151,7 @@ CROSS JOIN numbers d
             local_ref_key = f"{table_name}.{c_name_lower}"
             custom_measures = col.get("Custom Measures (Optional)")
             
+            # --- EXTRACT BASE DESC EARLY FOR ENTITIES ---
             val_mode = col.get("Distinct Value Mode")
             static_vals = col.get("Static Allowed Values")
             base_desc = str(col.get("Description", "")).strip()
@@ -158,21 +159,21 @@ CROSS JOIN numbers d
 
             is_entity = False
 
-            # 1. Entity Resolution
+            # 1. Entity Resolution (with descriptions injected)
             if local_ref_key in target_entities:
                 assigned_entities = target_entities[local_ref_key]
                 for i, ent in enumerate(assigned_entities):
                     e_type = "primary" if (is_pk and i == 0) else "unique"
-                    entities.append({"name": ent, "type": e_type, "expr": raw_col_name})
+                    entities.append({"name": ent, "type": e_type, "expr": raw_col_name, "description": base_desc})
                 is_entity = True
                     
             elif local_ref_key in fk_entity_map:
                 for ent in fk_entity_map[local_ref_key]:
-                    entities.append({"name": ent, "type": "foreign", "expr": raw_col_name})
+                    entities.append({"name": ent, "type": "foreign", "expr": raw_col_name, "description": base_desc})
                 is_entity = True
                     
             elif c_name_lower in global_entities:
-                entities.append({"name": safe_col_name, "type": "foreign", "expr": raw_col_name})
+                entities.append({"name": safe_col_name, "type": "foreign", "expr": raw_col_name, "description": base_desc})
                 is_entity = True
             
             # 2. Dimensions & Time Parsing
@@ -222,14 +223,16 @@ CROSS JOIN numbers d
                         if value_entries:
                             meta_parts.append(f"Value Mappings: [{'; '.join(value_entries)}]")
                 
+                # --- USE ISOLATED DESCRIPTION FOR DIMENSIONS ---
+                dim_desc = base_desc
                 if meta_parts:
-                    base_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
+                    dim_desc += f" [LLM Context: {' | '.join(meta_parts)}]"
 
                 dim_obj = {
                     "name": safe_col_name, 
                     "type": dim_type, 
                     "expr": raw_col_name, 
-                    "description": base_desc.strip()
+                    "description": dim_desc.strip()
                 }
                 
                 if dim_type == "time":
@@ -276,13 +279,14 @@ CROSS JOIN numbers d
             entities.append({
                 "name": sanitize_dbt_name(f"{table_name}_id"),
                 "type": "primary",
-                "expr": "1"
+                "expr": "1",
+                "description": "Auto-generated dummy primary key"
             })
 
         # Attach agg_time_dimension to measures and construct metrics
         formatted_measures = []
         for m in measures:
-            base_desc = m.pop("_base_desc")
+            m_base_desc = m.pop("_base_desc")
             col_name = m.pop("_col_name")
             agg = m.pop("_agg")
             
@@ -291,11 +295,26 @@ CROSS JOIN numbers d
                 
             formatted_measures.append(m)
 
+            # --- CONSTRUCT METRIC DESCRIPTION WITH PREFIXES ---
+            prefix = ""
+            if agg == "max":
+                prefix = "Nilai maksimum/terbesar dari "
+            elif agg == "min":
+                prefix = "Nilai minimum/terkecil dari "
+            elif agg == "sum":
+                prefix = "Total nilai /akumulasi dari "
+            elif agg in ["avg", "average"]:
+                prefix = "Nilai rata-rata/average dari "
+            elif agg == "count":
+                prefix = "Jumlah dari "
+            
+            metric_desc = f"{prefix}{m_base_desc}".strip()
+
             metric_name = sanitize_dbt_name(f"{table_name}_{col_name}_{agg}_metric")
             metrics.append({
                 "name": metric_name,
                 "label": f"{table_name} {col_name} {agg}".title()[:100],
-                "description": base_desc,
+                "description": metric_desc,
                 "type": "simple",
                 "type_params": {"measure": m["name"]}
             })
@@ -333,8 +352,13 @@ CROSS JOIN numbers d
         "metrics": metrics
     }
 
+    # Ensure yaml dump handles the dictionaries cleanly without anchors/aliases
+    class NoAliasDumper(yaml.SafeDumper):
+        def ignore_aliases(self, data):
+            return True
+
     with open(output_yaml_path, "w") as f:
-        yaml.dump(dbt_schema, f, sort_keys=False, default_flow_style=False)
+        yaml.dump(dbt_schema, f, Dumper=NoAliasDumper, sort_keys=False, default_flow_style=False)
 
 
 if __name__ == "__main__":
